@@ -1,0 +1,14 @@
+﻿I'm sorry, but errors were detected in your script. Please correct the
+errors listed below, and try again.
+
+
+File "game/script.rpy", line 33: style property box_border is not known.
+    box_border 1               
+              ^
+
+File "game/script.rpy", line 43: style property box_border is not known.
+    box_border 1               
+              ^
+
+Ren'Py Version: Ren'Py 8.0.2.22081402
+Tue Jun 30 23:58:12 2026

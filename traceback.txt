@@ -1,0 +1,28 @@
+﻿I'm sorry, but an uncaught exception occurred.
+
+While running game code:
+  File "game/script.rpy", line 266, in script
+    if not remembered_alexander:
+  File "game/script.rpy", line 266, in <module>
+    if not remembered_alexander:
+NameError: name 'remembered_alexander' is not defined
+
+-- Full Traceback ------------------------------------------------------------
+
+Full traceback:
+  File "game/script.rpy", line 266, in script
+    if not remembered_alexander:
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2115, in execute
+    if renpy.python.py_eval(condition):
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1083, in py_eval
+    return py_eval_bytecode(code, globals, locals)
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1076, in py_eval_bytecode
+    return eval(bytecode, globals, locals)
+  File "game/script.rpy", line 266, in <module>
+    if not remembered_alexander:
+NameError: name 'remembered_alexander' is not defined
+
+Windows-10-10.0.19044 AMD64
+Ren'Py 8.0.2.22081402
+DataSamurai 1.0
+Tue Jun 30 22:51:02 2026
