@@ -1,28 +1,32 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-  File "game/script.rpy", line 266, in script
-    if not remembered_alexander:
-  File "game/script.rpy", line 266, in <module>
-    if not remembered_alexander:
-NameError: name 'remembered_alexander' is not defined
+  File "renpy/common/00start.rpy", line 192, in script
+    python:
+  File "renpy/common/00start.rpy", line 193, in <module>
+    renpy.execute_default_statement(True)
+  File "game/script.rpy", line 12, in set_default
+    default unread_news = False       # есть ли новые
+Exception: store.unread_news is being given a default a second time.
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/script.rpy", line 266, in script
-    if not remembered_alexander:
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2115, in execute
-    if renpy.python.py_eval(condition):
-  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1083, in py_eval
-    return py_eval_bytecode(code, globals, locals)
-  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1076, in py_eval_bytecode
-    return eval(bytecode, globals, locals)
-  File "game/script.rpy", line 266, in <module>
-    if not remembered_alexander:
-NameError: name 'remembered_alexander' is not defined
+  File "renpy/common/00start.rpy", line 192, in script
+    python:
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1131, in execute
+    renpy.python.py_exec_bytecode(self.code.bytecode, self.hide, store=self.store)
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1052, in py_exec_bytecode
+    exec(bytecode, globals, locals)
+  File "renpy/common/00start.rpy", line 193, in <module>
+    renpy.execute_default_statement(True)
+  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 3790, in execute_default_statement
+    i.set_default(start)
+  File "game/script.rpy", line 12, in set_default
+    default unread_news = False       # есть ли новые
+Exception: store.unread_news is being given a default a second time.
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Tue Jun 30 22:51:02 2026
+Thu Jul  2 00:15:15 2026

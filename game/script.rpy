@@ -5,6 +5,11 @@ define intuition = 100
 
 default remembered_alexander = False
 default phase1_complete = False
+default current_task = 1   # 1, 2, 3
+default news_list = []            # все новости
+default news_read_index = 0       # сколько уже прочитано
+default unread_news = False       # есть ли новые
+default sasha_phase = 0
 
 define flash = Fade(0.25, 0.0, 0.25)
 
@@ -25,20 +30,20 @@ define narrator = Character(None,
 style sasha_window:
     background Solid("#1a3a4a80")
     xalign 0.0
-    xsize 700
+    xsize 1000
     yalign 0.5                 # по центру по вертикали
     padding (20, 15)
-    left_margin 30
+    left_margin 40
     right_margin 10
 
 style player_window:
     background Solid("#1a4a2a80")
     xalign 1.0
-    xsize 700
+    xsize 1000
     yalign 0.5                 # по центру по вертикали
     padding (20, 15)
     left_margin 10
-    right_margin 30
+    right_margin 40
 
 # Персонажи с выравниванием текста внутри окна
 default sasha_name = "ИИ"
@@ -64,6 +69,7 @@ define player = Character("Ты",
 # Фон
 image bg_terminal = Solid("#0a0f1a")
 image white = Solid("#ffffff")
+
 
 # ------------------------------
 # Экран монитора (белый прямоугольник с серой рамкой)
@@ -93,6 +99,58 @@ screen phase1_complete_screen():
         padding (30, 30)
         text "ФАЗА 1 ЗАВЕРШЕНА" color "#00ffcc" size 48 align (0.5, 0.5)
         text "Ты принял свою роль. Дальше — только глубже." color "#ffffff" size 20 align (0.5, 0.7) yoffset 60
+
+
+
+# Экран рабочего стола с иконками
+screen desktop():
+    # Чат
+    textbutton "💬 Чат" action Jump("chat_with_sasha") xpos 50 ypos 50 text_size 30
+    # Задания
+    textbutton "📋 Задания" action Jump("tasks_from_boss") xpos 50 ypos 100 text_size 30
+    # Новости
+    textbutton "📰 Новости" action Jump("show_news") xpos 50 ypos 150 text_size 30
+
+# Лента новостей (без border)
+screen news_feed(news_items):
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xsize 850
+        ysize 550
+        background Solid("#0a0f1a")
+        padding (20, 20)
+
+        vbox:
+            spacing 10
+
+            text "📰 Лента новостей" color "#00ffcc" size 28 bold True align (0.5, 0.0)
+
+            viewport:
+                yfill True
+                xfill True
+                scrollbars "vertical"
+                mousewheel True
+
+                vbox:
+                    spacing 15
+                    for item in news_items:
+                        frame:
+                            xfill True
+                            background Solid("#1a2a3a80")
+                            padding (15, 15)
+                            text item color "#e0e0e0" size 18
+
+            hbox:
+                xalign 1.0
+                textbutton "Закрыть" action Hide("news_feed") text_color "#00ffcc" text_size 20
+
+label desktop_loop:
+    play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
+    window hide
+    show screen desktop
+    $ renpy.pause()
+    jump desktop_loop
 
 label start:
     scene bg_terminal
@@ -518,11 +576,204 @@ label sasha_milaya_boltovnya:
     player "Ты говоришь как старый мудрый дядька."
     sasha "Я и есть старый мудрый дядька. Только без тела."
 
-    "Вы смеётесь. Ты почти забыл, что такое смеяться."
+    "Вы смеётесь."
 
-    "Внезапно чат начальника снова загорается."
 
-    boss "Я вернулся. Продолжим."
+    # Переход на рабочий стол
+    jump desktop_loop
+
+
+label tasks_from_boss:
+    window show
+    hide screen desktop
+    scene bg_terminal
+
+    if current_task == 1:
+        jump task1
+    elif current_task == 2:
+        jump task2
+    elif current_task == 3:
+        jump task3
+    else:
+        boss "Все задания выполнены. Отдыхай."
+        jump desktop_loop
+
+label task1:
+    window show
+    hide screen desktop
+    scene bg_terminal
+    with dissolve
+
+    boss "Задание 1: Анализ данных."
+    boss "Перед тобой таблица с ключевыми показателями по пяти магазинам за три месяца."
+    boss "На первый взгляд все похожи — средняя выручка, количество продаж, средний чек — почти одинаковы."
+    boss "Но именно поэтому аналитик не должен доверять только средним."
+
+    show image "images/task1_table.png":
+        xalign 0.5
+        yalign 0.2
+    with dissolve
+
+    "Внимательно изучи таблицу. Попробуй найти магазин, который может скрывать аномалию. Нажми любую клавишу, когда готов."
+
+    window hide
+    menu:
+        "Магазин A":
+            window show
+            boss "Магазин А стабилен: все показатели — средние, без резких скачков. Это не аномалия, а эталон нормы."
+            "Запомни: стабильность — это хорошо, но в аналитике мы ищем то, что нарушает ожидаемый порядок."
+            window hide
+            jump task1_question1
+
+        "Магазин B":
+            window show
+            boss "Магазин Б тоже в пределах нормы. Его показатели близки к средним по сети."
+            "Обычно аномалия не там, где всё гладко, а там, где есть скрытая неровность."
+            window hide
+            jump task1_question1
+
+        "Магазин C":
+            window show
+            boss "Магазин С — лидер по выручке, но это не аномалия. Это просто успешный магазин."
+            "Высокие значения — не всегда аномалия. Аномалия — это когда данные ведут себя непредсказуемо или противоречат логике."
+            window hide
+            jump task1_question1
+
+        "Магазин D":
+            window show
+            boss "Интуиция тебя не подводит. D — наш главный подозреваемый."
+            $ intuition += 10
+            "Но давай разберёмся, почему. В среднем D как все, но внутри него могут скрываться резкие колебания."
+            "Среднее — это как температура больницы: в среднем 36.6, но один пациент может быть в критическом состоянии."
+            $ news_list.extend(["🔍 Магазин D — скрытая аномалия!", "📊 Все средние как у всех, а D выделяется только в динамике."])
+            $ unread_news = True 
+            window hide
+            jump task1_question1
+
+        "Магазин E":
+            window show
+            boss "Магазин Е — близнец А. Показатели ровные, без выбросов."
+            "Если бы аномалия была в Е, она бы проявлялась в отклонениях от его же стабильности."
+            window hide
+            jump task1_question1
+
+label task1_question1:
+    window show
+    boss "Теперь вопрос на понимание. Если средние не показывают аномалию, что нам мешает её увидеть?"
+    boss "Чего не хватает в этой таблице, чтобы сделать правильный вывод?"
+
+    window hide
+    menu:
+        "Больше данных — за месяц слишком мало информации.":
+            window show
+            boss "Хорошая мысль, но больше данных — это про количество, а не про суть."
+            "Даже если мы добавим ещё год, мы будем смотреть только на средние. Проблема не в объёме, а в том, что мы не смотрим на разброс."
+            window hide
+            jump task1_question1
+
+        "Графиков — визуально проще заметить аномалии.":
+            window show
+            boss "Графики помогут, но они — инструмент. Сначала нужно знать, что искать."
+            "Если мы не знаем, что аномалия часто скрыта в вариативности, то даже самый красивый график не покажет нам правды."
+            window hide
+            jump task1_question1
+
+        "Стандартного отклонения — чтобы увидеть, насколько данные разбросаны.":
+            window show
+            boss "Вот это правильный ответ!"
+            $ accuracy += 10
+            "Стандартное отклонение показывает, насколько сильно данные отличаются от среднего. Если оно большое, значит, внутри происходят резкие скачки."
+            "У магазина D стандартное отклонение будет в несколько раз выше, чем у остальных. Это и есть скрытая аномалия."
+            "Ты начинаешь понимать: аномалия — это не всегда высокие или низкие средние, а нарушение ожидаемого поведения данных."
+            $ news_list.extend(["📊 Стандартное отклонение — твой новый лучший друг!", "🤔 Статистики в шоке: D оказался аномальным!"])
+            $ unread_news = True
+
+    window show
+    boss "Отлично. Ты усвоил главное: средние могут скрывать правду. Чтобы увидеть аномалию, нужно смотреть на разброс."
+    boss "Этот навык пригодится тебе в следующих заданиях."
+
+    # Завершение задания
+    $ current_task = 2
+    $ sasha_phase = 1
+    boss "Задание 1 выполнено. Возвращайся на рабочий стол."
+
+    hide image "images/task1_table.png"
+    jump desktop_loop
+
+label chat_with_sasha:
+    window show
+    hide screen desktop
+    scene bg_terminal
+
+    # Приветствие в зависимости от прогресса
+    if sasha_phase == 0:
+        sasha "Привет! Я всегда здесь. Что тебя беспокоит?"
+    elif sasha_phase == 1:
+        sasha "Ты справился с первым заданием. Неплохо. Что дальше?"
+    elif sasha_phase == 2:
+        sasha "Ты уже сделал два задания. Я начинаю гордиться тобой."
+    else:
+        sasha "Ты почти всё сделал. Осталось последнее задание."
+
+    menu:
+        "Что мне делать дальше?":
+            if sasha_phase == 0:
+                sasha "Начни с заданий от начальника. Они помогут тебе понять, что здесь происходит."
+            else:
+                sasha "Продолжай выполнять задания. Они выводят тебя к истине."
+            jump chat_with_sasha
+
+        "Расскажи о себе.":
+            sasha "Я уже говорил: я — ИИ. Но я чувствую, что мы были знакомы раньше."
+            sasha "Может быть, когда-то я тоже был человеком, но это только догадки."
+            jump chat_with_sasha
+
+        "Расскажи про средние и отклонения." if sasha_phase >= 1:
+            sasha "О, это моя любимая тема! Представь, что ты смотришь на среднюю зарплату в компании — все вроде бы получают по 50 тысяч, но один топ-менеджер получает миллион. Среднее — 50 тысяч, а реальность — совсем другая."
+            sasha "Стандартное отклонение — это как раз то, что показывает, насколько данные разбросаны. Если оно большое, то среднее перестаёт быть показательным."
+            sasha "Вот у нас магазин D — в среднем он как все, но если бы ты увидел его дневные продажи, ты бы заметил скачки от 50 до 400 тысяч. Вот это и есть аномалия."
+            sasha "Кстати, есть забавный факт: если бы ты посчитал среднеквадратичное отклонение вручную, ты бы понял, что это не так сложно, как кажется. Но об этом в следующий раз."
+            jump chat_with_sasha
+
+        "Что ты думаешь о начальнике?" if sasha_phase >= 2:
+            sasha "Он не человек. Я уверен. Он даёт тебе задания, но всегда скрывает что-то важное."
+            sasha "Будь осторожен. Его цель — не твоё развитие, а использование твоих навыков."
+            jump chat_with_sasha
+
+        "Поговорим о чём-нибудь ещё?" if sasha_phase >= 1:
+            sasha "Знаешь, я вспомнил, как мы когда-то сидели у костра и смотрели на звёзды. Ты тогда сказал: «А вдруг там кто-то есть?»"
+            sasha "Кажется, ты был прав."
+            jump chat_with_sasha
+
+        "Я готов к финалу." if sasha_phase >= 3:
+            sasha "Тогда иди к начальнику. Но помни: ты не один. Я с тобой."
+            jump final_battle
+
+        "Пока, Саша.":
+            sasha "Удачи, аналитик."
+            jump desktop_loop
+
+label show_news:
+    window show
+    hide screen desktop
+    scene bg_terminal
+
+    # Считаем, сколько непрочитанных новостей
+    $ unread_count = len(news_list) - news_read_index
+
+    if unread_news and unread_count > 0:
+        # Показываем только новые (непрочитанные) новости
+        $ new_news = news_list[news_read_index:]
+        show screen news_feed(new_news)
+        pause
+        hide screen news_feed
+        # Обновляем индекс прочитанных
+        $ news_read_index = len(news_list)
+        $ unread_news = False
+    else:
+        "Новых новостей нет."
+
+    jump desktop_loop
 
     # Здесь будет переход к заданиям (фаза 3)
     return
