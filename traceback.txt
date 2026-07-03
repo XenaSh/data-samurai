@@ -1,32 +1,22 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-  File "renpy/common/00start.rpy", line 192, in script
-    python:
-  File "renpy/common/00start.rpy", line 193, in <module>
-    renpy.execute_default_statement(True)
-  File "game/script.rpy", line 12, in set_default
-    default unread_news = False       # есть ли новые
-Exception: store.unread_news is being given a default a second time.
+  File "game/script.rpy", line 774, in script
+    jump final_battle
+ScriptError: could not find label 'final_battle'.
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "renpy/common/00start.rpy", line 192, in script
-    python:
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1131, in execute
-    renpy.python.py_exec_bytecode(self.code.bytecode, self.hide, store=self.store)
-  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1052, in py_exec_bytecode
-    exec(bytecode, globals, locals)
-  File "renpy/common/00start.rpy", line 193, in <module>
-    renpy.execute_default_statement(True)
-  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 3790, in execute_default_statement
-    i.set_default(start)
-  File "game/script.rpy", line 12, in set_default
-    default unread_news = False       # есть ли новые
-Exception: store.unread_news is being given a default a second time.
+  File "game/script.rpy", line 774, in script
+    jump final_battle
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1974, in execute
+    rv = renpy.game.script.lookup(target)
+  File "E:\renpy-8.0.2-sdk\renpy\script.py", line 927, in lookup
+    raise ScriptError("could not find label '%s'." % str(original))
+ScriptError: could not find label 'final_battle'.
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Thu Jul  2 00:15:15 2026
+Fri Jul  3 03:45:53 2026

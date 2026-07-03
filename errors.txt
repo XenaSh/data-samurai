@@ -2,9 +2,9 @@
 errors listed below, and try again.
 
 
-File "game/script.rpy", line 710: expected statement.
-    "Расскажи про средние и отклонения." if sasha_phase >= 1:
-                                         ^
+File "game/script.rpy", line 858: Line is indented, but the preceding show statement statement does not expect a block. Please check this line's indentation.
+    xalign 0.5
+    ^
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Thu Jul  2 02:07:10 2026
+Fri Jul  3 02:39:05 2026
