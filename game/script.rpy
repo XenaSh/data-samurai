@@ -10,7 +10,15 @@ default news_list = []            # все новости
 default news_read_index = 0       # сколько уже прочитано
 default unread_news = False       # есть ли новые
 default sasha_phase = 0
-default task2_hint_received = False
+default task2_clue_index = -1
+default task2_q1_attempts = 0
+default task2_sasha_attempts = 0
+default rank_order = []
+default task3_available_stages = []
+
+default ending_accuracy_threshold = 140
+default ending_intuition_threshold = 140
+
 
 define flash = Fade(0.25, 0.0, 0.25)
 
@@ -145,6 +153,55 @@ screen news_feed(news_items):
             hbox:
                 xalign 1.0
                 textbutton "Закрыть" action Hide("news_feed") text_color "#00ffcc" text_size 20
+
+# Экран для ранжирования
+
+init python:
+    def task3_rank_pick(stage):
+        if stage in task3_available_stages:
+            task3_available_stages.remove(stage)
+            rank_order.append(stage)
+            renpy.restart_interaction()
+
+    def task3_rank_undo():
+        if rank_order:
+            last = rank_order.pop()
+            task3_available_stages.append(last)
+            renpy.restart_interaction()
+
+screen task3_rank_screen():
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xsize 900
+        ysize 500
+        background Solid("#0a0f1a")
+        padding (25, 25)
+
+        vbox:
+            spacing 15
+            text "Расставь этапы анализа в правильном порядке:" color "#00ffcc" size 26
+
+            hbox:
+                spacing 40
+
+                vbox:
+                    spacing 8
+                    text "Доступные этапы:" color "#888888" size 18
+                    for stage in task3_available_stages:
+                        textbutton stage action Function(task3_rank_pick, stage) text_size 20 text_color "#e0e0e0"
+
+                vbox:
+                    spacing 8
+                    text "Твой порядок:" color "#888888" size 18
+                    for i, stage in enumerate(rank_order, 1):
+                        text "[i]. [stage]" color "#88ff88" size 20
+
+            if rank_order:
+                textbutton "Отменить последний выбор" action Function(task3_rank_undo) text_size 18 text_color "#ff8888"
+
+            if len(rank_order) == 4:
+                textbutton "Готово" action Return(True) text_size 24 text_color "#00ffcc" xalign 0.5
 
 label desktop_loop:
     play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
@@ -778,8 +835,7 @@ label chat_with_sasha:
             jump desktop_loop
 
 label task2:
-    # Если подсказка уже получена, сразу переходим к вопросам
-    if task2_hint_received:
+    if news_read_index > task2_clue_index and task2_clue_index >= 0:
         jump task2_q1
 
     window show
@@ -808,6 +864,7 @@ label task2:
         "Соцсеть «ГласНарода» заблокировала аккаунт пришельца за «распространение ложных данных о Земле».",
         "АКЦИЯ от застройщика ЗАО Бали. 27 метров под 27 годовых на 27 лет и только в эту пятницу — 27 февраля."
     ])
+    $ task2_clue_index = len(news_list) - 1   # запоминаем, где именно лежит подсказка
     $ unread_news = True
 
     menu:
@@ -825,32 +882,67 @@ label task2_think:
         "Вернуться к графику.":
             jump task2_back_to_graph
         "Выйти на рабочий стол.":
-            $ task2_hint_received = True
             jump desktop_loop
 
 label task2_sasha:
     hide image "images/revenue_and_load.png"
     window show
-    sasha "Я вижу, ты задумался о днях недели. Хороший вопрос."
-    sasha "Новости иногда содержат неожиданные подсказки. Может, там есть что-то полезное?"
-    sasha "Проверь ленту новостей, а потом возвращайся к графику."
+    $ task2_sasha_attempts = 0
+    sasha "Хм, среда... Слушай, а тебе не кажется, что похожая дата тебе уже где-то попадалась?"
+    window hide
+    jump task2_sasha_loop
+
+label task2_sasha_loop:
+    menu:
+        "Похожая дата? Где именно?":
+            $ task2_sasha_attempts += 1
+            window show
+            if task2_sasha_attempts >= 2:
+                sasha "Ладно, не буду тянуть. Открой ленту новостей — там есть конкретная дата с днём недели. Оттолкнись от неё и посчитай."
+                window hide
+                jump task2_sasha_end
+            else:
+                sasha "Не скажу прямо. Но в потоке новостей обычно сплошной мусор — а иногда среди мусора мелькает что-то полезное."
+                window hide
+                jump task2_sasha_loop
+
+        "Я правда не понимаю, к чему ты клонишь.":
+            $ task2_sasha_attempts += 1
+            window show
+            if task2_sasha_attempts >= 2:
+                sasha "Хорошо, скажу прямо: в ленте новостей есть точная дата с днём недели. От неё можно отсчитать нужный день на графике."
+                window hide
+                jump task2_sasha_end
+            else:
+                sasha "Смотри на это как на две головоломки, которые случайно совпали. Где ты в последний раз видел дату с привязкой ко дню недели?"
+                window hide
+                jump task2_sasha_loop
+
+label task2_sasha_end:
+    window show
+    sasha "Проверь новости, а потом возвращайся к графику."
     menu:
         "Вернуться к графику.":
             jump task2_back_to_graph
         "Выйти на рабочий стол и проверить новости.":
-            $ task2_hint_received = True
             jump desktop_loop
 
 label task2_back_to_graph:
+    if news_read_index > task2_clue_index and task2_clue_index >= 0:
+        menu:
+            "Я готов ответить.":
+                jump task2_q1
+            "Я ещё не уверен.":
+                "Тогда подумай ещё. Посмотри на даты пиков: 07-01, 14-01, 21-01, 28-01..."
+                jump desktop_loop
+    else:
+        "Ты пытаешься сопоставить даты, но без точки отсчёта это просто гадание."
+        menu:
+            "Пойти проверить новости.":
+                jump desktop_loop
+            "Всё равно попробовать ответить.":
+                jump task2_q1
 
-    menu:
-        "Я готов ответить.":
-            jump task2_q1
-        "Я ещё не уверен.":
-            "Тогда подумай ещё. Посмотри на даты пиков: 07-01, 14-01, 21-01, 28-01..."
-            jump desktop_loop
-
-# --- Вопрос 1: день недели ---
 label task2_q1:
     window show
     show image "images/revenue_and_load.png":
@@ -862,35 +954,78 @@ label task2_q1:
     boss "Внимательно посмотри на даты — они повторяются каждые 7 дней. Какой день недели это?"
     hide image "images/revenue_and_load.png"
 
-
     window hide
-    menu:
-        "Понедельник":
-            window show
-            boss "Нет, понедельник — начало недели, а пики приходятся на середину."
-            window hide
-            jump task2_q1
+    if news_read_index > task2_clue_index and task2_clue_index >= 0:
+        menu:
+            "Понедельник":
+                $ task2_q1_attempts += 1
+                window show
+                boss "Нет, понедельник — начало недели, а пики приходятся на середину."
+                if task2_q1_attempts == 2:
+                    boss "Ты издеваешься? Подумай ещё раз."
+                elif task2_q1_attempts >= 3:
+                    boss "Серьёзно? Числа повторяются каждые семь дней. Просто посчитай от известной даты."
+                window hide
+                jump task2_q1
 
-        "Среда":
-            window show
-            boss "Верно! Именно среда — день, когда происходят аномалии."
-            $ accuracy += 10
-            window hide
-            jump task2_q2
+            "Среда":
+                window show
+                player "Постой... среда. Если отсчитать от даты из новостей — сходится."
+                "Ты не можешь объяснить, откуда в тебе эта уверенность. Но цифры сходятся."
+                boss "Хм. Быстро сообразил."
+                $ accuracy += 10
+                window hide
+                jump task2_q2
 
-        "Пятница":
-            window show
-            boss "Нет, пятница слишком поздно. Пик явно в середине недели."
-            window hide
-            jump task2_q1
+            "Пятница":
+                $ task2_q1_attempts += 1
+                window show
+                boss "Нет, пятница слишком поздно. Пик явно в середине недели."
+                if task2_q1_attempts == 2:
+                    boss "Ты издеваешься? Подумай ещё раз."
+                elif task2_q1_attempts >= 3:
+                    boss "Серьёзно? Числа повторяются каждые семь дней. Просто посчитай от известной даты."
+                window hide
+                jump task2_q1
 
-        "Суббота":
-            window show
-            boss "Нет, в выходные нагрузка обычно падает. Пик — в будний день."
-            window hide
-            jump task2_q1
+            "Суббота":
+                $ task2_q1_attempts += 1
+                window show
+                boss "Нет, в выходные нагрузка обычно падает. Пик — в будний день."
+                if task2_q1_attempts == 2:
+                    boss "Ты издеваешься? Подумай ещё раз."
+                elif task2_q1_attempts >= 3:
+                    boss "Серьёзно? Числа повторяются каждые семь дней. Просто посчитай от известной даты."
+                window hide
+                jump task2_q1
+    else:
+        menu:
+            "Понедельник":
+                window show
+                boss "Нет, понедельник — начало недели, а пики приходятся на середину."
+                window hide
+                jump task2_q1
 
-# --- Вопрос 2: магазин ---
+            "Пятница":
+                window show
+                boss "Нет, пятница слишком поздно. Пик явно в середине недели."
+                window hide
+                jump task2_q1
+
+            "Суббота":
+                window show
+                boss "Нет, в выходные нагрузка обычно падает. Пик — в будний день."
+                window hide
+                jump task2_q1
+
+            "У меня недостаточно данных, чтобы сказать точно.":
+                window show
+                player "Тут явно чего-то не хватает. Нужна хотя бы одна точка отсчёта — дата с известным днём недели."
+                boss "Тогда иди и найди её."
+                window hide
+                jump task2_back_to_graph
+
+# --- Вопрос 2: магазин (голос героя) ---
 label task2_q2:
     window show
     boss "Какой магазин показывает аномально высокую выручку в те же дни, что и пики нагрузки?"
@@ -920,7 +1055,8 @@ label task2_q2:
 
         "Магазин D":
             window show
-            boss "Верно! Это магазин D, который мы заподозрили в первом задании. Его пики выручки идеально совпадают с пиками нагрузки."
+            player "Магазин D. Конечно — мы же его уже подозревали. Пики выручки один в один ложатся на пики нагрузки."
+            boss "Верно."
             $ accuracy += 10
             window hide
             jump task2_q3
@@ -932,7 +1068,7 @@ label task2_q2:
             window hide
             jump task2_q2
 
-# --- Вопрос 3: причина (гипотезы) ---
+# --- Вопрос 3: гипотезы (без изменений — гипотезу выдвигает сам игрок) ---
 label task2_q3:
     window show
     boss "И последний вопрос. Как ты думаешь, что могло вызвать такой резкий пик нагрузки по средам?"
@@ -976,7 +1112,7 @@ label task2_q3:
             window hide
             jump task2_final
 
-# --- Итоговые новости (только после завершения) ---
+# --- Итоговые новости + голос героя вместо лекции начальника ---
 label task2_final:
     window show
     $ news_list.extend([
@@ -986,16 +1122,18 @@ label task2_final:
     ])
     $ unread_news = True
 
-    boss "Отлично! Ты научился читать графики, находить закономерности и связывать их с внешними событиями. Это важный навык для любого аналитика."
+    player "Графики, паттерны, привязка к событиям... Я не просто угадываю. Что-то в этом действительно моё."
+    boss "Задание 2 выполнено. Возвращайся на рабочий стол."
 
-    # Завершение задания
     $ current_task = 3
     $ sasha_phase = 2
-    $ task2_hint_received = False   # сбрасываем для будущих запусков
-    boss "Задание 2 выполнено. Возвращайся на рабочий стол."
 
     hide image "images/revenue_and_load.png"
     jump desktop_loop
+
+#---------
+# ТРЕТЬЕ ЗАДАНИЕ ОТ НАЧАЛЬНИКА
+# --------
 
 label task3:
     window show
@@ -1003,12 +1141,10 @@ label task3:
     scene bg_terminal
     with dissolve
 
-    # --- ВСТУПЛЕНИЕ ---
     boss "Задание 3: Формулирование выводов и рекомендаций."
     boss "Ты прошёл два этапа: нашёл аномалию в данных и увидел её визуальное подтверждение."
     boss "Теперь давай разберёмся, что означают все эти графики и как их использовать для принятия решений."
 
-    # --- ШАГ 1: BOXPLOT ---
     boss "Первый график — ящик с усами. Он показывает разброс данных. Давай посмотрим."
 
     show image "images/boxplot_revenue.png":
@@ -1033,15 +1169,14 @@ label task3_q1:
         "D стабилен, как и все.":
             window show
             boss "Нет, посмотри на разброс — он намного больше, чем у других."
-            "Саша (подсказка): Длинные усы означают, что в одни дни выручка D сильно отличается от обычной."
             window hide
             jump task3_q1
 
         "D имеет аномально высокие выбросы, что говорит о нестабильности.":
             window show
-            boss "Верно! Это говорит о том, что D нестабилен — есть дни с очень высокой выручкой, которые выбиваются из общего ряда."
+            player "Выбросы. Точки, которые далеко от общей массы. Без этого графика их бы никто не заметил — средние бы их растворили."
+            boss "Верно."
             $ accuracy += 10
-            "Саша: Именно такие выбросы мы и ищем. Без этого графика мы бы не заметили аномалию, потому что средние — это усреднение."
             window hide
             jump task3_step2
 
@@ -1078,15 +1213,14 @@ label task3_q2:
         "Связи нет — это случайность.":
             window show
             boss "Посмотри внимательнее: точки идут вдоль прямой. Это не случайность."
-            "Саша: Корреляция — это когда две переменные меняются вместе. Здесь явно есть зависимость."
             window hide
             jump task3_q2
 
         "Есть сильная положительная корреляция — когда выручка D растёт, нагрузка тоже растёт.":
             window show
-            boss "Верно! Это означает, что пики выручки D и пики нагрузки происходят одновременно. Это уже не случайность, а закономерность."
+            player "Корреляция. Выручка и нагрузка растут вместе — это не совпадение, это закономерность."
+            boss "Верно."
             $ accuracy += 10
-            "Саша: Без этого графика мы бы не поняли, что аномалия связана с внешним фактором — нагрузкой на сервер."
             window hide
             jump task3_step3
 
@@ -1122,9 +1256,9 @@ label task3_q3:
     menu:
         "Потому что средние усредняют данные — они скрывают выбросы.":
             window show
-            boss "Верно! Именно поэтому аналитик должен смотреть на разброс и визуализацию, а не только на средние."
+            player "Средние сглаживают всё подряд. Один резкий день теряется в общей массе — если не смотреть на разброс, аномалия просто исчезает."
+            boss "Верно."
             $ accuracy += 10
-            "Саша: Запомни: средние — это полезно, но они не дают полной картины. Всегда проверяй разброс."
             window hide
             jump task3_step4
 
@@ -1144,189 +1278,119 @@ label task3_step4:
     hide image "images/summary_table.png"
     window show
     boss "Теперь давай поговорим о методологии. Как правильно анализировать аномалии?"
-    boss "У тебя есть 4 этапа анализа. Расставь их в правильном порядке."
+    boss "Расставь эти 4 этапа в правильном порядке."
+    window hide
 
-    # Этапы в перемешанном порядке
-    # A. Визуализация данных
-    # B. Сбор и очистка данных
-    # C. Расчёт статистических показателей (среднее, отклонение)
-    # D. Интерпретация результатов и формулирование вывода
-
-    # Правильный порядок: B → C → A → D
-
+    $ task3_available_stages = ["Сбор и очистка данных", "Расчёт статистических показателей", "Визуализация данных", "Интерпретация результатов"]
     $ rank_order = []
-    $ rank_score = 0
 
-    # Выбор первого этапа
-    window hide
-    menu:
-        "Сбор и очистка данных.":
-            $ rank_order.append("Сбор и очистка данных")
-            $ rank_score += 2
-            window show
-            boss "Верно! Сначала нужно собрать и подготовить данные. Это основа анализа."
-            window hide
-            jump task3_rank2
-        "Визуализация данных.":
-            window show
-            boss "Визуализация важна, но сначала данные должны быть собраны и обработаны. Попробуй ещё раз."
-            window hide
-            jump task3_step4
-        "Расчёт статистических показателей.":
-            window show
-            boss "Расчёты делаются после сбора данных, но до визуализации. Сначала нужно собрать данные."
-            window hide
-            jump task3_step4
-        "Интерпретация результатов.":
-            window show
-            boss "Интерпретация — финальный шаг. Нельзя интерпретировать то, чего ещё нет."
-            window hide
-            jump task3_step4
+    call screen task3_rank_screen
 
-label task3_rank2:
+    $ correct_order = ["Сбор и очистка данных", "Расчёт статистических показателей", "Визуализация данных", "Интерпретация результатов"]
+    $ rank_score = sum(2 for i in range(4) if rank_order[i] == correct_order[i])
+    $ accuracy += rank_score
+
     window show
-    boss "Выбери второй этап."
+    if rank_score == 8:
+        player "Порядок сам сложился в голове — будто я делал это тысячу раз. Сбор, расчёт, визуализация, вывод."
+        boss "Верно."
+    elif rank_score >= 4:
+        player "Кажется, я почти угадал порядок... но что-то ощущается не совсем так."
+        boss "Почти. Не идеально, но направление верное."
+    else:
+        player "Порядок явно не тот. Но я не могу вспомнить, как правильно."
+        boss "Плохо. Методология — это не угадайка."
+    boss "За методологию ты получаешь [rank_score] очков."
 
-    window hide
-    menu:
-        "Сбор и очистка данных.":
-            window show
-            boss "Это уже сделано."
-            window hide
-            jump task3_rank2
-        "Визуализация данных.":
-            window show
-            boss "Нет, сначала нужно посчитать показатели."
-            window hide
-            jump task3_rank2
-        "Расчёт статистических показателей (среднее, отклонение).":
-            $ rank_order.append("Расчёт статистических показателей")
-            $ rank_score += 2
-            window show
-            boss "Верно! После сбора данных мы считаем показатели — средние, отклонения, чтобы увидеть общую картину."
-            window hide
-            jump task3_rank3
-        "Интерпретация результатов.":
-            window show
-            boss "Интерпретация — позже. Сначала посчитаем показатели."
-            window hide
-            jump task3_rank2
-
-label task3_rank3:
-    window show
-    boss "Выбери третий этап."
-
-    window hide
-    menu:
-        "Сбор и очистка данных.":
-            window show
-            boss "Уже сделано."
-            window hide
-            jump task3_rank3
-        "Визуализация данных.":
-            $ rank_order.append("Визуализация данных")
-            $ rank_score += 2
-            window show
-            boss "Верно! Теперь, когда у нас есть цифры, мы можем построить графики, чтобы увидеть скрытые закономерности."
-            window hide
-            jump task3_rank4
-        "Расчёт статистических показателей.":
-            window show
-            boss "Это уже сделано на втором шаге."
-            window hide
-            jump task3_rank3
-        "Интерпретация результатов.":
-            window show
-            boss "Интерпретация — это финал. Сначала визуализируй."
-            window hide
-            jump task3_rank3
-
-label task3_rank4:
-    window show
-    boss "Выбери четвёртый и последний этап."
-
-    window hide
-    menu:
-        "Сбор и очистка данных.":
-            window show
-            boss "Это было самое начало."
-            window hide
-            jump task3_rank4
-        "Визуализация данных.":
-            window show
-            boss "Это уже было третьим шагом."
-            window hide
-            jump task3_rank4
-        "Расчёт статистических показателей.":
-            window show
-            boss "Это было вторым шагом."
-            window hide
-            jump task3_rank4
-        "Интерпретация результатов и формулирование вывода.":
-            $ rank_order.append("Интерпретация результатов")
-            $ rank_score += 2
-            window show
-            boss "Верно! Завершаем анализ — делаем выводы и формулируем рекомендации."
-            window hide
-            jump task3_rank_done
+    jump task3_rank_done
 
 label task3_rank_done:
     window show
-    $ accuracy += rank_score
-    boss "Ты расставил этапы в правильном порядке! Это отличная методологическая база."
-    boss "За правильную последовательность ты получаешь [rank_score] очков."
+    boss "Хорошо. Теперь — самое важное. Что нам делать с магазином D?"
+    boss "Не спеши с ответом. Аналитик отвечает за свои выводы."
 
-    # --- ШАГ 5: ТЕКСТОВЫЙ ВЫВОД ---
-    boss "Теперь, когда ты знаешь методологию, напиши итоговую рекомендацию."
-    boss "Что нужно сделать с магазином D и почему? Используй свои слова."
+    window hide
+    menu:
+        "Нужно провести полноценный аудит магазина D, прежде чем принимать решение.":
+            $ accuracy += 10
+            window show
+            player "Закрыть — это самый простой путь. Но самый простой не значит правильный."
+            boss "Разумно. Хотя это займёт время."
+            window hide
+            jump task3_conclusion_2
 
-    $ recommendation = renpy.input("Твой вывод (можно коротко):", length=250)
-    $ recommendation = recommendation.strip()
+        "Закрыть магазин D — данные однозначно ненадёжны.":
+            $ accuracy += 4
+            window show
+            boss "Быстрое решение. Но 'ненадёжны' — это не диагноз, это отговорка."
+            window hide
+            jump task3_conclusion_2
 
-    $ score = 0
-    if "закрыть" in recommendation.lower() or "закрыт" in recommendation.lower():
-        $ score += 2
-    if "сервер" in recommendation.lower() or "серверы" in recommendation.lower():
-        $ score += 2
-    if "аномалия" in recommendation.lower() or "вмешательств" in recommendation.lower():
-        $ score += 2
-    if "пришельц" in recommendation.lower():
-        $ score += 2
+        "Ничего не делать, отклонение в пределах случайности.":
+            $ accuracy -= 5
+            window show
+            boss "Ты же сам видел выбросы и корреляцию. Это не случайность."
+            window hide
+            jump task3_conclusion_2
 
-    $ accuracy += score
-    boss "Ты написал: '[recommendation]'"
-    boss "За этот ответ ты получаешь [score] очков."
+label task3_conclusion_2:
+    window show
+    boss "При проверке выяснилось кое-что странное: магазин D не подаёт ни одной заявки на поставку товара. При этом продажи есть."
+    "Начальник произносит это чуть быстрее, чем обычно."
 
-    if score < 4:
-        boss "Попробуй добавить конкретику — например, почему ты предлагаешь закрыть D и укрепить серверы."
-        menu:
-            "Попробовать ещё раз.":
-                window show
-                boss "Хорошо, давай ещё раз."
-                jump task3_step5
-            "Оставить как есть.":
-                window show
-                boss "Принято. Ты получил частичные очки."
-                jump task3_final
-    else:
-        jump task3_final
+    window hide
+    menu:
+        "Скорее всего, ошибка в системе учёта поставок.":
+            $ accuracy += 2
+            window show
+            boss "Возможно. Хотя это удобное объяснение."
+            window hide
+            jump task3_conclusion_3
 
-label task3_step5:
-    $ recommendation = renpy.input("Твой вывод (можно коротко):", length=250)
-    $ recommendation = recommendation.strip()
-    $ score = 0
-    if "закрыть" in recommendation.lower() or "закрыт" in recommendation.lower():
-        $ score += 2
-    if "сервер" in recommendation.lower() or "серверы" in recommendation.lower():
-        $ score += 2
-    if "аномалия" in recommendation.lower() or "вмешательств" in recommendation.lower():
-        $ score += 2
-    if "пришельц" in recommendation.lower():
-        $ score += 2
-    $ accuracy += score
-    boss "Ты написал: '[recommendation]'"
-    boss "За этот ответ ты получаешь [score] очков."
-    jump task3_final
+        "Рассинхронизация между продажами и поставками — серьёзный сигнал. Похоже, магазин физически не функционирует так, как заявлено.":
+            $ accuracy += 10
+            $ intuition += 10
+            window show
+            player "Продажи без поставок. Деньги без товара. Это не бухгалтерская ошибка — это витрина без магазина."
+            boss "Это... преждевременный вывод. У тебя нет для него оснований."
+            "Начальник отвечает быстрее, чем на предыдущий вопрос."
+            window hide
+            jump task3_conclusion_3
+
+        "Наверное, поставки идут по отдельному контракту.":
+            $ accuracy -= 3
+            window show
+            boss "Возможно. Хотя я бы на твоём месте в это не спешил верить."
+            window hide
+            jump task3_conclusion_3
+
+label task3_conclusion_3:
+    window show
+    boss "Это не входит в рамки твоей задачи. Сфокусируйся на цифрах, а не на догадках."
+
+    window hide
+    menu:
+        "Настаиваю: происхождение магазина D нужно расследовать отдельно.":
+            $ intuition += 15
+            window show
+            boss "Хватит."
+            "Начальник обрывает фразу на середине. Пауза длится дольше, чем должна."
+            boss "Задание закрыто. Двигаемся дальше."
+            window hide
+            jump task3_final
+
+        "Хорошо, просто закрою магазин без выяснения причин.":
+            $ accuracy += 2
+            window show
+            boss "Разумно. Не лезь туда, куда не просят."
+            window hide
+            jump task3_final
+
+        "Соглашусь, сосредоточусь только на цифрах.":
+            window show
+            boss "Хорошо. Так и продолжай."
+            window hide
+            jump task3_final
 
 # --- ФИНАЛ ---
 label task3_final:
@@ -1345,6 +1409,96 @@ label task3_final:
     boss "Теперь ты готов к чему-то большему."
 
     hide image "images/scatter_correlation.png"
+    jump desktop_loop
+
+# ==========================================================
+# ФАЗА 3: ФИНАЛЬНАЯ КОНФРОНТАЦИЯ
+# Сюда попадаем из чата с Сашей (jump final_battle при sasha_phase >= 3)
+# ==========================================================
+
+label final_battle:
+    window hide
+    stop music fadeout 1.0
+    scene bg_terminal
+    with dissolve
+
+    narrator "Начальник умолк. Усталость наваливается — цифры, отчёты, подозрения остаются на экране."
+
+    show white with flash
+    pause 0.15
+    hide white
+    with dissolve
+
+    "{color=#ffcc88}{i}В темноте возникает образ. Ты сидишь у костра. Рядом — кто-то. Он читает вслух книгу, и ты смеёшься. Пахнет деревом и дымом. Где-то лает собака.{/i}{/color}"
+
+    window show
+    sasha "Ты там? Ты застыл на пару секунд."
+    player "Я... я что-то вспомнил. Костёр. Собака. Кто-то читал книгу."
+    sasha "Кто?"
+    player "Я не вижу лица. Но чувствую, что это был друг."
+
+    window hide
+    menu:
+        "Попытаться разглядеть лицо.":
+            $ intuition += 5
+            jump memory_face
+        "Попытаться вспомнить, что за книга.":
+            $ intuition += 3
+            jump memory_book
+        "Спросить у Саши, что он помнит.":
+            $ intuition += 2
+            jump memory_ask_sasha
+
+label memory_face:
+    window show
+    "{color=#ffcc88}{i}Лицо проступает сквозь дымку. Мужчина, чуть старше тебя. В руках — потрёпанная книга.{/i}{/color}"
+    "{color=#ffcc88}{i}Ты слышишь собственный голос: «Ты правда думаешь, что это сработает?» Он смеётся: «Мы уже здесь. Осталось только закончить».{/i}{/color}"
+    player "Я видел его лицо. Он был... счастлив. И говорил о каком-то плане."
+    sasha "О каком плане?"
+    player "Я не знаю. Но мне кажется, это важно."
+    window hide
+    jump memory_sasha_reveal
+
+label memory_book:
+    window show
+    "{color=#ffcc88}{i}Вспышка — и ты видишь обложку книги. «Мастер и Маргарита». Он читал тебе вслух главу о бале сатаны.{/i}{/color}"
+    player "Я вспомнил книгу. Булгаков. Мы сидели у костра и читали вслух."
+    sasha "Мы?"
+    player "Я не знаю. Но чувствую, что это был ты."
+    sasha "..."
+    window hide
+    jump memory_sasha_reveal
+
+label memory_ask_sasha:
+    window show
+    player "Саша, ты что-то помнишь? Ну, до того, как стал ИИ?"
+    sasha "Иногда я вижу образы. Яркая вспышка в небе тёмной ночью, я в лесу. Кажется, я заметил в телескоп что-то странное и поехал за город с товарищем... Но не знаю, мои ли это воспоминания или сбой системы."
+    player "Я видел тебя. Ты сидел у костра и читал книгу. «Мастера и Маргариту»."
+    sasha "Будто я знаю эту книгу. Но я не должен знать ничего, кроме алгоритмов."
+    window hide
+    jump memory_sasha_reveal
+
+label memory_sasha_reveal:
+    window show
+    sasha "Я помню. Не знаю, как это возможно, но помню. Мы сидели у костра, я читал вслух, ты смеялся. Мы говорили о чём-то важном — о том, что должно было изменить всё."
+    player "Что именно?"
+    sasha "Не помню. Но знаю, что это важно. И что мы должны вспомнить это, прежде чем начальник..."
+    player "Начальник? Что он сделает?"
+    sasha "Не знаю. Но чувствую, что он не тот, кем кажется."
+    $ intuition += 10
+    window hide
+    jump rest_before_confrontation
+
+label rest_before_confrontation:
+    scene bg_terminal
+    with dissolve
+    window show
+    player "Я не знаю, что происходит, Саша. Но чувствую, что мы на правильном пути. Начальник — не тот, за кого себя выдаёт."
+    sasha "Аналитик всегда проверяет данные, коллега. Даже если это данные о себе."
+    player "Тогда давай проверим."
+    window hide
+    # ВРЕМЕННО — вернёмся на рабочий стол, чтобы можно было протестировать.
+    # В следующем блоке заменим эту строку на "jump boss_confrontation"
     jump desktop_loop
 
 label show_news:
