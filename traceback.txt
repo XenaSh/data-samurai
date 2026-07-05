@@ -1,43 +1,35 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-  File "game/script.rpy", line 1287, in script
-    call screen task3_rank_screen
-  File "renpy/common/000statements.rpy", line 609, in execute_call_screen
-    store._return = renpy.call_screen(name, *args, **kwargs)
-  File "game/script.rpy", line 172, in execute
-    screen task3_rank_screen():
-  File "game/script.rpy", line 172, in execute
-    screen task3_rank_screen():
-  File "game/script.rpy", line 173, in execute
+  File "game/script.rpy", line 1721, in script
+    pause
+  File "renpy/common/000statements.rpy", line 455, in execute_pause
+    renpy.pause()
+  File "game/script.rpy", line 131, in execute
+    screen ending_screen(title_text, subtitle_text):
+  File "game/script.rpy", line 131, in execute
+    screen ending_screen(title_text, subtitle_text):
+  File "game/script.rpy", line 132, in execute
     frame:
-  File "game/script.rpy", line 181, in execute
-    vbox:
-  File "game/script.rpy", line 185, in execute
-    hbox:
-  File "game/script.rpy", line 194, in execute
-    vbox:
-  File "game/script.rpy", line 197, in execute
-    for i, stage in enumerate(rank_order):
-  File "game/script.rpy", line 198, in execute
-    text "[i+1]. [stage]" color "#88ff88" size 20
-NameError: Name 'i+1' is not defined.
+  File "game/script.rpy", line 141, in execute
+    text "[КОНЕЦ]" color "#888888" size 16 align (0.5, 0.9)
+NameError: Name 'КОНЕЦ' is not defined.
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/script.rpy", line 1287, in script
-    call screen task3_rank_screen
+  File "game/script.rpy", line 1721, in script
+    pause
   File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2232, in execute
     self.call("execute")
   File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2220, in call
     return renpy.statements.call(method, parsed, *args, **kwargs)
   File "E:\renpy-8.0.2-sdk\renpy\statements.py", line 281, in call
     return method(parsed, *args, **kwargs)
-  File "renpy/common/000statements.rpy", line 609, in execute_call_screen
-    store._return = renpy.call_screen(name, *args, **kwargs)
-  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 3174, in call_screen
-    rv = renpy.ui.interact(mouse="screen", type="screen", roll_forward=roll_forward)
+  File "renpy/common/000statements.rpy", line 455, in execute_pause
+    renpy.pause()
+  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 1533, in pause
+    rv = renpy.ui.interact(mouse='pause', type='pause', roll_forward=roll_forward, pause=delay)
   File "E:\renpy-8.0.2-sdk\renpy\ui.py", line 299, in interact
     rv = renpy.game.interface.interact(roll_forward=roll_forward, **kwargs)
   File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3377, in interact
@@ -58,24 +50,16 @@ Full traceback:
     self.update()
   File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 653, in update
     self.screen.function(**self.scope)
-  File "game/script.rpy", line 172, in execute
-    screen task3_rank_screen():
-  File "game/script.rpy", line 172, in execute
-    screen task3_rank_screen():
-  File "game/script.rpy", line 173, in execute
+  File "game/script.rpy", line 131, in execute
+    screen ending_screen(title_text, subtitle_text):
+  File "game/script.rpy", line 131, in execute
+    screen ending_screen(title_text, subtitle_text):
+  File "game/script.rpy", line 132, in execute
     frame:
-  File "game/script.rpy", line 181, in execute
-    vbox:
-  File "game/script.rpy", line 185, in execute
-    hbox:
-  File "game/script.rpy", line 194, in execute
-    vbox:
-  File "game/script.rpy", line 197, in execute
-    for i, stage in enumerate(rank_order):
-  File "game/script.rpy", line 198, in execute
-    text "[i+1]. [stage]" color "#88ff88" size 20
-  File "E:\renpy-8.0.2-sdk\renpy\text\text.py", line 1594, in __init__
-    self.set_text(text, scope, substitute)
+  File "game/script.rpy", line 141, in execute
+    text "[КОНЕЦ]" color "#888888" size 16 align (0.5, 0.9)
+  File "E:\renpy-8.0.2-sdk\renpy\text\text.py", line 1688, in _scope
+    return self.set_text(self.text_parameter, scope, self.substitute, update)
   File "E:\renpy-8.0.2-sdk\renpy\text\text.py", line 1712, in set_text
     i, did_sub = renpy.substitutions.substitute(i, scope, substitute)
   File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 278, in substitute
@@ -88,9 +72,9 @@ Full traceback:
   File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 227, in get_value
   File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 236, in __getitem__
     raise NameError("Name '{}' is not defined.".format(key))
-NameError: Name 'i+1' is not defined.
+NameError: Name 'КОНЕЦ' is not defined.
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Sat Jul  4 01:22:15 2026
+Sun Jul  5 04:25:56 2026

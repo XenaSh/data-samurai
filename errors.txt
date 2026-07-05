@@ -2,9 +2,9 @@
 errors listed below, and try again.
 
 
-File "game/script.rpy", line 858: Line is indented, but the preceding show statement statement does not expect a block. Please check this line's indentation.
-    xalign 0.5
-    ^
+File "game/script.rpy", line 99: 'linear' is not a keyword argument or valid child for the add statement.
+    linear 0.5 alpha 0.0
+          ^
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Fri Jul  3 02:39:05 2026
+Sun Jul  5 02:48:24 2026
