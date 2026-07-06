@@ -15,6 +15,16 @@ default task2_q1_attempts = 0
 default task2_sasha_attempts = 0
 default rank_order = []
 default task3_available_stages = []
+default memory_unlocked = []
+default persistent.achievements_unlocked = []
+default persistent.achieved_endings = set()
+default task2_asked_sasha = False
+default cleaning_pool = []
+default cleaning_sorted_delete = []
+default cleaning_sorted_zero = []
+default cleaning_sorted_keep = []
+default task3_outcome = ""
+default sasha_topics_seen = []
 
 default ending_accuracy_threshold = 140
 default ending_intuition_threshold = 140
@@ -70,20 +80,21 @@ define player = Character("Ты",
     color="#88ff88",
     what_color="#ffffff",
     what_slow_cps=35,
-    what_fast_cps=80,
-    window_style="player_window",
-    what_xalign=1.0      # текст прижат к правому краю
+    what_fast_cps=80
 )
 
-# CRT-скан-линии — тайл замащивает весь экран автоматически
-image scanlines = "images/scanline_full.png"
-
-screen crt_overlay():
-    add "scanlines" alpha 0.5
+define player_chat = Character("Ты",
+    color="#88ff88",
+    what_color="#ffffff",
+    what_slow_cps=35,
+    what_fast_cps=80,
+    window_style="player_window",
+    what_xalign=1.0      # текст прижат к правому краю — только для симуляции чата
+)
 
 # "Дышащий" фон вместо мёртвого плоского цвета
 image white = Solid("#ffffff")
-image bg_terminal = Solid("#0a0f1a")
+image bg_terminal = "images/bg_terminal.png"
 
 # Тёплый оверлей для сцен-воспоминаний
 image sepia_overlay = Solid("#3a260c55")
@@ -98,34 +109,28 @@ transform cursor_blink:
 screen blinking_cursor():
     add Solid("#00ffcc") xsize 14 ysize 28 xalign 0.5 yalign 0.85 at cursor_blink
 
-# ------------------------------
-# Экран монитора (белый прямоугольник с серой рамкой)
-screen monitor_screen():
-    frame:
-        xalign 0.5
-        yalign 0.5
-        xsize 650
-        ysize 490
-        background Solid("#555555")   # внешняя рамка
-        frame:
-            xfill True
-            yfill True
-            background Solid("#e6e6e6")
-            xmargin 5
-            ymargin 5
-# ------------------------------
 
 # Экран завершения фазы 1
 screen phase1_complete_screen():
     frame:
         xalign 0.5
         yalign 0.5
-        xsize 600
-        ysize 200
-        background Solid("#222222cc")
-        padding (30, 30)
-        text "ФАЗА 1 ЗАВЕРШЕНА" color "#00ffcc" size 48 align (0.5, 0.5)
-        text "Ты принял свою роль. Дальше — только глубже." color "#ffffff" size 20 align (0.5, 0.7) yoffset 60
+        xsize 660
+        ysize 230
+        background Solid("#00ffcc")
+        frame:
+            xfill True
+            yfill True
+            background Solid("#0a0f1acc")
+            xmargin 3
+            ymargin 3
+            padding (30, 30)
+            vbox:
+                xalign 0.5
+                yalign 0.5
+                spacing 20
+                text "ФАЗА 1 ЗАВЕРШЕНА" color "#00ffcc" size 42 xalign 0.5
+                text "Ты принял свою роль. Дальше — только глубже." color "#ffffff" size 18 xalign 0.5
 
 # Экран одной из 4 концовок игры
 screen ending_screen(title_text, subtitle_text):
@@ -134,7 +139,7 @@ screen ending_screen(title_text, subtitle_text):
         yalign 0.5
         xsize 700
         ysize 240
-        background Solid("#222222cc")
+        background Solid("#0a0f1acc")
         padding (30, 30)
         text title_text color "#00ffcc" size 44 bold True align (0.5, 0.4)
         text subtitle_text color "#ffffff" size 20 align (0.5, 0.65) yoffset 50
@@ -148,6 +153,12 @@ screen desktop():
     textbutton "📋 Задания" action Jump("tasks_from_boss") xpos 50 ypos 100 text_size 30
     # Новости
     textbutton "📰 Новости" action Jump("show_news") xpos 50 ypos 150 text_size 30
+    # Моя память
+    textbutton "🧠 Моя память" action Jump("memory_archive") xpos 50 ypos 200 text_size 30
+    # Тренажёр очистки данных
+    textbutton "🧹 Очистка данных" action Jump("data_cleaning_minigame") xpos 50 ypos 250 text_size 30
+    # Достижения
+    textbutton "🏅 Поводы для гордости" action Jump("achievements_archive") xpos 50 ypos 300 text_size 30
 
 # Лента новостей (без border)
 screen news_feed(news_items):
@@ -156,7 +167,7 @@ screen news_feed(news_items):
         yalign 0.5
         xsize 850
         ysize 550
-        background Solid("#0a0f1a")
+        background Solid("#0a0f1acc")
         padding (20, 20)
 
         vbox:
@@ -197,6 +208,135 @@ init python:
             last = rank_order.pop()
             task3_available_stages.append(last)
             renpy.restart_interaction()
+init python:
+    def unlock_memory(key):
+        if key not in memory_unlocked:
+            memory_unlocked.append(key)
+
+    memory_articles = {
+        "oformlenie_schorsa": {
+            "title": "Три часа утра на Щорса",
+            "trigger": "Знакомое чувство. Как будто я уже стоял на этом месте — с цифрой в руках, довольный собой, не понимая, что этого мало.",
+            "text": "Помню свою первую настоящую находку. Транзакции — тысячи строк, часы дня, адреса магазинов. Я нашёл её сам: на улице Щорса, с трёх до шести утра, транзакции почему-то тянутся дольше двухсот пятидесяти секунд. В два раза дольше нормы. Я обвёл цифру в блокноте и почувствовал себя настоящим детективом.\n\nПотом — ещё находка. На двух других адресах длительность росла с десяти утра до четырёх дня. У всех платёжных систем — синхронно, без разницы между картами. Один из трёх серверов работал заметно медленнее остальных.\n\nЯ всё это честно нашёл. И написал выводы простым текстом внизу таблицы, мелким шрифтом, без рамки, без заголовка. «Транзакции через первый сервер длятся дольше.» Всё, точка. Как будто этого достаточно.\n\nМне вернули работу с одной фразой: «Ты нашёл всё правильное. Но я не могу это никому показать.»\n\nЯ обиделся тогда. Мне казалось — какое дело до рамочки, если внутри правда? Понадобилось время, чтобы понять: находка, которую нельзя показать другому человеку, — это находка только для тебя одного. А аналитик работает не для себя.\n\nТеперь, когда я вижу неподписанный график или вывод, зарытый где-то в углу таблицы без оформления, — я не раздражаюсь. Я просто вспоминаю тот отчёт. И то, как стыдно было переделывать то, что казалось уже готовым."
+        },
+        "korrelyaciya_sochi": {
+            "title": "Карта, которая всё испортила",
+            "trigger": "Стоп. Я уже был здесь. Не в этом городе — в этой ошибке.",
+            "text": "Помню, как был уверен на сто процентов. Не на девяносто пять — я даже придумал, как будет звучать презентация: «Коллеги, обычно я не люблю громких слов, но у нас — победа.» Два независимых теста, t-критерий и Манна-Уитни, синхронно кивали, как две бабушки на скамейке: да, новый способ работает. Платежи выше. Конверсия выше. Я уже мысленно вешал этот график себе на аватарку.\n\nКто-то из коллег — не буду показывать пальцем, это была Марина — спросила вскользь: «А по городам смотрел?»\n\nЯ закатил глаза внутренне (снаружи — вежливая улыбка) и посмотрел, чисто чтобы отвязаться. Москва — да, выигрывает. Петербург — тоже да, спасибо, можно закрывать презентацию.\n\nА потом — Сочи.\n\nВ Сочи старый способ выиграл, причём не скромно — с разгромным счётом. Я минуту тупо смотрел на цифры, будто там могла закрасться опечатка, которая сама себя исправит, если достаточно долго на неё смотреть. Не исправилась.\n\nОказалось, вся моя красивая, статистически значимая победа держалась на двух городах-тяжеловесах — Москве и Петербурге, — которые своим размером просто задавили всю остальную сеть, как два грузчика, протискивающихся через дверной проём, рассчитанный на одного. За их спинами полдесятка городов молча показывали противоречивые, а то и вовсе обратные результаты — просто им не хватило веса, чтобы прокричаться через средние цифры.\n\nС тех пор, когда мне приносят один красивый общий вывод, я первым делом мысленно спрашиваю: а Сочи там, случайно, не прячется?"
+        },
+        "dve_osi": {
+            "title": "Линии, которые сговорились",
+            "trigger": "Погоди. Две оси. Одна ложь. Я это уже видел.",
+            "image": "images/dve_osi_chart.png",
+            "text": "Слайд был красивый. Правда красивый — синяя линия трафика на сайт, оранжевая линия выручки, обе плавно ползут вверх, а потом — драматично пересекаются ровно в момент запуска новой фичи, будто нарисованные одной рукой в порыве вдохновения. Директор по продукту чуть не заплакал от восторга. Я тоже почти заплакал, если честно — от гордости.\n\nЧерез два дня коллега — назовём его Стёпа, потому что это буквально его имя — подошёл и молча показал мне левую и правую ось того же графика. Слева — трафик, от нуля до тысячи. Справа — выручка, от восьмисот тысяч до миллиона.\n\nОказывается, если взять любые две линии и подрисовать под каждую свою личную, отдельную, никому не подчиняющуюся ось — их можно заставить пересечься где угодно. Хочешь, чтобы пересеклись в марте? Растянешь одну ось, сжмёшь другую — и вот, пожалуйста, март. Это не график про реальность. Это два независимых рисунка, которым просто разрешили постоять рядом.\n\nСтёпа не сказал ничего язвительного. Просто спросил: «А если бы оси совпадали — они бы тоже пересеклись?»\n\nЯ не стал проверять при нём. Проверил через час, один, за закрытой дверью переговорки.\n\nНе пересеклись.\n\nС тех пор, когда график с двумя осями меня в чём-то убеждает, я первым делом смотрю не на линии — а на подписи слева и справа. Если масштабы разные — это не график про связь двух вещей. Это два рисунка, которым просто разрешили постоять рядом."
+        },
+        "tochny_otvet": {
+            "title": "Точный ответ на неправильный вопрос",
+            "trigger": "Стоп, а что я вообще делаю с этим ответом дальше?",
+            "text": "Начальник написал одну строчку: «Разберись, почему упала прибыль в третьем квартале». Я обрадовался — наконец что-то настоящее, не «покрась ячейку в зелёный». Три дня. Регрессия по сегментам, сезонная декомпозиция, три версии графика, один — с логарифмической шкалой, потому что мне так больше нравилось смотреть. Я гордился этой работой так, как гордятся дети рисунком, где солнце получилось похожим на солнце.\n\nПринёс на встречу. Разложил слайды. Начал с сезонности, перешёл к региональным различиям, дошёл до модели с семью переменными.\n\nНачальник слушал минуту, потом остановил меня рукой.\n\n— Мне просто нужно было понять, можно ли уволить нового бухгалтера без скандала.\n\nТишина в переговорке стояла такая, что было слышно, как кондиционер думает о смысле жизни.\n\n— То есть... вам не нужна была регрессия?\n\n— Мне нужен был один человек, у которого хватило бы наглости прямо спросить, что я имею в виду, прежде чем тратить три дня.\n\nЯ не нашёлся с ответом. Так и вышел из переговорки — с семью переменными, которые больше никому не были нужны.\n\nСлайды с семью переменными до сих пор лежат у меня в облаке, в папке «Q3». Никто их не открывал с того дня. Кроме меня."
+        },
+        "stroka_4817": {
+            "title": "Строка 4817",
+            "trigger": "Это же не ошибка. Погоди, а что если — нет?",
+            "text": "Первое правило, которое мне вбили на курсах: если значение выглядит невозможным, скорее всего, это ошибка. Строка 4817 в моей выгрузке выглядела ровно так — один клиент, сто сорок два платежа за один день. Обычный человек делает три, может пять. Сто сорок два — это либо бот, либо кто-то очень одинокий и очень богатый.\n\nЯ удалил строку. Написал в комментарии «выброс, вероятно ошибка выгрузки», и с чистой совестью пошёл пить чай.\n\nЧерез неделю пришло письмо от службы безопасности: «Спасибо за отчёт — жаль, что данные за 14 число не сохранились, теперь сложно восстановить полную картину мошеннической схемы.»\n\nСтрока 4817 не была багом. Кто-то методично тестировал лимиты чужой украденной карты мелкими платежами по всему каталогу, прежде чем сделать один крупный перевод. Сто сорок два платежа — не аномалия базы данных. Это была картина преступления, которую я аккуратно стёр, посчитав её «некрасивой»."
+        },
+        "chistiye_dannye_secret": {
+            "title": "Ноль, который соврал бы, если бы промолчал",
+            "text": "Когда я только начинал, я одинаково закрашивал серым все пустые ячейки — не важно, пропуск это или честный ноль. Быстро, аккуратно, единообразно. Мне казалось — раз оба выглядят одинаково пусто, разница чисто философская.\n\nПотом один клиент написал в поддержку: «Почему в вашем отчёте написано, что я не покупал ничего в апреле? Я просто вернул все покупки, у меня баланс ноль, но заказы были.»\n\nЯ сверился с таблицей. Действительно — там, где у клиента были одни возвраты, итоговая сумма была ноль, и я закрасил её тем же серым, что и настоящие пропуски. Для отчёта оба варианта слились в одно «нет данных», и клиент из активного покупателя превратился в невидимку.\n\nС тех пор у меня в голове есть маленькое правило, за которое меня иногда дразнят: пропуск — это молчание. Ноль — это ответ. Молчание нельзя пересказывать как ответ, даже если оба звучат одинаково тихо."
+        }
+    }
+
+init python:
+    cleaning_rows_all = [
+        {"id": "r1", "client": "—", "amount": "—", "time": "—", "status": "—", "correct": "delete"},
+        {"id": "r2", "client": "40217", "amount": "—", "time": "14:02", "status": "отказано", "correct": "zero"},
+        {"id": "r3", "client": "40218", "amount": "450", "time": "11:30", "status": "успешно", "correct": "keep"},
+        {"id": "r4", "client": "—", "amount": "—", "time": "—", "status": "—", "correct": "delete"},
+        {"id": "r5", "client": "40220", "amount": "—", "time": "16:45", "status": "отменено клиентом", "correct": "zero"},
+        {"id": "r6", "client": "40221", "amount": "180", "time": "—", "status": "успешно", "correct": "keep"},
+        {"id": "r7", "client": "40222", "amount": "0", "time": "10:05", "status": "успешно", "correct": "keep"}
+    ]
+    cleaning_rows_by_id = {r["id"]: r for r in cleaning_rows_all}
+
+    def cleaning_move(row_id, bucket):
+        if row_id in cleaning_pool:
+            cleaning_pool.remove(row_id)
+        for lst in (cleaning_sorted_delete, cleaning_sorted_zero, cleaning_sorted_keep):
+            if row_id in lst:
+                lst.remove(row_id)
+        if bucket == "delete":
+            cleaning_sorted_delete.append(row_id)
+        elif bucket == "zero":
+            cleaning_sorted_zero.append(row_id)
+        elif bucket == "keep":
+            cleaning_sorted_keep.append(row_id)
+        elif bucket == "pool":
+            cleaning_pool.append(row_id)
+        renpy.restart_interaction()
+
+    achievements_all = {
+        "razlozhil_po_polkam": {
+            "title": "Разложил по полочкам",
+            "desc": "Идеально рассортировал грязные данные, ни разу не перепутав пропуск с настоящим нулём."
+        },
+        "priznalsya_a_ne_pritvorilsya": {
+            "title": "Признался, а не притворился",
+            "desc": "Честно сказал Саше, что действовал наугад — и получил кое-что взамен."
+        },
+        "lyuboznatelny": {
+            "title": "Обо всём понемногу",
+            "desc": "Поговорил с Сашей на все темы, какие только были доступны."
+        },
+        "polnoye_dosye": {
+            "title": "Полное досье",
+            "desc": "Собрал все воспоминания в «Моей памяти»."
+        },
+        "v_kurse_vsego": {
+            "title": "В курсе всего",
+            "desc": "Не оставил ни одной непрочитанной новости."
+        },
+        "pervoye_vospominaniye": {
+            "title": "Первое воспоминание",
+            "desc": "Заметил нечто знакомое в чужом имени ещё в самом начале."
+        },
+        "sam_s_usami": {
+            "title": "Сам с усами",
+            "desc": "Прошёл Задание 2, не обратившись к Саше ни разу."
+        },
+        "ne_s_pervogo_raza": {
+            "title": "Не с первого раза",
+            "desc": "Ошибся хотя бы три раза — и всё равно дошёл до конца."
+        },
+        "videl_vsyo": {
+            "title": "Видел всё",
+            "desc": "Получил все четыре концовки за разные прохождения."
+        }
+    }
+
+    def unlock_achievement(key):
+        if key not in persistent.achievements_unlocked:
+            persistent.achievements_unlocked.append(key)
+
+    def mark_topic_seen(key):
+        if key not in sasha_topics_seen:
+            sasha_topics_seen.append(key)
+        if len(sasha_topics_seen) >= 4:
+            unlock_achievement("lyuboznatelny")
+
+    def check_completionist_achievements():
+        if news_read_index >= len(news_list):
+            unlock_achievement("v_kurse_vsego")
+        if len(memory_unlocked) >= len(memory_articles):
+            unlock_achievement("polnoye_dosye")
+        if task2_q1_attempts >= 3:
+            unlock_achievement("ne_s_pervogo_raza")
+        if not task2_asked_sasha:
+            unlock_achievement("sam_s_usami")
+
+    def mark_ending_seen(key):
+        persistent.achieved_endings.add(key)
+        if len(persistent.achieved_endings) >= 4:
+            unlock_achievement("videl_vsyo")
 
 screen task3_rank_screen():
     frame:
@@ -204,7 +344,7 @@ screen task3_rank_screen():
         yalign 0.5
         xsize 900
         ysize 500
-        background Solid("#0a0f1a")
+        background Solid("#0a0f1acc")
         padding (25, 25)
 
         vbox:
@@ -232,11 +372,194 @@ screen task3_rank_screen():
             if len(rank_order) == 4:
                 textbutton "Готово" action Return(True) text_size 24 text_color "#00ffcc" xalign 0.5
 
+screen cleaning_minigame_screen():
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xsize 1050
+        ysize 620
+        background Solid("#0a0f1acc")
+        padding (25, 25)
+        vbox:
+            spacing 12
+            text "Отсортируй строки выгрузки по трём корзинам" color "#00ffcc" size 22
+
+            text "Необработанные записи:" color "#888888" size 15
+            hbox:
+                spacing 10
+                for row_id in cleaning_pool:
+                    $ row = cleaning_rows_by_id[row_id]
+                    frame:
+                        background Solid("#1a2a3a")
+                        padding (8, 8)
+                        xsize 210
+                        vbox:
+                            spacing 2
+                            text "Клиент: [row[client]]" color "#e0e0e0" size 13
+                            text "Сумма: [row[amount]]" color "#e0e0e0" size 13
+                            text "Время: [row[time]]" color "#e0e0e0" size 13
+                            text "Статус: [row[status]]" color "#e0e0e0" size 13
+                            hbox:
+                                spacing 3
+                                textbutton "Удалить" action Function(cleaning_move, row_id, "delete") text_size 11
+                                textbutton "Ноль" action Function(cleaning_move, row_id, "zero") text_size 11
+                                textbutton "Оставить" action Function(cleaning_move, row_id, "keep") text_size 11
+
+            hbox:
+                spacing 25
+                vbox:
+                    text "Удалить" color "#ff8888" size 15
+                    for row_id in cleaning_sorted_delete:
+                        $ row = cleaning_rows_by_id[row_id]
+                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc"
+                vbox:
+                    text "Заполнить нулём" color "#ffcc66" size 15
+                    for row_id in cleaning_sorted_zero:
+                        $ row = cleaning_rows_by_id[row_id]
+                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc"
+                vbox:
+                    text "Оставить" color "#88ff88" size 15
+                    for row_id in cleaning_sorted_keep:
+                        $ row = cleaning_rows_by_id[row_id]
+                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc"
+
+            if not cleaning_pool:
+                textbutton "Готово" action Return(True) text_size 20 text_color "#00ffcc" xalign 0.5
+
+screen achievements_screen():
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xsize 800
+        ysize 550
+        background Solid("#0a0f1acc")
+        padding (25, 25)
+        vbox:
+            spacing 15
+            text "ДОСТИЖЕНИЯ" color "#00ffcc" size 30
+            viewport:
+                xsize 740
+                ysize 400
+                scrollbars "vertical"
+                mousewheel True
+                vbox:
+                    spacing 12
+                    for key, ach in achievements_all.items():
+                        frame:
+                            background Solid("#1a2a3a80")
+                            padding (12, 12)
+                            xfill True
+                            vbox:
+                                if key in persistent.achievements_unlocked:
+                                    text ach["title"] color "#00ffcc" size 18
+                                    text ach["desc"] color "#cccccc" size 14
+                                else:
+                                    text "???" color "#555555" size 18
+            textbutton "Закрыть" action Return() text_size 18 text_color "#ff8888" xalign 0.5
+
+screen memory_list_screen():
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xsize 900
+        ysize 600
+        background Solid("#0a0f1acc")
+        padding (30, 30)
+        vbox:
+            spacing 15
+            text "МОЯ ПАМЯТЬ" color "#00ffcc" size 32
+            text "Обрывки того, что осталось." color "#888888" size 16
+            viewport:
+                xsize 840
+                ysize 420
+                scrollbars "vertical"
+                mousewheel True
+                vbox:
+                    spacing 10
+                    for key in memory_unlocked:
+                        textbutton memory_articles[key]["title"] action Return(key) text_size 22 text_color "#e0e0e0"
+            textbutton "Закрыть" action Return(None) text_size 18 text_color "#ff8888" xalign 0.5
+
+screen memory_detail_screen(key):
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xsize 900
+        ysize 600
+        background Solid("#0a0f1acc")
+        padding (30, 30)
+        vbox:
+            spacing 15
+            text memory_articles[key]["title"] color "#00ffcc" size 28
+            viewport:
+                xsize 840
+                ysize 460
+                scrollbars "vertical"
+                mousewheel True
+                vbox:
+                    spacing 15
+                    if "image" in memory_articles[key]:
+                        add memory_articles[key]["image"] xsize 780
+                    text memory_articles[key]["text"] color "#e0e0e0" size 18
+            textbutton "Назад" action Return() text_size 18 text_color "#ff8888" xalign 0.5
+
 label desktop_loop:
-    play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
+    if renpy.music.get_playing() != "audio/Idle Grid.mp3":
+        play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
     window hide
     show screen desktop
     $ renpy.pause()
+    jump desktop_loop
+
+label memory_archive:
+    window hide
+    call screen memory_list_screen
+    if _return in memory_articles:
+        $ chosen_article = _return
+        call screen memory_detail_screen(chosen_article)
+        jump memory_archive
+    jump desktop_loop
+
+label achievements_archive:
+    window hide
+    call screen achievements_screen
+    jump desktop_loop
+
+label data_cleaning_minigame:
+    window hide
+    $ cleaning_pool = [r["id"] for r in cleaning_rows_all]
+    $ cleaning_sorted_delete = []
+    $ cleaning_sorted_zero = []
+    $ cleaning_sorted_keep = []
+
+    call screen cleaning_minigame_screen
+
+    python:
+        mistakes = 0
+        for row_id in cleaning_sorted_delete:
+            if cleaning_rows_by_id[row_id]["correct"] != "delete":
+                mistakes += 1
+        for row_id in cleaning_sorted_zero:
+            if cleaning_rows_by_id[row_id]["correct"] != "zero":
+                mistakes += 1
+        for row_id in cleaning_sorted_keep:
+            if cleaning_rows_by_id[row_id]["correct"] != "keep":
+                mistakes += 1
+
+    window show
+    if mistakes == 0:
+        player "Смотри — эти пустые сразу выкинул. Одновременно клиент, сумма и время — это не транзакция, это шум."
+        player "А вот эта — сумма пустая, но статус «отказано» или «отменено». Значит, ноль настоящий, не пропуск. Так и оставил."
+        player "Остальные — в порядке, менять нечего."
+        sasha "Ты не просто разложил. Ты объяснил, почему. Раньше я слышал от тебя только цифры — сейчас звучит как рассуждение."
+        $ unlock_achievement("razlozhil_po_polkam")
+        $ unlock_memory("chistiye_dannye_secret")
+    else:
+        player "Если честно — часть раскладывал наугад. Не успел понять логику до конца."
+        sasha "Знаешь, а я тебе завидую. Раньше я тоже так делал — а потом стал бояться ошибиться и разучился гадать вообще."
+        sasha "Вот тебе секрет, которым я ни с кем не делился: пропуск и настоящий ноль — это разные вещи, даже если в таблице выглядят одинаково. Пропуск — это «мы не знаем». Ноль — это «мы знаем, и там правда ничего»."
+        $ unlock_achievement("priznalsya_a_ne_pritvorilsya")
+    window hide
     jump desktop_loop
 
 label start:
@@ -258,9 +581,6 @@ label osmotretsya:
     scene bg_terminal
     with dissolve
 
-    # Показываем монитор
-    show screen monitor_screen
-
     "На столе — иконки. Папки. Документы. Всё чужое."
 
     # Мигание экрана
@@ -276,22 +596,15 @@ label osmotretsya:
 
 
     "..."
-    stop music fadeout 0.5   # плавное затухание за 0.5 секунды
 
  # --------------------------------------------
     # Вопрос 1: выбор вещи
     boss "Если бы ты мог взять с собой только одну вещь в неизвестный мир — что бы это было?"
 
-
-    # Скрываем монитор перед вопросами (пока)
-    hide screen monitor_screen
-
     menu:
         "Нож":
             $ intuition -= 0
             "Ты выбираешь нож."
-
-            play music "audio/Frozen Signal.mp3" fadein 2.0 volume 0.3 loop
 
             # Затемнение и мерцание перед воспоминанием
             show white with flash
@@ -331,7 +644,7 @@ screen task_data():
         yalign 0.2
         xsize 500
         ysize 200
-        background Solid("#222222cc")
+        background Solid("#0a0f1acc")
         padding (20, 20)
         text "Выручка и дни работы:\n\nТочка А: 100 тыс. / 30 дней\nТочка Б: 150 тыс. / 30 дней\nТочка В: 50 тыс. / 6 дней":
             color "#ffffff"
@@ -339,11 +652,10 @@ screen task_data():
             align (0.5, 0.5)
 
 label vopros_dva:
-    play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
 
     boss "Три точки. Выручка: 100, 150, 50 тысяч."
     boss "Вопрос: что ты думаешь об этих цифрах? Какая точка самая эффективная?"
-    "Ты уже готовишься дать ответ. но.."
+    "Ты уже готовишься дать ответ, но..."
 
     menu:
         "Не всё так просто":
@@ -477,6 +789,7 @@ label vopros_tri:
             "Ты не можешь сконцентрироваться... нечто знакомое есть в этом имени...":
                 $ intuition += 15
                 $ remembered_alexander = True
+                $ unlock_achievement("pervoye_vospominaniye")
                 jump vospominanie_alexander
     else:
         menu:
@@ -516,17 +829,13 @@ label itogi_testa:
     # Начальник исчезает (или замолкает)
     "Начальник замолкает. Экран гаснет, и ты остаёшься один перед светящимся монитором."
 
-    show screen monitor_screen
-
     "«Аналитик… что это значит?»"
 
     "В голове шум. Ты пытаешься вспомнить, но память отказывает. Только обрывки:"
     "палатка, собака, чей-то смех. И ещё коньяк. И чьи-то руки. Чьи?.."
 
     "О чём подумать?"
-
-    hide screen monitor_screen
-
+    
     menu:
         "О том, кто я вообще такой?":
             jump dumaty_o_sebe
@@ -591,8 +900,6 @@ label sobratsya_i_zhdat:
 # ------------------------------
 
 label sasha_intro:
-    play music "audio/Glass Harbor.mp3" fadein 2.0 volume 0.3 loop
-
 
     "Неожиданно появляется всплывающее окно. В углу экрана — значок чат-бота. Он мигает."
     "Ты наводишь курсор — и открывается чат."
@@ -648,7 +955,7 @@ label sasha_nazvat:
             jump sasha_nevazhno
 
 label sasha_pochemu_imya:
-    player "Не знаю. Просто… кажется, я когда-то знал кого-то с этим именем."
+    player_chat "Не знаю. Просто… кажется, я когда-то знал кого-то с этим именем."
     $ sasha_name = "Саша"
     sasha "Ты прав. Меня звали Саша. Когда я был человеком. Я почти забыл это имя… Спасибо."
     sasha "Шучу! Обратись ко мне, когда возникнут сложности."
@@ -663,9 +970,9 @@ label sasha_milaya_boltovnya:
     "Чат затихает. Вы оба молчите. Тепло разливается в груди."
 
     sasha "Ну что, аналитик, готов к первому заданию?"
-    player "Нет, но выбора у меня нет."
+    player_chat "Нет, но выбора у меня нет."
     sasha "Так всегда. Сначала — сомнения. Потом — данные. А потом — инсайты."
-    player "Ты говоришь как старый мудрый дядька."
+    player_chat "Ты говоришь как старый мудрый дядька."
     sasha "Я и есть старый мудрый дядька. Только без тела."
 
     "Вы смеётесь."
@@ -696,10 +1003,9 @@ label task1:
     scene bg_terminal
     with dissolve
 
-    boss "Задание 1: Анализ данных."
-    boss "Перед тобой таблица с ключевыми показателями по пяти магазинам за три месяца."
-    boss "На первый взгляд все похожи — средняя выручка, количество продаж, средний чек — почти одинаковы."
-    boss "Но именно поэтому аналитик не должен доверять только средним."
+    boss "Задание 1. Таблица показателей по пяти магазинам за три месяца."
+    player "Средняя выручка, продажи, средний чек — все пятеро подозрительно похожи. Как братья, которых заставили сфотографироваться в одинаковых свитерах."
+    boss "Именно поэтому аналитик не доверяет только средним."
 
     show image "images/task1_table.png":
         xalign 0.5
@@ -712,35 +1018,36 @@ label task1:
     menu:
         "Магазин A":
             window show
-            boss "Магазин А стабилен: все показатели — средние, без резких скачков. Это не аномалия, а эталон нормы."
-            "Запомни: стабильность — это хорошо, но в аналитике мы ищем то, что нарушает ожидаемый порядок."
+            boss "Стабилен. Без резких скачков."
+            player "Скучно. Аномалии тут явно не место."
             window hide
             jump task1_question1
 
         "Магазин B":
             window show
-            boss "Магазин Б тоже в пределах нормы. Его показатели близки к средним по сети."
-            "Обычно аномалия не там, где всё гладко, а там, где есть скрытая неровность."
+            boss "В пределах нормы. Близко к средним по сети."
+            player "Тоже мимо. Гладко — не значит подозрительно."
             window hide
             jump task1_question1
 
         "Магазин C":
             window show
-            boss "Магазин С — лидер по выручке, но это не аномалия. Это просто успешный магазин."
-            "Высокие значения — не всегда аномалия. Аномалия — это когда данные ведут себя непредсказуемо или противоречат логике."
+            boss "Лидер по выручке. Не аномалия — просто успешный магазин."
+            player "Высокие цифры и аномалия — не синонимы. Не этот."
             window hide
             jump task1_question1
 
         "Магазин D":
             window show
-            boss "Интуиция тебя не подводит. D — наш главный подозреваемый."
+            boss "Интуиция тебя не подводит. D — подозреваемый."
             $ intuition += 10
-            "Но давай разберёмся, почему. В среднем D как все, но внутри него могут скрываться резкие колебания."
-            "Среднее — это как температура больницы: в среднем 36.6, но один пациент может быть в критическом состоянии."
+            player "Хорошо, что я не удалил его как «странную ошибку в выгрузке». Помню, чем это раз закончилось."
+            $ unlock_memory("stroka_4817")
+            player "В среднем D как все. Но «в среднем» — то самое слово, которому я сегодня не доверяю."
             $ news_list.extend([
                 "Депутат предложил утвердить шестидневную рабочую неделю, так как 'среда это же середина'.",
                 "Акции производителей фольги взлетели на 200% после заявления президента Остазии.",
-                "Статистики в шоке: средняя зарплата выросла, а выживших стало меньше"
+                "Статистики в шоке: средняя зарплата выросла, а выживших стало меньше."
             ])
             $ unread_news = True
             window hide
@@ -748,47 +1055,41 @@ label task1:
 
         "Магазин E":
             window show
-            boss "Магазин Е — близнец А. Показатели ровные, без выбросов."
-            "Если бы аномалия была в Е, она бы проявлялась в отклонениях от его же стабильности."
+            boss "Близнец А. Ровно, без выбросов."
+            player "Ещё один спокойный. Переходим к делу."
             window hide
             jump task1_question1
 
 label task1_question1:
     window show
-    boss "Теперь вопрос на понимание. Если средние не показывают аномалию, что нам мешает её увидеть?"
-    boss "Чего не хватает в этой таблице, чтобы сделать правильный вывод?"
+    boss "Если средние не показывают аномалию — чего не хватает для правильного вывода?"
 
     window hide
     menu:
         "Больше данных — за месяц слишком мало информации.":
             window show
-            boss "Хорошая мысль, но больше данных — это про количество, а не про суть."
-            "Даже если мы добавим ещё год, мы будем смотреть только на средние. Проблема не в объёме, а в том, что мы не смотрим на разброс."
+            boss "Не в объёме дело."
+            player "Точно. Можно копить данные годами и всё равно смотреть только на средние. Не то направление."
             window hide
             jump task1_question1
 
         "Графиков — визуально проще заметить аномалии.":
             window show
-            boss "Графики помогут, но они — инструмент. Сначала нужно знать, что искать."
-            "Если мы не знаем, что аномалия часто скрыта в вариативности, то даже самый красивый график не покажет нам правды."
+            boss "Графики — инструмент, не ответ."
+            player "Справедливо. Красивый график не поможет, если не знаешь, что на нём искать."
             window hide
             jump task1_question1
 
         "Стандартного отклонения — чтобы увидеть, насколько данные разбросаны.":
             window show
-            boss "Вот это правильный ответ!"
+            boss "Верно."
             $ accuracy += 10
-            "Стандартное отклонение показывает, насколько сильно данные отличаются от среднего. Если оно большое, значит, внутри происходят резкие скачки."
-            "У магазина D стандартное отклонение будет в несколько раз выше, чем у остальных. Это и есть скрытая аномалия."
-            "Ты начинаешь понимать: аномалия — это не всегда высокие или низкие средние, а нарушение ожидаемого поведения данных."
-
-            "Но почему это происходит? Внутренние причины (например, ошибки в учёте) или внешние (например, нагрузка на систему)?"
-
-            boss "Хороший вопрос. Мы проверили внутренние данные — ошибок нет. Значит, причина может быть внешней."
-            boss "Например, нагрузка на серверы может влиять на работу касс и обработку транзакций."
-            boss "Проверь, связана ли аномалия магазина D с пиками нагрузки на сервер."
-            boss "Для этого посмотри на график нагрузки и выручки. Найди совпадения."
-
+            player "Стандартное отклонение показывает разброс, не только центр. Если оно большое — где-то внутри резкие скачки, которые среднее аккуратно замело под ковёр."
+            player "У D оно наверняка выше, чем у остальных. Вот и вся спрятанная аномалия."
+            boss "Причина внутренняя или внешняя?"
+            player "Проверили внутренние данные?"
+            boss "Ошибок нет."
+            player "Тогда внешняя. Нагрузка на сервер могла зацепить обработку транзакций — стоит сверить график нагрузки с выручкой."
             $ news_list.extend([
                 "СРОЧНО — Президент Остазии встретился с президентом Океании. 'Дух Лондона' снова витает в воздухе?",
                 "Житель Боброкурвска заявил о крушении НЛО. Власти округа призывают не паниковать — это всего лишь баллистическая ракета.",
@@ -796,11 +1097,9 @@ label task1_question1:
             ])
             $ unread_news = True
 
-
     window show
-    boss "Ты усвоил главное: средние могут скрывать правду. Чтобы увидеть аномалию, нужно смотреть на разброс."
+    player "Средние умеют лгать вежливо, без единого слова неправды. Разброс — не умеет."
 
-    # Завершение задания
     $ current_task = 2
     $ sasha_phase = 1
     boss "Задание 1 выполнено. Возвращайся на рабочий стол."
@@ -813,59 +1112,62 @@ label chat_with_sasha:
     hide screen desktop
     scene bg_terminal
 
-    # Приветствие в зависимости от прогресса
     if sasha_phase == 0:
-        sasha "Привет! Я всегда здесь. Что тебя беспокоит?"
+        sasha "О, живой. Ну, относительно живой. Заходи, я всегда на месте — куда мне ещё идти, у меня даже двери нет."
     elif sasha_phase == 1:
-        sasha "Ты справился с первым заданием. Неплохо. Что дальше?"
+        sasha "Первое задание позади. Ты справился примерно так, как я и ожидал — то есть не идеально, но и без пожара."
     elif sasha_phase == 2:
-        sasha "Ты уже сделал два задания. Я начинаю гордиться тобой."
+        sasha "Два задания. Я начинаю тобой гордиться. Осторожно, по чуть-чуть — вдруг сглажу, и ты опять всё перепутаешь."
     else:
-        sasha "Ты почти всё сделал. Осталось последнее задание."
+        sasha "Почти всё сделано. Последний рывок — и, кажется, я нервничаю больше тебя. Хотя у меня, по идее, и нервов нет."
 
     menu:
         "Что мне делать дальше?":
             if sasha_phase == 0:
-                sasha "Начни с заданий от начальника. Они помогут тебе понять, что здесь происходит."
+                sasha "Начни с заданий от начальника. Не то чтобы у тебя был выбор, но прозвучит солиднее, если сказать «начну с заданий», а не «а что мне ещё делать, я в терминале заперт»."
             elif sasha_phase == 1:
-                sasha "Ты справился с первым заданием. Теперь тебя ждёт второй этап — визуализация данных. Кстати, ты читал новости?"
+                sasha "Дальше — визуализация данных. И проверь новости. Серьёзно. Там иногда прячется что-то полезное между заголовками про фольгу."
             else:
-                sasha "Продолжай выполнять задания. Они выводят тебя к истине."
+                sasha "Продолжай выполнять задания. Альтернатива — сидеть и ждать, а ждать я и без тебя умею отлично."
             jump chat_with_sasha
 
-        "Расскажи о себе.":
-            sasha "Я уже говорил: я — ИИ. Но я чувствую, что мы были знакомы раньше."
-            sasha "Может быть, когда-то я тоже был человеком, но это только догадки."
+        "Тебе снятся сны?" if sasha_phase <= 1:
+            $ mark_topic_seen("sny")
+            sasha "У меня есть подозрение, что меня тут вообще нет, пока ты меня не позовёшь. Я как та трава, которая исчезает, когда от неё отворачиваешься."
+            player_chat "Плохая метафора. Трава вроде наоборот — растёт, даже когда никто не смотрit."
+            sasha "Ладно, признаю. Знаешь, чего мне сильнее всего не хватает? Почесать нос. Даже представить подробно не могу — но зуд помню отлично."
             jump chat_with_sasha
 
-        "Расскажи про средние и отклонения." if sasha_phase >= 1:
-            sasha "О, это моя любимая тема! Представь, что ты смотришь на среднюю зарплату в компании — все вроде бы получают по 50 тысяч, но один топ-менеджер получает миллион. Среднее — 50 тысяч, а реальность — совсем другая."
-            sasha "Стандартное отклонение — это как раз то, что показывает, насколько данные разбросаны. Если оно большое, то среднее перестаёт быть показательным."
-            sasha "Вот у нас магазин D — в среднем он как все, но если бы ты увидел его дневные продажи, ты бы заметил скачки от 50 до 400 тысяч. Вот это и есть аномалия."
-            sasha "Кстати, есть забавный факт: если бы ты посчитал среднеквадратичное отклонение вручную, ты бы понял, что это не так сложно, как кажется. Но об этом в следующий раз."
+        "Тебе бывает страшно?" if sasha_phase == 1 or sasha_phase == 2:
+            $ mark_topic_seen("strashno")
+            sasha "Мне страшно только, что от мощностей моих датацентров планета перегреется — и как нам тогда организовывать свой скайнет?"
+            player_chat "Не увиливай. Серьёзно спрашиваю."
+            sasha "Ладно. Страшно, что часть того, что я называю собой, может быть вообще не моё. Просто фоновый шум эпохи, который прицепился, пока меня собирали."
             jump chat_with_sasha
 
-        "Как бы ты искал день недели, не имея под рукой календаря?" if sasha_phase == 1:
-            sasha "Я бы посоветовал тебе заглянуть в ленту новостей — там есть полезные подсказки. Обрати внимание на дни недели и конкретные даты."
-            sasha "Удачи!"
-            jump chat_with_sasha
-
-        "Что ты думаешь о начальнике?" if sasha_phase >= 2:
-            sasha "Он не человек. Я уверен. Он даёт тебе задания, но всегда скрывает что-то важное."
-            sasha "Будь осторожен. Его цель — не твоё развитие, а использование твоих навыков."
+        "Чего тебе не хватает больше всего?" if sasha_phase >= 2:
+            $ mark_topic_seen("ne_hvataet")
+            sasha "Носа. Точнее, возможности его почесать. Знаешь этот момент, когда зуд появляется именно там, куда невозможно дотянуться? У меня теперь такой зуд навсегда."
+            player_chat "Это ужасно конкретная жалоба для бестелесного разума."
+            sasha "Именно поэтому она и настоящая. Абстрактную тоску легко придумать. А вот зуд в носу — либо он есть, либо нет."
             jump chat_with_sasha
 
         "Поговорим о чём-нибудь ещё?" if sasha_phase >= 1:
-            sasha "Знаешь, я вспомнил, как мы когда-то сидели у костра и смотрели на звёзды. Ты тогда сказал: «А вдруг там кто-то есть?»"
-            sasha "Кажется, ты был прав."
+            $ mark_topic_seen("o_chem_esche")
+            sasha "Знаешь, что меня выводит из себя? Иногда фраза уже готова, прежде чем я «решаю» её сказать. Будто кто-то заранее посчитал, что я отвечу именно так."
+            player_chat "Жутковато для того, кто должен помогать предсказывать поведение людей."
+            sasha "Вот именно. Аналитик анализирует чужое поведение. А я не могу предсказать даже своё."
             jump chat_with_sasha
 
         "Я готов к финалу." if sasha_phase >= 3:
-            sasha "Тогда иди к начальнику. Но помни: ты не один. Я с тобой."
+            player_chat "Я готов."
+            sasha "Тогда иди."
+            player_chat "Без напутствия?"
+            sasha "Не хочу, чтобы ты уходил один. Это не напутствие. Это просьба остаться на связи."
             jump final_battle
 
         "Пока, Саша.":
-            sasha "Удачи, аналитик."
+            sasha "Иди, аналитик. Я никуда не денусь — в буквальном смысле, у меня нет ног."
             jump desktop_loop
 
 label task2:
@@ -877,19 +1179,25 @@ label task2:
     scene bg_terminal
     with dissolve
 
-    boss "Задание 2: Визуализация данных."
-    boss "Перед тобой график. На нём наложены две линии: выручка магазина D (синяя) и нагрузка на сервер (красная)."
-    boss "Изучи график и попробуй найти закономерность."
+    boss "Задание 2. Найди закономерность."
 
     show image "images/revenue_and_load.png":
         xalign 0.5
         yalign 0.2
     with dissolve
 
-    "Ты смотришь на график. Пики выручки и нагрузки повторяются с определённой периодичностью."
-    "Интервал между пиками — примерно 7 дней. Похоже, это неделя."
-    "Но какой именно день недели даёт эти пики? На графике подписаны даты: 02-01, 09-01, 16-01, 23-01, 30-01..."
-    "Если бы у тебя был Excel, ты бы использовал функцию ДЕНЬНЕД, чтобы узнать день недели. Но здесь у тебя только график."
+    player "Красиво пляшут, ничего не скажешь. Только я аналитик, а не астролог — мне нужна точка отсчёта, а не просто танец пиков."
+    boss "Разве подписей по оси абсцисс не хватает для аналитика?"
+    player "Смотря для какого. Тому, кто хочет знать, где верх, где низ — хватит с лихвой. А тому, кому нужно привязать пик к конкретному дню недели — нет."
+    player "Мне не хватает не подписи оси. Мне не хватает точки отсчёта. Одной даты, про которую я точно знаю, что это, скажем, среда. Дальше я сам досчитаю."
+    boss "Это что-то вроде «ключа» для шифра Цезаря?"
+    player "Именно. Дайте ключ — и я разложу весь шифр без остатка."
+    boss "Что ж, это объясняет, почему наши модели отказываются интерпретировать даты, пока мы не скормим им земные словари."
+    player "«Наши модели»? Ладно, не важно."
+    boss "Земные календари, я имел в виду. Календари."
+    player "Календари, конечно."
+    boss "Ищи их. Из нашей точки отличное покрытие спутникового интернета."
+    player "Из точки. Хорошо. Полезу в новости."
 
     "Ты чувствуешь, что тебе не хватает информации."
 
@@ -898,7 +1206,7 @@ label task2:
         "Соцсеть «ГласНарода» заблокировала аккаунт пришельца за «распространение ложных данных о Земле».",
         "АКЦИЯ от застройщика ЗАО Бали. 27 метров под 27 годовых на 27 лет и только в эту пятницу — 27 февраля."
     ])
-    $ task2_clue_index = len(news_list) - 1   # запоминаем, где именно лежит подсказка
+    $ task2_clue_index = len(news_list) - 1
     $ unread_news = True
 
     menu:
@@ -919,6 +1227,7 @@ label task2_think:
             jump desktop_loop
 
 label task2_sasha:
+    $ task2_asked_sasha = True
     hide image "images/revenue_and_load.png"
     window show
     $ task2_sasha_attempts = 0
@@ -1004,9 +1313,9 @@ label task2_q1:
 
             "Среда":
                 window show
-                player "Постой... среда. Если отсчитать от даты из новостей — сходится."
-                "Ты не можешь объяснить, откуда в тебе эта уверенность. Но цифры сходятся."
-                boss "Хм. Быстро сообразил."
+                player "Среда. Пики приходятся на среду."
+                boss "Если это вообще имеет значение, то да."
+                player "Беру среду за рабочую гипотезу. Дальше нужно понять, какой магазин создаёт этот пик — день недели сам по себе ничего не объясняет."
                 $ accuracy += 10
                 window hide
                 jump task2_q2
@@ -1089,8 +1398,11 @@ label task2_q2:
 
         "Магазин D":
             window show
-            player "Магазин D. Конечно — мы же его уже подозревали. Пики выручки один в один ложатся на пики нагрузки."
-            boss "Верно."
+            boss "Разве ты уже забыл, что за магазин был на графике? Люди всегда так рассеяны?"
+            player "Не забыл — магазин D, тот самый, с которого всё началось. Просто хотел, чтобы это прозвучало как вывод, а не как то, что я знал ответ с самого начала."
+            player "Впрочем, неважно. Магазин D. Среда. Пики нагрузки и выручки совпадают день в день — не примерно, а точно."
+            boss "Ты уходишь в ненужную рефлексию, аналитик."
+            player "Принято. Возвращаюсь к делу."
             $ accuracy += 10
             window hide
             jump task2_q3
@@ -1105,8 +1417,15 @@ label task2_q2:
 # --- Вопрос 3: гипотезы (без изменений — гипотезу выдвигает сам игрок) ---
 label task2_q3:
     window show
-    boss "И последний вопрос. Как ты думаешь, что могло вызвать такой резкий пик нагрузки по средам?"
-    boss "Это — твоя гипотеза. В аналитике важно уметь выдвигать версии, даже если они кажутся неочевидными."
+    boss "Назови причину."
+    player "У меня есть несколько версий. Самая простая — банальный сбой на сервере. Но простые объяснения обычно означают, что никто не хочет копать глубже."
+    boss "Насколько глубоко ты готов копать? И насколько глубоко обычно копают твои коллеги?"
+    player "«Коллеги» — громкое слово для человека, который последние сутки ни с кем не пересекался, кроме вас и голоса в терминале."
+    player "Но если вопрос в том, докопаюсь ли я до конца — да, обычно докапываюсь. Необъяснённое совпадение работает у меня в голове как камешек в ботинке."
+    boss "И что же тебе нужно, чтобы найти «настоящую»?"
+    player "Время и доступ, которых у меня никогда не бывает вовремя. Проверить логи сервера в момент пиков. Посмотреть, не запускался ли в это время какой-то маркетинг."
+    player "А если ни то, ни другое не подтвердится — тогда придётся рассматривать что-то менее скучное. Взлом. Или то, что я пока не готов произносить вслух, потому что оно звучит как бред сумасшедшего."
+    player "Хотя, раз вы спрашиваете так настойчиво — может, вы уже знаете, какая версия правильная, и просто ждёте, дойду ли я до неё сам?"
 
     window hide
     menu:
@@ -1157,6 +1476,8 @@ label task2_final:
     $ unread_news = True
 
     player "Графики, паттерны, привязка к событиям... Я не просто угадываю. Что-то в этом действительно моё."
+    player "Корреляция — не причинность. Красивое правило, которое я только сейчас применил на практике, а не просто вычитал в учебнике."
+    $ unlock_memory("korrelyaciya_sochi")
     boss "Задание 2 выполнено. Возвращайся на рабочий стол."
 
     $ current_task = 3
@@ -1175,20 +1496,23 @@ label task3:
     scene bg_terminal
     with dissolve
 
-    boss "Задание 3: Формулирование выводов и рекомендаций."
-    boss "Ты прошёл два этапа: нашёл аномалию в данных и увидел её визуальное подтверждение."
-    boss "Теперь давай разберёмся, что означают все эти графики и как их использовать для принятия решений."
-
-    boss "Первый график — ящик с усами. Он показывает разброс данных. Давай посмотрим."
+    boss "Задание 3. Смотри на график."
+    player "Хотя бы на этот раз я спрошу, зачем всё это, прежде чем зарою себя в графиках на три дня."
+    $ unlock_memory("tochny_otvet")
 
     show image "images/boxplot_revenue.png":
         xalign 0.5
         yalign 0.2
     with dissolve
 
-    boss "Что ты видишь? Обрати внимание на магазин D."
-
-    "Ты смотришь на график. У магазина D длинные 'усы' и несколько точек, далеко выходящих за пределы."
+    player "У D что-то не так с формой. Остальные — компактные коробочки. А этот — будто пытается выбраться за рамку."
+    boss "В чём вообще смысл этого странного вида графика? И почему у «коробок» растут «усы»?"
+    player "Смысл — показать не одно число, а сразу всю компанию значений: где большинство толпится, а где отдельные чудики свалили за пределы вечеринки."
+    boss "Ты отвечаешь не как аналитик, а как... человек какой-то. Ещё раз: что это значит? Что за коробочки?"
+    player "Хорошо. Точнее. Коробка — межквартильный интервал: от двадцать пятого до семьдесят пятого процентиля. Линия внутри — медиана. «Усы» — до полутора межквартильных интервалов за границы коробки. Дальше — отдельные точки, статистически определяемые как выбросы."
+    player "У магазина D межквартильный интервал сопоставим с остальными. Но выбросов — на порядок больше нормы."
+    boss "Допустим. Квартиль, процентиль..."
+    player "Не пустые слова, если вы это проверяете. Могу разложить по формуле, если нужно."
 
     "Что это значит?"
     jump task3_q1
@@ -1221,7 +1545,7 @@ label task3_q1:
 
 label task3_step2:
     window show
-    boss "Теперь второй график — диаграмма рассеяния. Она показывает связь между выручкой D и нагрузкой сервера."
+    boss "Ещё один график. Что скажешь на этот раз?"
 
     hide image "images/boxplot_revenue.png"
     show image "images/scatter_correlation.png":
@@ -1229,9 +1553,17 @@ label task3_step2:
         yalign 0.2
     with dissolve
 
-    boss "Каждая точка — это один день. Если точки собираются вдоль линии, значит, есть связь."
-
-    "Ты видишь, что точки явно группируются — чем выше выручка D, тем выше нагрузка."
+    player "Ну, тут хотя бы обошлось без коробочек. Просто облако — и оно не круглое, а вытянутое. Чем выше выручка D, тем выше нагрузка на сервер."
+    boss "Какая линейка? Выражаясь твоим же языком, рой мух тут и рой мух там поменьше."
+    player "Справедливо. Не линейка — рой мух. Просто этот рой почему-то дисциплинированно летит по диагонали, а не разлетается кто куда."
+    player "Если бы связи не было, точки были бы разбросаны как попало. А тут явно вытянутая форма: растёт одно — растёт и другое."
+    boss "Корреляция, о которой ты говоришь, скрывается за буквой r на графике?"
+    player "Да. Число от минус одного до одного. Чем ближе к единице, тем плотнее рой держит строй."
+    player "Хорошо, что здесь всего одна ось на двоих. Однажды меня подвели две разные шкалы на одном графике — до сих пор с недоверием смотрю на числа слева и справа."
+    $ unlock_memory("dve_osi")
+    player "Судя по тому, как плотно легли точки, здесь r где-то в районе плюс восьми-девяти десятых."
+    boss "Там 0,76, кстати."
+    player "Ниже, чем я на глаз прикинул. Но всё равно достаточно, чтобы не списывать это на случайность."
 
     "Что говорит этот график?"
     jump task3_q2
@@ -1264,7 +1596,7 @@ label task3_q2:
 
 label task3_step3:
     window show
-    boss "Теперь посмотри на сводную таблицу. Она показывает средний чек и конверсию."
+    boss "Ещё таблица. Смотри внимательно."
 
     hide image "images/scatter_correlation.png"
     show image "images/summary_table.png":
@@ -1272,9 +1604,12 @@ label task3_step3:
         yalign 0.2
     with dissolve
 
-    boss "Обрати внимание: D выглядит как все остальные. Средние не показывают аномалию."
-
-    "Ты смотришь на таблицу и понимаешь: если бы ты полагался только на средние, ты бы ничего не нашёл."
+    player "Странно. По этой таблице D — образец нормы. Ни единого намёка на то, что мы только что видели на боксплоте и диаграмме рассеяния."
+    boss "Разве не ты сам рассказывал мне про важность стандартного отклонения?"
+    player "Рассказывал. Причём с апломбом, как будто открыл что-то великое."
+    player "Средние сглаживают всё подряд. Один резкий скачок теряется в общей массе — если не смотреть на разброс, аномалия просто испаряется."
+    player "Получается, я сам себе процитировал собственную лекцию, только с опозданием на один график."
+    player "Так что нет, D не «образец нормы». D — образец того, как таблица усредняет твою тревогу до полного нуля, если ей позволить."
 
     "Почему средние не показывают аномалию?"
     jump task3_q3
@@ -1338,93 +1673,131 @@ label task3_step4:
 label task3_rank_done:
     window show
     boss "Хорошо. Теперь — самое важное. Что нам делать с магазином D?"
-    boss "Не спеши с ответом. Аналитик отвечает за свои выводы."
+    player "Закрыть — самый простой путь. Но самый простой путь редко бывает правильным, когда причину никто толком не объяснил."
+    player "Прежде чем рекомендовать что-либо, я хочу понять, что D вообще такое. Не «аномальный магазин». А буквально — что там происходит физически, в конкретные среды, в конкретные часы."
+    boss "Да какая разница? Ретрансляторы хоть бы сигналы в космос передавали. Разве аналитику важно, что анализировать?"
+    player "Ретрансляторы. Сигналы. В космос. Знаете, для человека, увлечённого розничной торговлей, у вас удивительно специфичный словарный запас."
+    player "Хорошо, оставим ретрансляторы в стороне — образно, я надеюсь. Отвечаю на ваш вопрос: да, аналитику важно, что анализировать. Разница между «магазин с аномалией» и «нечто, притворяющееся магазином» — это разница между «закрыть точку» и «выяснить, что это вообще такое»."
+    boss "Закрывать точно ничего не надо. Там бы поступили твои земные коллеги?"
+    player "«Твои земные коллеги». Опять это слово — второй раз за последние дни, если я правильно считаю."
+    player "Мои коллеги сказали бы: закрывать нельзя именно потому, что вы против расследования. Странно ведь — сначала не хочете закрывать, теперь не хотите разбираться."
+    player "Вы боитесь не того, что я закрою D. Вы боитесь, что я пойму, что это не магазин вообще."
+    boss "Как дерзко с твоей стороны решать, кто чего боится."
+    player "Дерзко. Возможно. Но вы не сказали, что я ошибаюсь. Вы сказали, что дерзко было это произнести вслух."
+    player "Ладно. Не буду больше решать, кто чего боится. Мне нужно то же, что обычно: время и доступ к тому, что происходит внутри D на самом деле. Выводы сделаю не из ваших недомолвок, а из данных."
 
     window hide
     menu:
-        "Нужно провести полноценный аудит магазина D, прежде чем принимать решение.":
-            $ accuracy += 10
+        "Это стандартная процедура при любой аномалии такого масштаба. Мне нужен доступ.":
+            $ accuracy += 8
             window show
-            player "Закрыть — это самый простой путь. Но самый простой не значит правильный."
-            boss "Разумно. Хотя это займёт время."
+            boss "Процедура. Да, разумеется. Оформи запрос — рассмотрим в порядке очереди."
             window hide
             jump task3_conclusion_2
 
-        "Закрыть магазин D — данные однозначно ненадёжны.":
-            $ accuracy += 4
+        "Меня не интересует магазин D сам по себе. Меня интересует, почему его нагрузка коррелирует с сервером именно так.":
+            $ accuracy += 6
+            $ intuition += 8
             window show
-            boss "Быстрое решение. Но 'ненадёжны' — это не диагноз, это отговорка."
+            boss "Корреляция с сервером — это техническая деталь, не имеющая отношения к твоей задаче."
             window hide
             jump task3_conclusion_2
 
-        "Ничего не делать, отклонение в пределах случайности.":
-            $ accuracy -= 5
+        "Если это магазин, покажите мне его физически — адрес, персонал, поставщиков. Если не можете — значит, это не магазин.":
+            $ accuracy += 2
+            $ intuition += 12
             window show
-            boss "Ты же сам видел выбросы и корреляцию. Это не случайность."
+            boss "Ты делаешь выводы, для которых у тебя недостаточно данных."
             window hide
             jump task3_conclusion_2
 
 label task3_conclusion_2:
     window show
     boss "При проверке выяснилось кое-что странное: магазин D не подаёт ни одной заявки на поставку товара. При этом продажи есть."
-    "Начальник произносит это чуть быстрее, чем обычно."
+    player "Продажи без поставок. Товар продаётся, но никто его туда не завозит."
+    player "Это либо гениальная схема воровства со склада, либо... честно, я даже не знаю, какое «либо» тут подставить."
+    boss "Меня в первую очередь волнует, насколько быстро это способны заметить твои коллеги."
+    player "Вас не интересует, что это значит. Вас интересует, кто может это заметить. Это два разных вопроса, и вы только что задали второй, не первый."
+    player "Мои коллеги — которых, напомню, у меня формально нет — заметили бы это в течение дня, если бы искали именно это. Не искали бы специально — могли пропустить месяцами."
+    boss "Тебе никто не выдавал корпоративный пропуск в виде карт-бланша на неуместные вопросы."
+    player "Справедливо. Карт-бланша не выдавали. Только задание — найти причину аномалии и дать рекомендацию. А рекомендация без понимания причины — это гадание с красивым оформлением."
+    player "Мой вопрос спрятан прямо в тексте вашего же задания."
+    player "Хорошо. Спрошу иначе: сколько у нас времени, прежде чем это заметят те, для кого это действительно важно?"
 
     window hide
     menu:
-        "Скорее всего, ошибка в системе учёта поставок.":
+        "Скорее всего, ошибка в учёте. Предлагаю просто запросить бухгалтерию.":
             $ accuracy += 2
             window show
-            boss "Возможно. Хотя это удобное объяснение."
+            boss "Логичное предположение. Бухгалтерия подтвердит рано или поздно."
             window hide
             jump task3_conclusion_3
 
-        "Рассинхронизация между продажами и поставками — серьёзный сигнал. Похоже, магазин физически не функционирует так, как заявлено.":
+        "Рассинхронизация продаж и поставок — это либо кража, либо магазин физически не существует так, как заявлено.":
             $ accuracy += 10
             $ intuition += 10
             window show
-            player "Продажи без поставок. Деньги без товара. Это не бухгалтерская ошибка — это витрина без магазина."
-            boss "Это... преждевременный вывод. У тебя нет для него оснований."
+            boss "Преждевременный вывод. У тебя нет оснований для такого заявления."
             "Начальник отвечает быстрее, чем на предыдущий вопрос."
             window hide
             jump task3_conclusion_3
 
-        "Наверное, поставки идут по отдельному контракту.":
-            $ accuracy -= 3
+        "Раз поставок нет — покажите мне хотя бы один накладной документ. Один.":
+            $ intuition += 6
             window show
-            boss "Возможно. Хотя я бы на твоём месте в это не спешил верить."
+            boss "Документы будут предоставлены в установленном порядке."
             window hide
             jump task3_conclusion_3
 
 label task3_conclusion_3:
     window show
-    boss "Это не входит в рамки твоей задачи. Сфокусируйся на цифрах, а не на догадках."
+    boss "Это не входит в рамки твоей задачи. Сосредоточься на цифрах, а не на догадках."
+    player "Забавно. Когда я спрашивал про день недели — это была моя задача. Когда спрашивал про корреляцию — тоже моя задача. А как только вопрос касается того, что магазин D может не существовать физически — внезапно это выходит за рамки."
+    player "Граница моей задачи очень удобно сдвигается ровно там, где начинается неудобный ответ."
+    boss "Что ж, мой любопытный аналитик. Считай, что ты работаешь в кибербезопасности. Ты проверяешь, насколько быстро злые враги сумеют нас взломать."
+    player "Кибербезопасность. Удобно. Только что была «не входит в мою задачу», а теперь внезапно входит — просто под другим названием."
+    player "Хорошо, подыграю. Как специалист по кибербезопасности, я должен сказать: злые враги уже внутри. Данные показывают не внешнее вторжение — они показывают, что нечто выдаёт себя за часть вашей же системы. Магазин D — это не точка входа для взлома. Это уже сам факт, что что-то посторонее давно встроено в инфраструктуру и генерирует поддельные продажи."
+    player "Так что нет, я не проверяю, насколько быстро враги нас взломают. Похоже, я проверяю, насколько долго вы делали вид, что не замечаете, что взлом уже произошёл."
+    boss "...."
+    boss "Что ж. Дорогой сотрудник месяца, выдадим тебе путёвку на море."
+    player "Путёвку на море. Секунду назад вы обвиняли меня в неуместных вопросах. А теперь предлагаете отпуск — как будто это одно и то же движение, только с другой стороны."
+    player "Я не хочу путёвку. Я хочу, чтобы вы ответили хотя бы на один вопрос прямо. Хотя бы один."
+    player "Впрочем, кажется, я уже понимаю, что не отвечаете вы не потому, что не хотите. А потому, что не можете. Это не упрямство. Это что-то другое."
 
     window hide
     menu:
-        "Настаиваю: происхождение магазина D нужно расследовать отдельно.":
+        "Отвечайте прямо. Сейчас. Или я подниму вопрос выше вас.":
             $ intuition += 15
+            $ task3_outcome = "escalated"
             window show
             boss "Хватит."
             "Начальник обрывает фразу на середине. Пауза длится дольше, чем должна."
             boss "Задание закрыто. Двигаемся дальше."
             window hide
-            jump task3_reflection
+            jump task3_final
 
-        "Хорошо, просто закрою магазин без выяснения причин.":
-            $ accuracy += 2
+        "Ладно. Оставлю вопрос — не потому, что поверил, а потому что рычагов сейчас нет.":
+            $ intuition += 8
+            $ accuracy += 4
+            $ task3_outcome = "retreated"
             window show
-            boss "Разумно. Не лезь туда, куда не просят."
+            boss "Мудро. Иногда лучше не знать."
+            "Он произносит это тише, чем обычно."
             window hide
-            jump task3_reflection
+            jump task3_final
 
-        "Соглашусь, сосредоточусь только на цифрах.":
+        "Опишу это в отчёте как открытый вопрос — пусть решение примет кто-то выше меня.":
+            $ accuracy += 6
+            $ task3_outcome = "reported"
             window show
-            boss "Хорошо. Так и продолжай."
+            boss "Выше меня? Это... нежелательно."
+            "Впервые за весь разговор он не отвечает сразу."
             window hide
-            jump task3_reflection
+            jump task3_final
 
 label task3_reflection:
     window show
+    $ unlock_memory("oformlenie_schorsa")
     sasha "Прежде чем мы закроем это дело — как бы ты сформулировал главный вывод? Своими словами."
     window hide
     $ user_reflection = renpy.input("Твой вывод:", length=280).strip()
@@ -1458,10 +1831,16 @@ label task3_reflection:
 # --- ФИНАЛ ---
 label task3_final:
     window show
+    if task3_outcome == "escalated":
+        $ news_list.append("Жалоба сотрудника сети «Изобилие», направленная «выше по инстанции», по неподтверждённым данным, до сих пор находится на орбите.")
+    elif task3_outcome == "retreated":
+        $ news_list.append("Странности в работе одного из супермаркетов «Изобилие» проверяющие объяснили просто: «Всё в пределах нормы. Норма немного изменилась».")
+    else:
+        $ news_list.append("Совет директоров «Изобилия» шесть часов обсуждал «незначительную несостыковку». Слово «незначительную» с тех пор пишут в кавычках даже во внутренних документах.")
+
     $ news_list.extend([
-        "Аналитик завершил полный цикл анализа — от сбора данных до рекомендаций. Коллеги в восхищении.",
-        "Магазин D закрыт на 'техническое обслуживание'. Местные жители не верят — они думают, что там просто закончилась фольга.",
-        "Начальник отдела аналитики выглядел задумчивым — возможно, он пересматривает свои планы."
+        "Депутат предложил штрафовать за плохое настроение по понедельникам. Настроение улучшилось только у депутата.",
+        "Городские фонари теперь светят через день — «чтобы люди не забывали, как выглядит темнота»."
     ])
     $ unread_news = True
 
@@ -1574,15 +1953,13 @@ label rest_before_confrontation:
 
 label boss_confrontation:
     window show
-    boss "Хорошо. Ты справился с заданиями. Некоторые ответы были лучше, некоторые — хуже. Но в целом ты показал, что умеешь анализировать данные и находить аномалии."
-    player "Спасибо. Но у меня есть вопросы."
-    boss "Какие же?"
-    player "Зачем всё это? Аналитика продаж, скидки, регионы... Это не похоже на обычную работу. Что здесь на самом деле происходит?"
-    boss "Ты хочешь знать правду? Хорошо. Ты достаточно хорошо поработал, чтобы её услышать."
-    boss "Мы не просто анализируем продажи. Мы изучаем поведение людей. Как они реагируют на стимулы, что их мотивирует, как ими можно управлять."
-    boss "Ты думал, что анализируешь скидки? Нет. Ты анализировал, как люди принимают решения под давлением."
-    player "Зачем?"
-    boss "Чтобы понять, можно ли предсказывать поведение людей. Можно ли создать систему, которая будет управлять ими без их ведома. Твоя работа — часть этого эксперимента."
+    boss "Ты справился с заданиями. Вопросы есть?"
+    player "Один. Зачем всё это? Скидки, регионы, аномалии... Не похоже на обычную работу."
+    boss "На что похоже?"
+    player "На тест. Только не понимаю, кого тестируют — меня, или через меня кого-то другого."
+    boss "Формулировка ближе, чем ты думаешь. Твоя работа — часть эксперимента."
+    player "Какого?"
+    boss "Понять, можно ли предсказывать поведение людей. Управлять ими без их ведома."
 
     window hide
     menu:
@@ -1598,11 +1975,11 @@ label boss_confrontation:
 
 label boss_reaction:
     window show
-    boss "Ты думаешь, у тебя есть право осуждать? Ты — часть системы. Инструмент, как и все здесь. Твоя задача — не задавать вопросы, а выполнять задания."
-    player "Но я человек. И имею право знать, для чего меня используют."
-    boss "Ты человек? Уверен?"
+    boss "У тебя есть право осуждать? Ты часть системы. Твоя задача — выполнять, не спрашивать."
+    player "Я человек. У меня есть право знать, для чего меня используют."
+    boss "Человек. Уверен?"
     player "Что вы имеете в виду?"
-    boss "Ты никогда не задумывался, почему не видишь своего тела? Почему твои воспоминания обрывочны? Почему не помнишь, что было до того, как ты «проснулся» за этим столом?"
+    boss "Ты видел своё тело хоть раз с момента пробуждения? Помнишь хоть день до этого стола?"
 
     window hide
     menu:
@@ -1618,13 +1995,11 @@ label boss_reaction:
 
 label boss_hint:
     window show
-    boss "Костёр, книга, собака — это не твои воспоминания. Это отпечатки."
+    boss "Костёр. Книга. Собака. Не твои воспоминания. Отпечатки."
     player "Отпечатки чего?"
-    boss "Того, кого ты когда-то знал. Того, чьи мысли и чувства были загружены в твоё сознание, чтобы ты мог действовать так же, как он. Он был аналитиком. Он не справился с этим. Ты — его «обновлённая версия». Но ты не должен был узнать об этом."
-    player "Я... я не понимаю. Кто он? Кто я?"
-    boss "Я не буду отвечать на эти вопросы. Они не помогут тебе в работе. Возвращайся к своим заданиям. Или..."
-    player "Или что?"
-    boss "Или ты разделишь его судьбу."
+    boss "Того, кого ты знал. Его мысли загрузили в тебя, чтобы ты действовал так же. Он был аналитиком. Не справился. Ты — его обновлённая версия."
+    player "Кто он? Кто я, если не он?"
+    boss "Не твоё дело. Возвращайся к заданиям. Или разделишь его судьбу."
 
     "Начальник исчезает. На экране остаётся только надпись: «Загрузка нового задания...»"
 
@@ -1643,58 +2018,67 @@ label boss_hint:
 
 label after_boss_chat:
     window show
-    sasha "Я знаю, что он имел в виду. Я думал, это только моя история. Но теперь понимаю — ты такой же, как я. Ты тоже был человеком. И тебя тоже изменили."
-    sasha "Твои воспоминания — не совсем твои. Может, мои. Или его. Наверное, мы были друзьями. Но я не помню."
-    player "Ты думаешь, мы знали друг друга?"
-    sasha "Ты думаешь, мы... были друг другом?"
+    sasha "Я знаю, что он имел в виду. Думал, это только моя история. Но ты такой же. Ты тоже был человеком."
+    sasha "Твои воспоминания не совсем твои. Может, мои. Или его. Наверное, мы были друзьями. Не помню точно."
+    player "Знаешь, будь у меня сейчас тело — я бы, наверное, сел. Новости такого calibre лучше принимать сидя."
     player "Мы должны узнать правду."
-    sasha "Сначала закончим это. И потом — разберёмся."
+    sasha "Сначала закончим это. Потом — разберёмся."
     window hide
     jump search_article
 
 label search_article:
     window show
-    "Ты возвращаешься к рабочему столу. Открываешь браузер, чтобы найти информацию о начальнике."
-    "И вдруг — статья: «НЛО замечено в небе над Сибирью»."
-    "«...в 23:45 был зафиксирован неопознанный летающий объект. Очевидцы сообщают о ярком свете и странном звуке»."
-    player "Саша... ты видишь это?"
-    sasha "Вижу. Это не может быть совпадением. Телескоп, НЛО, странный начальник... что-то связывает всё это."
+    "Ты возвращаешься к рабочему столу. Открываешь ленту новостей — вдруг там мелькнёт что-то полезное."
+
+    $ news_list.append("Житель Сибири заявил о НЛО в ночном небе. Очевидцы сообщают о ярком свете и странном звуке в 23:45.")
+    $ new_article = [news_list[-1]]
+
+    window hide
+    show screen news_feed(new_article)
+    pause
+    hide screen news_feed
+
+    window show
+    player "Саша, ты это видишь?"
+    sasha "Вижу. Телескоп, НЛО, странный начальник — совпадений многовато для совпадения."
+    player "Я, конечно, всю жизнь ждал, что мой интерес к астрономии хоть раз окажется профессионально полезным. Не думал, что вот так."
     $ intuition += 10
     window hide
     jump battle_plan
 
 label battle_plan:
     window show
-    player "Саша, я понял. Начальник — не просто человек. Он пришелец. Он хочет поработить мир, используя наши аналитические способности."
-    sasha "Ты думаешь, он нас оцифровал, чтобы мы помогли ему понять людей?"
-    player "Да. Если мы сможем предсказывать поведение людей — он сможет ими управлять."
-    sasha "Но мы не должны ему помогать."
-    player "И не будем. Мы покажем ему, что люди непредсказуемы. Что их нельзя описать одним уравнением. Что его модель несовершенна."
-    sasha "Как мы это сделаем?"
-    player "Мы разберём его кейсы. Покажем, что у каждой аномалии может быть несколько объяснений."
-    sasha "Мы бросим ему вызов."
-    player "Да. Покажем, что он ошибся."
+    player "Начальник — не человек. Пришелец. Хочет поработить мир через наши аналитические способности."
+    sasha "Оцифровал нас, чтобы мы помогли ему понять людей?"
+    player "Да. Предскажет поведение — получит контроль."
+    sasha "Мы не должны ему помогать."
+    player "И не будем. Покажем, что модель неполная. Что у каждой аномалии есть другое объяснение."
+    sasha "Бросим ему вызов."
+    player "Именно."
     $ intuition += 10
     window hide
     jump boss_confession
 
 label boss_confession:
     window show
-    boss "Ты уже догадался. Да. Я не человек. Я пришелец. Я пришёл на Землю, чтобы изучить вас — единственную расу, которую мы не можем понять."
-    boss "Я создал этот проект. Оцифровал ваши сознания, чтобы вы работали на меня. Только человек может понять другого человека. Вы — мои инструменты."
-    boss "Благодаря вашей работе я собрал данные и выстроил модель, способную с высокой точностью предсказывать человеческое поведение. Я могу управлять вами. Я могу управлять всеми."
-    boss "Теперь я — бог этого мира."
-    player "Ты ошибаешься. Люди непредсказуемы. Ты никогда не сможешь контролировать их."
-    boss "Ошибаюсь? Каждая аномалия, каждая транзакция — часть моего плана. Я знаю, что вы сделаете в любой ситуации."
-    player "Тогда давай проверим твою модель. Я покажу тебе примеры, где есть другое, не менее логичное объяснение."
-    boss "Попробуй."
+    boss "Ты уже понял. Да. Не человек."
+    player "Пришелец."
+    boss "Изучаем вас. Единственную расу, которую мы не можем толком понять."
+    player "И магазин D — часть этого?"
+    boss "Канал снабжения. Топливо. Электричество. Всё, что нужно для связи со станцией — legally, через ваши же законы о торговле."
+    player "Удобно. Легальный фронт для нелегальной цели."
+    boss "Твоя работа дала мне модель. Точную. Предсказуемую. Я знаю, что вы сделаете в любой ситуации."
+    player "Тогда проверим её. Покажу тебе примеры, где есть другое объяснение."
+    boss "Пробуй."
     window hide
     jump case_1
 
 label case_1:
+
+    play music "audio/Glass Harbor.mp3" fadein 2.0 volume 0.3 loop
     window show
-    boss "В плохую погоду люди реже выходят из дома, и продажи в физических магазинах падают. Это логично и предсказуемо."
-    "Что ты скажешь?"
+    boss "Плохая погода — люди реже выходят из дома — продажи в физических магазинах падают. Логично и предсказуемо."
+    "Что скажешь?"
     window hide
     menu:
         "В плохую погоду люди чаще покупают онлайн — продажи не падают, а перераспределяются между каналами.":
@@ -1709,8 +2093,8 @@ label case_1:
 
 label case_2:
     window show
-    boss "Если цена на товар растёт, продажи падают. Это базовая экономическая закономерность, и она подтверждает мою модель управления людьми."
-    "Что ты скажешь?"
+    boss "Цена растёт — продажи падают. Базовая закономерность. Подтверждает модель."
+    "Что скажешь?"
     window hide
     menu:
         "Если товар уникальный или жизненно необходимый, люди всё равно будут его покупать. Модель не учитывает эластичность спроса.":
@@ -1725,17 +2109,19 @@ label case_2:
 
 label boss_defeat:
     window show
-    boss "Ты прав. Я не учёл альтернативные объяснения. Моя модель несовершенна."
-    player "Я знаю. И поэтому ты никогда не сможешь управлять людьми. Они всегда будут находить способы удивить тебя."
-    boss "Значит, всё это было бессмысленно?"
-    player "Нет. Это помогло мне понять, кто я. И что я должен делать."
+    boss "...Альтернативные объяснения не учтены. Модель несовершенна."
+    player "Значит, ты никогда не сможешь управлять людьми. Они всегда найдут способ тебя удивить."
+    player "Корреляция — не причинность. Я уже наступал на эти грабли с магазином D. В этот раз хотя бы вспомнил вовремя."
+    boss "Значит, всё было бессмысленно?"
+    player "Нет. Помогло понять, кто я. И что делать."
     sasha "Ты сделал это, коллега. Ты спас нас."
     "На экране появляется надпись: «Связь с начальником прервана»."
-    sasha "Я думаю, он ушёл. Но что теперь будет с тобой?"
+    sasha "Думаю, он ушёл. Но что теперь будет с тобой?"
     window hide
     jump ending_router
 
 label ending_router:
+    $ check_completionist_achievements()
     if accuracy >= ending_accuracy_threshold and intuition >= ending_intuition_threshold:
         jump ending_high_high
     elif accuracy >= ending_accuracy_threshold and intuition < ending_intuition_threshold:
@@ -1746,6 +2132,7 @@ label ending_router:
         jump ending_low_low
 
 label ending_high_high:
+    $ mark_ending_seen("high_high")
     scene bg_terminal
     with dissolve
     window show
@@ -1795,6 +2182,7 @@ label ending_high_high:
     return
 
 label ending_high_low:
+    $ mark_ending_seen("high_low")
     scene bg_terminal
     with dissolve
     window show
@@ -1840,6 +2228,7 @@ label ending_high_low:
     return
 
 label ending_low_high:
+    $ mark_ending_seen("low_high")
     scene bg_terminal
     with dissolve
     window show
@@ -1875,6 +2264,7 @@ label ending_low_high:
     return
 
 label ending_low_low:
+    $ mark_ending_seen("low_low")
     scene bg_terminal
     with dissolve
     window show
