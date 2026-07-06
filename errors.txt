@@ -2,9 +2,11 @@
 errors listed below, and try again.
 
 
-File "game/script.rpy", line 99: 'linear' is not a keyword argument or valid child for the add statement.
-    linear 0.5 alpha 0.0
-          ^
+The label task3_final is defined twice, at File "game/script.rpy", line 1806:
+label task3_final:
+and File "game/script.rpy", line 1807:
+    label task3_final:
+
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Sun Jul  5 02:48:24 2026
+Mon Jul  6 00:52:33 2026

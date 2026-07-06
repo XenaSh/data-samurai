@@ -94,7 +94,17 @@ define player_chat = Character("Ты",
 
 # "Дышащий" фон вместо мёртвого плоского цвета
 image white = Solid("#ffffff")
+image flash_monitor_glow = "images/flash_monitor_glow.png"
 image bg_terminal = "images/bg_terminal.png"
+image bg_desktop_grid = "images/bg_desktop_grid.png"
+image dock_panel = "images/dock_panel.png"
+image icon_chat = "images/icon_chat.png"
+image icon_tasks = "images/icon_tasks.png"
+image icon_news = "images/icon_news.png"
+image icon_memory = "images/icon_memory.png"
+image icon_cleaning = "images/icon_cleaning.png"
+image icon_achievements = "images/icon_achievements.png"
+image bg_campfire = "images/bg_campfire.png"
 
 # Тёплый оверлей для сцен-воспоминаний
 image sepia_overlay = Solid("#3a260c55")
@@ -105,6 +115,9 @@ transform cursor_blink:
     linear 0.5 alpha 0.0
     linear 0.5 alpha 1.0
     repeat
+transform monitor_glow_in:
+    matrixcolor BrightnessMatrix(1.0)
+    linear 1.2 matrixcolor BrightnessMatrix(0.0)
 
 screen blinking_cursor():
     add Solid("#00ffcc") xsize 14 ysize 28 xalign 0.5 yalign 0.85 at cursor_blink
@@ -147,18 +160,53 @@ screen ending_screen(title_text, subtitle_text):
 
 # Экран рабочего стола с иконками
 screen desktop():
-    # Чат
-    textbutton "💬 Чат" action Jump("chat_with_sasha") xpos 50 ypos 50 text_size 30
-    # Задания
-    textbutton "📋 Задания" action Jump("tasks_from_boss") xpos 50 ypos 100 text_size 30
-    # Новости
-    textbutton "📰 Новости" action Jump("show_news") xpos 50 ypos 150 text_size 30
-    # Моя память
-    textbutton "🧠 Моя память" action Jump("memory_archive") xpos 50 ypos 200 text_size 30
-    # Тренажёр очистки данных
-    textbutton "🧹 Очистка данных" action Jump("data_cleaning_minigame") xpos 50 ypos 250 text_size 30
-    # Достижения
-    textbutton "🏅 Поводы для гордости" action Jump("achievements_archive") xpos 50 ypos 300 text_size 30
+
+    fixed:
+        xalign 0.5
+        yalign 1.0
+        yoffset -24
+        xsize 1400
+        ysize 160
+
+        add "dock_panel"
+
+        hbox:
+            spacing 36
+            xalign 0.5
+            yalign 0.5
+            yoffset 4
+
+            $ desktop_items = [
+                ("icon_chat", "Чат", "chat_with_sasha", False),
+                ("icon_tasks", "Задания", "tasks_from_boss", False),
+                ("icon_news", "Новости", "show_news", unread_news),
+                ("icon_memory", "Моя память", "memory_archive", False),
+                ("icon_cleaning", "Очистка данных", "data_cleaning_minigame", False),
+                ("icon_achievements", "Гордость", "achievements_archive", False),
+            ]
+
+            for icon_img, label, target, has_badge in desktop_items:
+                button:
+                    action Jump(target)
+                    xsize 110
+                    ysize 100
+                    background Solid("#00000000")
+                    hover_background Solid("#1a3a4a80")
+                    padding (6, 10)
+
+                    vbox:
+                        xalign 0.5
+                        spacing 6
+
+                        fixed:
+                            xalign 0.5
+                            xsize 44
+                            ysize 44
+                            add icon_img xsize 44 ysize 44
+                            if has_badge:
+                                add Solid("#ff5555") xsize 12 ysize 12 xalign 1.0 yalign 0.0
+
+                        text label size 15 color "#cfefff" xalign 0.5 text_align 0.5
 
 # Лента новостей (без border)
 screen news_feed(news_items):
@@ -507,6 +555,8 @@ label desktop_loop:
     if renpy.music.get_playing() != "audio/Idle Grid.mp3":
         play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
     window hide
+    scene bg_desktop_grid
+    with dissolve
     show screen desktop
     $ renpy.pause()
     jump desktop_loop
@@ -563,7 +613,18 @@ label data_cleaning_minigame:
     jump desktop_loop
 
 label start:
-    scene bg_terminal
+
+    # Сознание моргает несколько раз, прежде чем стабилизироваться
+    show white with flash
+    pause 0.1
+    hide white
+    pause 0.3
+    show white with flash
+    pause 0.08
+    hide white
+    pause 0.5
+
+    scene flash_monitor_glow
     with dissolve
 
     # play music переносим на пару строк ниже — пусть начало будет в тишине
@@ -578,10 +639,10 @@ label start:
             jump osmotretsya
 
 label osmotretsya:
-    scene bg_terminal
+    scene bg_desktop_grid
     with dissolve
 
-    "На столе — иконки. Папки. Документы. Всё чужое."
+    "Всё чужое."
 
     # Мигание экрана
     show white with flash
@@ -803,6 +864,7 @@ label vopros_tri:
                 jump pravilnyy
 
 label vospominanie_alexander:
+    scene bg_campfire
     "В голове вспыхивает картинка. Палатка. Костер. Рядом с тобой сидит мужчина и читает вслух Шекспира."
     "Ты знаешь его. Это Александр. Он был с тобой в тот день."
     "Но где он сейчас?"
@@ -827,7 +889,7 @@ label itogi_testa:
     boss "Ты будешь полезен, Аналитик."
 
     # Начальник исчезает (или замолкает)
-    "Начальник замолкает. Экран гаснет, и ты остаёшься один перед светящимся монитором."
+    "Начальник замолкает. Ты остаёшься один перед светящимся монитором."
 
     "«Аналитик… что это значит?»"
 
@@ -835,7 +897,7 @@ label itogi_testa:
     "палатка, собака, чей-то смех. И ещё коньяк. И чьи-то руки. Чьи?.."
 
     "О чём подумать?"
-    
+
     menu:
         "О том, кто я вообще такой?":
             jump dumaty_o_sebe
@@ -1869,6 +1931,7 @@ label final_battle:
     show white with flash
     pause 0.15
     hide white
+    scene bg_campfire
     with dissolve
 
     "{color=#ffcc88}{i}В темноте возникает образ. Ты сидишь у костра. Рядом — кто-то. Он читает вслух книгу, и ты смеёшься. Пахнет деревом и дымом. Где-то лает собака.{/i}{/color}"
