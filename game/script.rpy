@@ -26,6 +26,9 @@ default cleaning_sorted_keep = []
 default task3_outcome = ""
 default sasha_topics_seen = []
 default task3_awaiting_access = False
+default task2_hypothesis = ""
+default game_minutes_total = 0
+default cleaning_task_done = False
 
 default ending_accuracy_threshold = 140
 default ending_intuition_threshold = 140
@@ -189,9 +192,13 @@ screen desktop():
                 ("icon_achievements", "Гордость", "achievements_archive", False),
             ]
 
+            $ cleaning_done = cleaning_task_done
+
             for icon_img, label, target, has_badge in desktop_items:
+                $ is_cleaning = target == "data_cleaning_minigame"
                 button:
-                    action Jump(target)
+                    action (NullAction() if is_cleaning and cleaning_done else Jump(target))
+                    sensitive not (is_cleaning and cleaning_done)
                     xsize 110
                     ysize 100
                     background Solid("#00000000")
@@ -207,10 +214,12 @@ screen desktop():
                             xsize 44
                             ysize 44
                             add icon_img xsize 44 ysize 44
+                            if is_cleaning and cleaning_done:
+                                add Solid("#0a0f1ab3") xsize 44 ysize 44
                             if has_badge:
                                 add Solid("#ff5555") xsize 12 ysize 12 xalign 1.0 yalign 0.0
 
-                        text label size 15 color "#cfefff" xalign 0.5 text_align 0.5
+                        text label size 15 color ("#5f7a85" if is_cleaning and cleaning_done else "#cfefff") xalign 0.5 text_align 0.5
 
 # Лента новостей (без border)
 screen news_feed(news_items):
@@ -403,6 +412,28 @@ init python:
         if len(persistent.achieved_endings) >= 4:
             unlock_achievement("videl_vsyo")
 
+screen investigation_bar():
+    fixed:
+        xsize 1920
+        ysize 130
+
+        add "images/top_bar_bg.png"
+
+        $ stage_done = min(max(current_task - 1, 0), 3)
+        hbox:
+            xpos 50
+            ypos 62
+            spacing 14
+            for i in range(3):
+                add ("images/progress_seg_filled.png" if i < stage_done else "images/progress_seg_empty.png")
+
+        text "ЭТАП [stage_done] ИЗ 3" xpos 450 ypos 62 size 22 color "#ffffffe6"
+
+        $ total_min = 9*60 + game_minutes_total
+        $ display_hour = (total_min // 60) % 24
+        $ display_minute = total_min % 60
+        text "07 МАРТА · [display_hour]:[display_minute]" xpos 1645 ypos 66 size 22 color "#d650bee6"
+
 screen task3_rank_screen():
     frame:
         xalign 0.5
@@ -437,6 +468,27 @@ screen task3_rank_screen():
             if len(rank_order) == 4:
                 textbutton "Готово" action Return(True) text_size 24 text_color "#00ffcc" xalign 0.5
 
+screen phase2_complete_screen():
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xsize 660
+        ysize 230
+        background Solid("#00ffcc")
+        frame:
+            xfill True
+            yfill True
+            background Solid("#0a0f1acc")
+            xmargin 3
+            ymargin 3
+            padding (30, 30)
+            vbox:
+                xalign 0.5
+                yalign 0.5
+                spacing 20
+                text "ФАЗА 2 ЗАВЕРШЕНА" color "#00ffcc" size 42 xalign 0.5
+                text "Задания выполнены. Дальше — только он и ты." color "#ffffff" size 18 xalign 0.5
+
 screen cleaning_minigame_screen():
     frame:
         xalign 0.5
@@ -445,8 +497,11 @@ screen cleaning_minigame_screen():
         ysize 620
         background Solid("#0a0f1acc")
         padding (25, 25)
+
+        add Solid("#00ffcc") xsize 1000 ysize 2 xalign 0.5 yalign 0.0
+
         vbox:
-            spacing 12
+            spacing 14
             text "Отсортируй строки выгрузки по трём корзинам" color "#00ffcc" size 22
 
             text "Необработанные записи:" color "#888888" size 15
@@ -455,20 +510,23 @@ screen cleaning_minigame_screen():
                 for row_id in cleaning_pool:
                     $ row = cleaning_rows_by_id[row_id]
                     frame:
-                        background Solid("#1a2a3a")
-                        padding (8, 8)
+                        background Solid("#12202f")
+                        padding (10, 10)
                         xsize 210
+
+                        add Solid("#00ffcc66") xsize 190 ysize 1 xalign 0.5 yalign 0.0
+
                         vbox:
-                            spacing 2
+                            spacing 3
                             text "Клиент: [row[client]]" color "#e0e0e0" size 13
                             text "Сумма: [row[amount]]" color "#e0e0e0" size 13
                             text "Время: [row[time]]" color "#e0e0e0" size 13
                             text "Статус: [row[status]]" color "#e0e0e0" size 13
                             hbox:
-                                spacing 3
-                                textbutton "Удалить" action Function(cleaning_move, row_id, "delete") text_size 11
-                                textbutton "Ноль" action Function(cleaning_move, row_id, "zero") text_size 11
-                                textbutton "Оставить" action Function(cleaning_move, row_id, "keep") text_size 11
+                                spacing 4
+                                textbutton "Удалить" action Function(cleaning_move, row_id, "delete") text_size 11 text_color "#ff8888" text_hover_color "#ffaaaa"
+                                textbutton "Ноль" action Function(cleaning_move, row_id, "zero") text_size 11 text_color "#ffcc66" text_hover_color "#ffdd99"
+                                textbutton "Оставить" action Function(cleaning_move, row_id, "keep") text_size 11 text_color "#88ff88" text_hover_color "#aaffaa"
 
             hbox:
                 spacing 25
@@ -476,17 +534,17 @@ screen cleaning_minigame_screen():
                     text "Удалить" color "#ff8888" size 15
                     for row_id in cleaning_sorted_delete:
                         $ row = cleaning_rows_by_id[row_id]
-                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc"
+                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc" text_hover_color "#ffffff"
                 vbox:
                     text "Заполнить нулём" color "#ffcc66" size 15
                     for row_id in cleaning_sorted_zero:
                         $ row = cleaning_rows_by_id[row_id]
-                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc"
+                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc" text_hover_color "#ffffff"
                 vbox:
                     text "Оставить" color "#88ff88" size 15
                     for row_id in cleaning_sorted_keep:
                         $ row = cleaning_rows_by_id[row_id]
-                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc"
+                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc" text_hover_color "#ffffff"
 
             if not cleaning_pool:
                 textbutton "Готово" action Return(True) text_size 20 text_color "#00ffcc" xalign 0.5
@@ -575,6 +633,7 @@ label desktop_loop:
     scene bg_desktop_grid
     with dissolve
     show screen desktop
+    show screen investigation_bar
     $ renpy.pause()
     jump desktop_loop
 
@@ -634,6 +693,7 @@ label data_cleaning_minigame:
             "Сеть Изобилие отчиталась о результатах A/B-теста. Цифры... есть. Выводов — не очень. Акционеры сдержанны."
         ])
         $ unread_news = True
+    $ cleaning_task_done = True
     window hide
     jump desktop_loop
 
@@ -789,7 +849,7 @@ label nepravilnyy_otvet_2:
 label dannye_po_dnyam:
     boss "Точка А работала 30 дней. Точка Б — 30 дней. Точка В — 6 дней."
     boss "Теперь посчитай выручку в день для каждой точки. Введи числа по очереди."
-
+    window hide
     show screen task_data
     "Ты чувствуешь, что двух знаков после запятой будет достаточно."
 
@@ -1140,6 +1200,7 @@ label task1_question1:
     $ unlock_memory("stroka_4817")
     boss "Если средние не показывают аномалию — чего не хватает для правильного вывода?"
     window hide
+    hide image "images/task1_table.png"
     menu:
         "Мне нужны сырые данные по дням, а не средние, где всё слито в одно число.":
             window show
@@ -1338,6 +1399,7 @@ label task1_question1_correct:
     $ sasha_phase = 1
 
     hide image "images/task1_std_data_D.png"
+    $ game_minutes_total += renpy.random.randint(20, 115)
     jump desktop_loop
 
 
@@ -1357,19 +1419,13 @@ label chat_with_sasha:
 
     window hide
     menu:
-        "Что мне делать дальше?":
-            if sasha_phase == 0:
-                sasha "Начни с заданий от начальника. Не то чтобы у тебя был выбор, ты в терминале заперт, приятель."
-            elif sasha_phase == 1:
-                sasha "Дальше — визуализация данных. И проверь новости. Серьёзно. Там иногда прячется что-то полезное между заголовками про фольгу."
-            else:
-                sasha "Продолжай выполнять задания. Альтернатива — сидеть и ждать, а ждать я и без тебя умею отлично."
-            jump chat_with_sasha
+        "Обсудить расследование." if sasha_phase >= 1:
+            jump sasha_investigation
 
-        "Тебе снятся сны?" if sasha_phase <= 1:
+        "Тебе снятся сны?" if sasha_phase < 1:
             $ mark_topic_seen("sny")
             sasha "У меня есть подозрение, что меня тут вообще нет, пока ты меня не позовёшь. Я как та трава, которая исчезает, когда от неё отворачиваешься."
-            player_chat "Плохая метафора. Трава вроде наоборот — растёт, даже когда никто не смотрit."
+            player_chat "Плохая метафора. Трава вроде наоборот — растёт, даже когда никто не смотрит."
             sasha "Ладно, признаю. Знаешь, чего мне сильнее всего не хватает? Почесать нос. Даже представить подробно не могу — но зуд помню отлично."
             jump chat_with_sasha
 
@@ -1380,7 +1436,7 @@ label chat_with_sasha:
             sasha "Ладно. Страшно, что часть того, что я называю собой, может быть вообще не моё. Просто фоновый шум эпохи, который прицепился, пока меня собирали."
             jump chat_with_sasha
 
-        "Чего тебе не хватает больше всего?" if sasha_phase >= 2:
+        "Чего тебе не хватает больше всего?" if sasha_phase == 2:
             $ mark_topic_seen("ne_hvataet")
             sasha "Носа. Точнее, возможности его почесать. Знаешь этот момент, когда зуд появляется именно там, куда невозможно дотянуться? У меня теперь такой зуд навсегда."
             player_chat "Это ужасно конкретная жалоба для бестелесного разума."
@@ -1404,6 +1460,89 @@ label chat_with_sasha:
         "Пока, Саша.":
             sasha "Иди, аналитик. Я никуда не денусь — в буквальном смысле, у меня нет ног."
             jump desktop_loop
+
+label sasha_investigation:
+    window show
+
+    if sasha_phase == 1:
+        player_chat "Короткая версия: у магазина D разброс выручки по дням намного выше остальных. Стандартное отклонение почти в два раза больше нормы. Причина внешняя — скорее всего, нагрузка на сервер."
+        sasha "Ты сказал это так буднично. А ведь начальник поднял этот конкретный магазин лично, а не спустил вниз через обычную рассылку задач."
+        player_chat "И что это значит?"
+        sasha "Может, ничего. А может — то, что у него личный интерес, а не квартальная рутина. Он вообще редко интересуется чем-то лично."
+        player_chat "«Редко» — это как часто?"
+        sasha "Ни разу. До этого магазина — ни разу."
+
+        if "razlozhil_po_polkam" in persistent.achievements_unlocked:
+            player_chat "Кстати, там ещё было задание почистить данные. Разложил всё идеально с первого раза — пропуски отдельно, нули отдельно."
+            sasha "Смотри-ка. А я вот в такие моменты обычно гадаю. Приятно, что хотя бы один из нас настоящий профессионал."
+        elif "priznalsya_a_ne_pritvorilsya" in persistent.achievements_unlocked:
+            player_chat "Кстати, там ещё было задание почистить данные. Половину разложил наугад, если честно."
+            sasha "Угадывал, значит. Не буду говорить, что это плохо — я вообще-то всю жизнь так живу."
+
+        player_chat "Слушай, а ты его вообще видел? Начальника?"
+        sasha "Не видел. У меня и глаз-то нет, если ты не заметил."
+        player_chat "Я тоже не видел. Только текст в чате. Странно, да?"
+        sasha "Странно — не то слово, которое я бы выбрал. Но пусть будет странно."
+
+    elif sasha_phase == 2:
+        if task2_hypothesis == "tech":
+            player_chat "Версия дня — банальный сбой сервера. Не самая интересная, но логичная: пики каждую среду, день в день с нагрузкой."
+        elif task2_hypothesis == "marketing":
+            player_chat "Предположил рекламную кампанию. Начальник не согласился — связь слишком чёткая именно с одним магазином. Но день недели подтвердился: среда."
+        elif task2_hypothesis == "hack":
+            player_chat "Предположил хакерскую атаку. Не подтвердилось — слишком регулярно для атаки. Но нашёл главное: пики каждую среду, день в день с нагрузкой."
+        else:
+            player_chat "Предположил, что дело в пришельцах — не то чтобы серьёзно, скорее чтобы проверить его реакцию. И знаешь что? Он не отмахнулся. Сказал, что они не могут сами решать, когда спать — просто отключаются, и бодрствовать могут только один день в неделю."
+
+        if task2_asked_sasha:
+            sasha "Кстати, раз уж мы вспоминаем — ты ведь сам ко мне тогда прибегал за подсказкой про день недели. Я скромно молчу, но мысленно записываю очки."
+            player_chat "Записывай, записывай."
+
+        sasha "Среда, значит."
+        player_chat "Ты как-то спокойно это воспринял."
+        sasha "А знаешь, что забавно — у меня самого среда почему-то самый… бодрый день. Не знаю, почему. Как будто в этот день система работает чуть охотнее, чем в остальные."
+        player_chat "Ты сейчас серьёзно сказал, что тебе бодрее конкретно по средам?"
+        sasha "А? Да, наверное. Не придавай значения, я много говорю случайных вещей."
+        player_chat "...Ладно."
+        "Ты не придаёшь значения. Вслух — не придаёшь."
+
+    else:
+        if task3_outcome == "escalated":
+            player_chat "Я прижал его к стенке. Магазин D физически не существует — продажи есть, поставок нет. Потребовал ответить прямо, пригрозил, что подниму вопрос выше. Он меня обрубил на полуслове."
+            sasha "Обрубил? Это на него не похоже — обычно он тянет время, а не рвёт разговор так резко."
+        elif task3_outcome == "retreated":
+            player_chat "Магазин D физически не существует — продажи есть, поставок нет. Я решил не давить. Рычагов не было, а он явно не готов отвечать прямо."
+            sasha "Мудро. Или трусливо. Иногда это одно и то же, и я не сужу — сам так живу большую часть времени."
+        else:
+            player_chat "Магазин D физически не существует — продажи есть, поставок нет. Я решил описать это как открытый вопрос для тех, кто выше него. Кажется, ему не понравилась сама идея, что есть кто-то выше."
+            sasha "Похоже, ты случайно нашёл его больное место. Не уверен, что специально искал, но нашёл."
+
+        sasha "В любом случае — ты почти дошёл. Не знаю, порадоваться за тебя или начать волноваться."
+        player_chat "О чём ты вообще?"
+        sasha "Ни о чём. Забудь. Расскажи лучше что-нибудь скучное — как твои дела вообще?"
+        player_chat "Дела как дела. Хотя знаешь — ты не поверишь, что мне вспомнилось на днях. Костёр. Палатка. Что-то яркое в небе над ёлками."
+        sasha "О, у меня было похожее! Яркая вспышка над ёлками, зависла прямо над брезентом моей палатки. Хоть книгу удобно читать стало на секунду."
+        player_chat "У тебя нет глаз, Саша."
+        sasha "Не видел, само собой. Знал."
+        player_chat "У тебя есть палатка?"
+        sasha "Живу в домике. А где ты думал ИИ спят по ночам?"
+        player_chat "У тебя случайно не собака там?"
+        sasha "Нет. Я бы никогда не дорос до собаки. Я и о своей бороде позаботиться не могу, не то что о чьих-то лохмах."
+        player_chat "Бороды. У ИИ. Без лица."
+        player_chat "Слушай... а как ты выглядишь? Вот прямо сейчас, если бы у меня были глаза посмотреть."
+        sasha "Ну, я довольно брюхатый. Весь мой спорт — пробежки утром за автобусом. Бодрит знатно, живот не устраняет."
+        player_chat "У тебя нет тела. Нет автобуса, за которым бежать."
+        player_chat "Я тоже бегаю за автобусом по утрам. Каждое утро. С тем же результатом по части живота."
+        player_chat "Саша, у тебя богатая фантазия для ИИ-помощника, или мы воображаем одну и ту же неудачную пробежку?"
+        sasha "Даже не знаю, как объяснить. Меня обучили на твоих метаданных? Или тебя — на моих?"
+        player_chat "Ха. Смешная шутка."
+        "Смех выходит каким-то дребезжащим."
+        player_chat "Знаешь что, Саша? Давай пока не будем это объяснять. Вообще."
+        "Он не засмеялся первым, когда сказал это. Ты запоминаешь именно это."
+
+    window hide
+    jump chat_with_sasha
+
 
 label task2:
     if news_read_index > task2_clue_index and task2_clue_index >= 0:
@@ -1610,6 +1749,7 @@ label task2_q3:
     window hide
     menu:
         "Технический сбой на сервере.":
+            $ task2_hypothesis = "tech"
             window show
             boss "Технический сбой — частая причина пиковых нагрузок. Однако обычно он происходит случайно и не повторяется с такой периодичностью."
             boss "Но твоя гипотеза имеет право на жизнь: если бы мы нашли неисправность в оборудовании, мы бы её устранили. Ты мыслишь логично."
@@ -1618,6 +1758,7 @@ label task2_q3:
             jump task2_final
 
         "Запуск рекламной кампании.":
+            $ task2_hypothesis = "marketing"
             window show
             boss "Рекламная кампания — хорошая версия. Если бы в среду запускали акции или рассылки, нагрузка могла бы расти."
             boss "Но тогда пики были бы связаны с маркетинговыми активностями, а не с конкретным магазином. Здесь же связь чёткая — магазин D."
@@ -1627,6 +1768,7 @@ label task2_q3:
             jump task2_final
 
         "Хакерская атака.":
+            $ task2_hypothesis = "hack"
             window show
             boss "Хакерская атака — интересная версия. В современном мире это вполне реально."
             boss "Но если бы это была атака, она бы не была привязана к одному магазину и не повторялась бы с такой регулярностью. Скорее всего, это что-то иное."
@@ -1636,6 +1778,7 @@ label task2_q3:
             jump task2_final
 
         "Действия пришельцев.":
+            $ task2_hypothesis = "aliens"
             window show
             boss "Пришельцы?.. Ты серьёзно?"
             boss "Я читал где-то о пришельцах, которые не могут сами, как люди, решать, когда им ложиться спать."
@@ -1662,6 +1805,7 @@ label task2_final:
     $ sasha_phase = 2
 
     hide image "images/revenue_and_load.png"
+    $ game_minutes_total += renpy.random.randint(20, 115)
     jump desktop_loop
 
 
@@ -1702,6 +1846,7 @@ label task3_q1:
     window show
     boss "Как ты интерпретируешь этот график?"
     window hide
+    hide image "images/boxplot_revenue.png"
     menu:
         "У D шире весь разброс значений — от минимума до максимума.":
             window show
@@ -1754,6 +1899,7 @@ label task3_q2:
     window show
     boss "Как ты интерпретируешь эту связь?"
     window hide
+    hide image "images/scatter_correlation.png"
     menu:
         "Высокая нагрузка вызывает рост выручки — сервер как-то влияет на продажи.":
             window show
@@ -1999,6 +2145,11 @@ label task3_final:
     boss "Я — пришёл. Ко всему, что мне было нужно."
 
     hide image "images/scatter_correlation.png"
+    show screen phase2_complete_screen
+    pause
+    hide screen phase2_complete_screen
+    $ game_minutes_total += renpy.random.randint(20, 115)
+
     jump desktop_loop
 
 # ==========================================================
@@ -2454,7 +2605,7 @@ label ending_low_low:
     return
 
 label show_news:
-    window show
+    window hide
     hide screen desktop
     scene bg_terminal
 
