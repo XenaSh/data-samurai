@@ -238,16 +238,20 @@ style choice_button_text is default:
 
 screen quick_menu():
 
-    ## Гарантирует, что оно появляется поверх других экранов.
     zorder 100
 
-    if quick_menu:
+    mousearea:
+        area (0, 980, 1920, 100)
+        hovered SetVariable("quick_menu_hovered", True)
+        unhovered SetVariable("quick_menu_hovered", False)
+
+    if quick_menu and quick_menu_hovered:
 
         hbox:
             style_prefix "quick"
-
             xalign 0.5
             yalign 1.0
+            at quick_menu_fade
 
             textbutton _("Назад") action Rollback()
             textbutton _("История") action ShowMenu('history')
@@ -265,6 +269,7 @@ init python:
     config.overlay_screens.append("quick_menu")
 
 default quick_menu = True
+default quick_menu_hovered = False
 
 style quick_button is default
 style quick_button_text is button_text
@@ -1219,6 +1224,12 @@ transform delayed_blink(delay, cycle):
         pause (cycle - .4)
         repeat
 
+transform quick_menu_fade:
+    on show:
+        alpha 0.0
+        linear 0.3 alpha 1.0
+    on hide:
+        linear 0.3 alpha 0.0
 
 style skip_frame is empty
 style skip_text is gui_text

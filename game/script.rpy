@@ -56,8 +56,9 @@ define narrator = Character(None,
 style sasha_window:
     background Frame("images/sasha_panel.png", 0, 20)
     xalign 0.0
-    xsize 1000
-    yalign 0.5                 # по центру по вертикали
+    xsize 850
+    ysize 500
+    yalign 0.5
     padding (20, 15)
     left_margin 40
     right_margin 10
@@ -65,8 +66,9 @@ style sasha_window:
 style player_window:
     background Frame("images/player_panel.png", 0, 20)
     xalign 1.0
-    xsize 1000
-    yalign 0.5                 # по центру по вертикали
+    xsize 850
+    ysize 500
+    yalign 0.5
     padding (20, 15)
     left_margin 10
     right_margin 40
@@ -80,7 +82,8 @@ define sasha = Character("[sasha_name]",
     what_slow_cps=35,
     what_fast_cps=80,
     window_style="sasha_window",
-    what_xalign=0.0      # текст прижат к левому краю
+    what_xalign=0.0,      # текст прижат к левому краю
+    what_yalign=0.5
 )
 
 define player = Character("Ты",
@@ -96,7 +99,8 @@ define player_chat = Character("Ты",
     what_slow_cps=35,
     what_fast_cps=80,
     window_style="player_window",
-    what_xalign=1.0      # текст прижат к правому краю — только для симуляции чата
+    what_xalign=1.0,      # текст прижат к правому краю — только для симуляции чата
+    what_yalign=0.5
 )
 
 # "Дышащий" фон вместо мёртвого плоского цвета
@@ -1180,6 +1184,7 @@ label task1:
     player "Средняя выручка, продажи, средний чек — все пятеро подозрительно похожи. Как братья, которых заставили сфотографироваться в одинаковых свитерах. Без дополнительных данных это пальцем в небо!"
 
     "Внимательно изучи таблицу. Попробуй найти магазин, который может скрывать аномалию. Нажми любую клавишу, когда готов."
+    hide image "images/task1_table.png"
 
     window hide
     menu:
@@ -1231,7 +1236,6 @@ label task1_question1:
     $ unlock_memory("stroka_4817")
     boss "Если средние не показывают аномалию — чего не хватает для правильного вывода?"
     window hide
-    hide image "images/task1_table.png"
     menu:
         "Мне нужны сырые данные по дням, а не средние, где всё слито в одно число.":
             window show

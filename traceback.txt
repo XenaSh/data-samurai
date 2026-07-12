@@ -1,43 +1,22 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-OSError: Couldn't find file 'Frozen Signal.mp3'.
+  File "game/script.rpy", line 2441, in script
+    jump confrontation_round1
+ScriptError: could not find label 'confrontation_round1'.
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "renpy/common/_layout/screen_main_menu.rpym", line 28, in script
-    python hide:
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1131, in execute
-    renpy.python.py_exec_bytecode(self.code.bytecode, self.hide, store=self.store)
-  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1052, in py_exec_bytecode
-    exec(bytecode, globals, locals)
-  File "renpy/common/_layout/screen_main_menu.rpym", line 28, in <module>
-    python hide:
-  File "renpy/common/_layout/screen_main_menu.rpym", line 35, in _execute_python_hide
-    ui.interact()
-  File "E:\renpy-8.0.2-sdk\renpy\ui.py", line 299, in interact
-    rv = renpy.game.interface.interact(roll_forward=roll_forward, **kwargs)
-  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3377, in interact
-    repeat, rv = self.interact_core(preloads=preloads, trans_pause=trans_pause, pause=pause, pause_start=pause_start, **kwargs) # type: ignore
-  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 4097, in interact_core
-    renpy.audio.audio.periodic()
-  File "E:\renpy-8.0.2-sdk\renpy\audio\audio.py", line 1166, in periodic
-    raise_(exc[0], exc[1], exc[2])
-  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/site-packages/future/utils/__init__.py", line 441, in raise_
-  File "E:\renpy-8.0.2-sdk\renpy\audio\audio.py", line 1144, in periodic_thread_main
-    periodic_pass()
-  File "E:\renpy-8.0.2-sdk\renpy\audio\audio.py", line 1086, in periodic_pass
-    c.periodic()
-  File "E:\renpy-8.0.2-sdk\renpy\audio\audio.py", line 517, in periodic
-    topf = load(filename)
-  File "E:\renpy-8.0.2-sdk\renpy\audio\audio.py", line 70, in load
-    rv = renpy.loader.load(fn)
-  File "E:\renpy-8.0.2-sdk\renpy\loader.py", line 820, in load
-    raise IOError("Couldn't find file '%s'." % name)
-OSError: Couldn't find file 'Frozen Signal.mp3'.
+  File "game/script.rpy", line 2441, in script
+    jump confrontation_round1
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1974, in execute
+    rv = renpy.game.script.lookup(target)
+  File "E:\renpy-8.0.2-sdk\renpy\script.py", line 927, in lookup
+    raise ScriptError("could not find label '%s'." % str(original))
+ScriptError: could not find label 'confrontation_round1'.
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Mon Jul  6 06:47:46 2026
+Sun Jul 12 01:00:00 2026
