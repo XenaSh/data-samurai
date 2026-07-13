@@ -1,22 +1,66 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
-While running game code:
-  File "game/script.rpy", line 2441, in script
-    jump confrontation_round1
-ScriptError: could not find label 'confrontation_round1'.
+While loading <renpy.display.im.Image object ('images/task1_std_data_D.png') at 0x00000000062397f0>:
+  File "game/script.rpy", line 1283, in script
+    with dissolve
+OSError: Couldn't find file 'images/task1_std_data_D.png'.
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/script.rpy", line 2441, in script
-    jump confrontation_round1
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1974, in execute
-    rv = renpy.game.script.lookup(target)
-  File "E:\renpy-8.0.2-sdk\renpy\script.py", line 927, in lookup
-    raise ScriptError("could not find label '%s'." % str(original))
-ScriptError: could not find label 'confrontation_round1'.
+  File "game/script.rpy", line 1283, in script
+    with dissolve
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1658, in execute
+    renpy.exports.with_statement(trans, paired=paired)
+  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 1653, in with_statement
+    return renpy.game.interface.do_with(trans, paired, clear=clear)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 2798, in do_with
+    return self.interact(trans_pause=True,
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3377, in interact
+    repeat, rv = self.interact_core(preloads=preloads, trans_pause=trans_pause, pause=pause, pause_start=pause_start, **kwargs) # type: ignore
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3906, in interact_core
+    self.draw_screen(root_widget, fullscreen_video, (not fullscreen_video) or video_frame_drawn)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 2602, in draw_screen
+    surftree = renpy.display.render.render_screen(
+  File "render.pyx", line 495, in renpy.display.render.render_screen
+  File "render.pyx", line 266, in renpy.display.render.render
+  File "E:\renpy-8.0.2-sdk\renpy\display\layout.py", line 884, in render
+    surf = render(child, width, height, cst, cat)
+  File "render.pyx", line 170, in renpy.display.render.render
+  File "render.pyx", line 266, in renpy.display.render.render
+  File "E:\renpy-8.0.2-sdk\renpy\display\transition.py", line 378, in render
+    top = render(self.new_widget, width, height, st, at)
+  File "render.pyx", line 170, in renpy.display.render.render
+  File "render.pyx", line 266, in renpy.display.render.render
+  File "E:\renpy-8.0.2-sdk\renpy\display\layout.py", line 884, in render
+    surf = render(child, width, height, cst, cat)
+  File "render.pyx", line 170, in renpy.display.render.render
+  File "render.pyx", line 266, in renpy.display.render.render
+  File "E:\renpy-8.0.2-sdk\renpy\display\layout.py", line 884, in render
+    surf = render(child, width, height, cst, cat)
+  File "render.pyx", line 170, in renpy.display.render.render
+  File "render.pyx", line 266, in renpy.display.render.render
+  File "E:\renpy-8.0.2-sdk\renpy\display\transform.py", line 747, in render
+    return transform_render(self, width, height, st, at)
+  File "accelerator.pyx", line 187, in renpy.display.accelerator.transform_render
+  File "render.pyx", line 266, in renpy.display.render.render
+  File "E:\renpy-8.0.2-sdk\renpy\display\transform.py", line 747, in render
+    return transform_render(self, width, height, st, at)
+  File "accelerator.pyx", line 187, in renpy.display.accelerator.transform_render
+  File "render.pyx", line 266, in renpy.display.render.render
+  File "E:\renpy-8.0.2-sdk\renpy\display\im.py", line 627, in render
+    return cache.get(self, render=True)
+  File "E:\renpy-8.0.2-sdk\renpy\display\im.py", line 295, in get
+    surf = image.load()
+  File "E:\renpy-8.0.2-sdk\renpy\display\im.py", line 720, in load
+    raise e
+  File "E:\renpy-8.0.2-sdk\renpy\display\im.py", line 685, in load
+    filelike = renpy.loader.load(self.filename)
+  File "E:\renpy-8.0.2-sdk\renpy\loader.py", line 820, in load
+    raise IOError("Couldn't find file '%s'." % name)
+OSError: Couldn't find file 'images/task1_std_data_D.png'.
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Sun Jul 12 01:00:00 2026
+Mon Jul 13 03:47:16 2026
