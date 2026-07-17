@@ -45,6 +45,12 @@ default ending_intuition_threshold = 178
 define config.window_show_transition = Dissolve(0.2)
 define config.window_hide_transition = Dissolve(0.2)
 
+# Приглушённая "вспышка" вместо резкого чисто-белого мигания — снижает риск
+# фотосенситивной реакции. Используем как замену резкому "show flash_soft with flash".
+image flash_soft = Solid("#4a5568")
+define flash = Fade(0.35, 0.0, 0.35)
+
+
 define flash = Fade(0.25, 0.0, 0.25)
 
 define boss = Character("Начальник",
@@ -112,7 +118,6 @@ define player_chat = Character("Ты",
 )
 
 # "Дышащий" фон вместо мёртвого плоского цвета
-image white = Solid("#ffffff")
 image flash_monitor_glow = "images/flash_monitor_glow.png"
 image bg_terminal = "images/bg_terminal.png"
 image bg_desktop_grid = "images/bg_desktop_grid.png"
@@ -131,6 +136,8 @@ image bg_ending_return = "images/bg_ending_return.png"
 image bg_ending_dissolve = "images/bg_ending_dissolve.png"
 image bg_ending_truce = "images/bg_ending_truce.png"
 image bg_arena = "images/bg_arena.png"
+image bg_orion_sky = "images/orion_sky_bg.png"
+image katana_overlay = "images/katana_overlay.png"
 
 # Тёплый оверлей для сцен-воспоминаний
 image sepia_overlay = Solid("#3a260c55")
@@ -148,6 +155,196 @@ transform monitor_glow_in:
 screen blinking_cursor():
     add Solid("#00ffcc") xsize 14 ysize 28 xalign 0.5 yalign 0.85 at cursor_blink
 
+# СОЗВЕЗДИЕ ОРИОНА
+
+default orion_stars_clicked = []
+
+define orion_star_positions = {
+    "betelgeuse": (650, 300),
+    "bellatrix": (950, 320),
+    "belt1": (760, 480),
+    "belt2": (820, 510),
+    "belt3": (880, 540),
+    "saiph": (780, 780),
+    "rigel": (960, 750),
+}
+
+define orion_star_order = ["betelgeuse", "bellatrix", "belt1", "belt2", "belt3", "saiph", "rigel"]
+
+init python:
+    def click_orion_star(key):
+        if key not in orion_stars_clicked:
+            orion_stars_clicked.append(key)
+            renpy.sound.play("audio/star_click.mp3")
+            if len(orion_stars_clicked) >= len(orion_star_order):
+                renpy.sound.play("audio/constellation_complete.mp3")
+
+screen orion_constellation():
+    modal True
+    zorder 10
+
+    add "images/orion_sky_bg.png"
+
+    for key in orion_star_order:
+        button:
+            pos (orion_star_positions[key][0] - 32, orion_star_positions[key][1] - 32)
+            xysize (64, 64)
+            background None
+            action Function(click_orion_star, key)
+            if key in orion_stars_clicked:
+                add "images/star_bright.png"
+            else:
+                add "images/star_dim.png"
+
+    if len(orion_stars_clicked) >= len(orion_star_order):
+        add "images/orion_overlay.png"
+        textbutton "Я должен вспомнить всё.":
+            xalign 0.5
+            yalign 0.92
+            action Return()
+            text_color "#00ffcc"
+            text_size 24
+
+
+# СБОРКА СЛОВА "САМУРАЙ" — мини-игра "Кто я?"
+
+default samurai_letters_state = {}
+
+define samurai_word = ["С", "А", "М", "У", "Р", "А", "Й"]
+define samurai_start_angles = [90, 45, 135, 45, 90, 135, 45]
+define samurai_rotation_step = 45
+
+init python:
+    def click_samurai_letter(i):
+        if i not in samurai_letters_state:
+            samurai_letters_state[i] = samurai_start_angles[i]
+        if samurai_letters_state[i] != 0:
+            samurai_letters_state[i] = (samurai_letters_state[i] - samurai_rotation_step) % 360
+            renpy.sound.play("audio/star_click.mp3")
+            if all(samurai_letters_state.get(j, samurai_start_angles[j]) == 0 for j in range(len(samurai_word))):
+                renpy.sound.play("audio/constellation_complete.mp3")
+
+transform samurai_reveal:
+    zoom 0.4 alpha 0.0
+    linear 0.6 zoom 1.0 alpha 1.0
+
+transform fly_to_katana(tx, ty, ang):
+    xpos 960 ypos 900 xanchor 0.5 yanchor 0.5 alpha 0.0 rotate 0
+    linear 0.7 xpos tx ypos ty alpha 1.0 rotate ang
+
+screen samurai_constellation():
+    modal True
+    zorder 10
+
+    add "images/orion_sky_bg.png"
+
+    python:
+        samurai_done = all(samurai_letters_state.get(i, samurai_start_angles[i]) == 0 for i in range(len(samurai_word)))
+        samurai_slot_w = 170
+        samurai_start_x = 960 - (len(samurai_word) - 1) * samurai_slot_w // 2
+
+    fixed:
+        for i in range(len(samurai_word)):
+            $ s_angle = samurai_letters_state.get(i, samurai_start_angles[i])
+            $ s_x = samurai_start_x + i * samurai_slot_w
+            $ s_y = 500 + (26 if i % 2 == 0 else -18)
+            button:
+                pos (s_x - 65, s_y - 65)
+                xysize (130, 130)
+                background None
+                action Function(click_samurai_letter, i)
+                add Text(samurai_word[i], color="#6fb8e8", size=150, alpha=0.12) at Transform(rotate=s_angle)
+                add Text(samurai_word[i], color="#9ed4f5", size=130, alpha=0.22) at Transform(rotate=s_angle)
+                add Text(samurai_word[i], color="#cdeeff", size=112, alpha=0.4) at Transform(rotate=s_angle)
+                add Text(samurai_word[i], color="#f8fcff", size=96, bold=True) at Transform(rotate=s_angle)
+
+    if samurai_done:
+        text "ДАТА":
+            xalign 0.5
+            ypos 260
+            color "#00e5ff"
+            size 100
+            bold True
+            italic True
+            at samurai_reveal
+        textbutton "Вот кто я такой.":
+            xalign 0.5
+            yalign 0.92
+            action Return()
+            text_color "#00ffcc"
+            text_size 24
+
+# ЗАПРОС К ПАМЯТИ — мини-игра "select * from memory.subject"
+
+default memory_query_cleared = []
+
+define memory_query_tokens = [
+    "const", "void", "select", "&&", "0x1F", "*", "std::cout",
+    "try:", "from", "NaN", "elif", "memory.subject", "yield", "where", "goto",
+    "malloc", "segment", "undefined", "=", "lambda", "throw", "'analytics'", "catch", "static"
+]
+define memory_query_target_idx = [2, 5, 8, 11, 13, 16, 18, 21]
+define memory_query_cols = 8
+
+
+init python:
+    def click_memory_token(idx):
+        if idx not in memory_query_target_idx and idx not in memory_query_cleared:
+            memory_query_cleared.append(idx)
+            renpy.sound.play("audio/star_click.mp3")
+            total_noise = len(memory_query_tokens) - len(memory_query_target_idx)
+            if len(memory_query_cleared) >= total_noise:
+                renpy.sound.play("audio/constellation_complete.mp3")
+
+screen memory_query_puzzle():
+    modal True
+    zorder 10
+
+    add "images/orion_sky_bg.png"
+
+    python:
+        total_noise = len(memory_query_tokens) - len(memory_query_target_idx)
+        query_done = len(memory_query_cleared) >= total_noise
+
+
+    if not query_done:
+        fixed:
+            $ cell_w = 210
+            $ cell_h = 70
+            $ cols = memory_query_cols
+            $ grid_w = cols * cell_w
+            $ start_x = 960 - grid_w // 2
+            $ start_y = 420
+            for idx in range(len(memory_query_tokens)):
+                $ r = idx // cols
+                $ c = idx % cols
+                $ tx = start_x + c * cell_w
+                $ ty = start_y + r * cell_h
+                $ is_target = idx in memory_query_target_idx
+                $ is_cleared = idx in memory_query_cleared
+                if not (is_cleared and not is_target):
+                    button:
+                        pos (tx, ty)
+                        xysize (cell_w - 8, cell_h - 8)
+                        background None
+                        action (NullAction() if is_target else Function(click_memory_token, idx))
+                        text memory_query_tokens[idx]:
+                            color "#8b95a8"
+                            size 22
+                            xalign 0.5
+                            yalign 0.5
+    else:
+        text "select * from memory.subject where segment = 'analytics'":
+            xalign 0.5
+            yalign 0.45
+            color "#5df0c0"
+            size 30
+        textbutton "Вот что я искал.":
+            xalign 0.5
+            yalign 0.92
+            action Return()
+            text_color "#00ffcc"
+            text_size 24
 
 # Экран завершения фазы 1
 screen phase1_complete_screen():
@@ -754,14 +951,11 @@ label data_cleaning_minigame:
 label start:
 
     # Сознание моргает несколько раз, прежде чем стабилизироваться
-    show white with flash
-    pause 0.1
-    hide white
-    pause 0.3
-    show white with flash
-    pause 0.08
-    hide white
-    pause 0.5
+
+    show flash_soft with flash
+    pause 0.4
+    hide flash_soft
+    pause 0.6
 
     scene flash_monitor_glow
     with dissolve
@@ -784,12 +978,11 @@ label osmotretsya:
     "Всё чужое."
 
     # Мигание экрана
-    show white with flash
+    show flash_soft with flash
     pause 0.2
-    hide white
+    hide flash_soft
     with dissolve
 
-    "Внезапно экран мигает, и появляется окно чата."
 
     boss "Ты наконец-то очнулся. Сколько можно спать?"
     boss "У тебя есть 10 минут, чтобы доказать, что ты не потерял остатки разума. Отвечай."
@@ -797,8 +990,68 @@ label osmotretsya:
     "«Это ещё что такое? У меня был начальник? У меня есть начальник?»"
     "«Меня что, опять дёрнули из отпуска?» — твой мозг пытается судорожно обработать происходящее."
 
+    player "Мне бы только сначала... мне бы вспомнить."
 
-    "..."
+    boss "Вспомнить что?"
+
+    "Кто ты? Мысль виляет хвостом, дразнит, но увиливает. А тебе бы только вспомнить, кто ты. Или хотя бы — какая у тебя роль. Кем тебе притворяться в этом конкретном месте."
+
+    "Кто ты?"
+    "Кто ты?"
+    "{size=+20}{b}КТО ТЫ{/b}{/size}"
+
+    menu:
+        "Кто я?":
+            pass
+
+    window hide
+    $ samurai_letters_state = {}
+    call screen samurai_constellation with Dissolve(1.0)
+
+    "Самурай..."
+
+    scene bg_orion_sky
+    with dissolve
+    window show
+
+    "{color=#00e5ff}{i}Дата бусидо — твой кодекс чести.{/i}{/color}"
+    show expression Text("Дата бусидо — кодекс чести.", color="#00e5ff", size=20) as katana1 at fly_to_katana(620, 520, -12)
+
+    "{color=#00e5ff}{i}Истинная храбрость заключается в том, чтобы чистить данные, когда можно чистить, и оставить, когда следует оставить.{/i}{/color}"
+    show expression Text("Храбрость — чистить, когда нужно.", color="#00e5ff", size=20) as katana2 at fly_to_katana(756, 442, -12)
+
+    "{color=#00e5ff}{i}К дедлайну следует идти с ясным осознанием того, что надлежит делать самураю и что унижает его KPI.{/i}{/color}"
+    show expression Text("Дедлайн — не враг, враг — тот, кто не подумал.", color="#00e5ff", size=20) as katana3 at fly_to_katana(892, 364, -12)
+
+    "Пустая ячейка — не слабость, а честность. Ложный ноль — вот единственное бесчестие."
+    show expression Text("Пустая ячейка — честность.", color="#dfefff", size=20) as katana4 at fly_to_katana(1028, 286, -12)
+
+    "Не бойся выброса. Бойся среднего, что прячет его от тебя, как хорошо сшитая ложь."
+    show expression Text("Не бойся выброса.", color="#dfefff", size=20) as katana5 at fly_to_katana(1164, 208, -12)
+
+    "Стандартное отклонение — не приговор твой. Зеркало твоё."
+    show expression Text("Отклонение — зеркало твоё.", color="#dfefff", size=20) as katana6 at fly_to_katana(1300, 130, -12)
+
+    show katana_overlay
+    with dissolve
+
+    window hide
+    pause
+
+    hide katana1
+    hide katana2
+    hide katana3
+    hide katana4
+    hide katana5
+    hide katana6
+    with dissolve
+
+    "«Так вот, значит, кто я», — думаешь ты. — «Не имя. Не лицо. Профессия, натянутая на позвоночник так туго, что стала осанкой»."
+
+    scene bg_desktop_grid
+    with dissolve
+
+    boss "Ты вообще меня слушаешь? Я задал вопрос!"
 
  # --------------------------------------------
     # Вопрос 1: выбор вещи
@@ -806,13 +1059,12 @@ label osmotretsya:
     window hide
     menu:
         "Нож":
-            $ intuition -= 0
             "Ты выбираешь нож."
 
             # Затемнение и мерцание перед воспоминанием
-            show white with flash
+            show flash_soft with flash
             pause 0.15
-            hide white
+            hide flash_soft
             show sepia_overlay with dissolve
 
             "{color=#ffcc88}{i}В памяти всплывает картинка: ты сидишь у костра, в руках — нож, ты точишь палку. Рядом кто-то есть. Кто-то смеётся.{/i}{/color}"
@@ -820,8 +1072,7 @@ label osmotretsya:
             pause 0.8
             hide sepia_overlay with dissolve
 
-            boss "Правильный ответ. Ты хотя бы не забыл, что такое выживание. Дальше."
-            $ intuition += 5
+            boss "Практично. Хотя бы инстинкт выживания не отшибло. Дальше."
             jump vopros_dva
 
         "Фонарик":
@@ -829,14 +1080,12 @@ label osmotretsya:
             "«Хоть логотип конторы разгляжу — вдруг вспомню, где я вообще работал»."
             "{color=#ffcc88}{i}Свет на секунду выхватывает из тьмы что-то — кажется, страницу книги. Потом гаснет.{/i}{/color}"
             boss "Ты это всерьёз? Ладно, проехали."
-            $ intuition -= 10
             jump vopros_dva
 
         "Дневник":
             "Ты выбираешь дневник."
             "{color=#ffcc88}{i}На обложке — чьи-то инициалы. Не твои. Или твои?{/i}{/color}"
             boss "Интересно. Ты хочешь оставить след. Или боишься забыть? Это… нестандартно. Продолжим."
-            $ intuition -= 5
             jump vopros_dva
 
     # --------------------------------------------
@@ -887,18 +1136,19 @@ label vopros_dva:
 
 # Ветка для первого неправильного вопроса (скидки)
 label nepravilnyy_otvet_1:
-    boss "Ты спрашиваешь про скидки, но мы не знаем, были ли они. Это делает вопрос не очень точным."
+    boss "Уже эффективной точке скидки ни к чему, не находишь?"
     boss "Чтобы оценить эффективность, нужно знать базовый параметр — сколько дней работала точка."
     boss "Ладно, в следующий раз будь внимательнее. Двигаемся дальше."
     jump vopros_tri
 
 # Ветка для второго неправильного вопроса (товары)
 label nepravilnyy_otvet_2:
-    boss "Ассортимент — это важно, но без данных о времени работы мы не сможем сравнить точки."
+    boss "Без данных о времени работы мы всё равно не сможем сравнить точки между собой."
     boss "Правильнее было бы спросить о днях работы. Запомни это."
-    boss "Идём дальше."
+    boss "Предыдущая версия тебя запомнила это с первого раза. Идём дальше."
     jump vopros_tri
 
+# Правильный путь — расчёт выручки в день
 # Правильный путь — расчёт выручки в день
 label dannye_po_dnyam:
     boss "Точка А работала 30 дней. Точка Б — 30 дней. Точка В — 6 дней."
@@ -910,30 +1160,31 @@ label dannye_po_dnyam:
     $ correct_a = 100.0 / 30.0
     $ otvet_a = get_number("Выручка в день для точки А (тыс. руб.):")
     if abs(otvet_a - correct_a) <= 0.1:
-        "Верно! Точка А приносит [correct_a:.2f] тыс. в день."
+        player "Хорошо — я, может, не помню своего имени, но считать в уме ещё умею. [correct_a:.2f] тыс. в день."
         $ accuracy += 5
     else:
-        "Не совсем. Правильный ответ: [correct_a:.2f] тыс. в день."
+        player "...Нет. Что я только что написал? Должно быть [correct_a:.2f] тыс. в день. Двигаемся дальше."
 
     $ correct_b = 150.0 / 30.0
     $ otvet_b = get_number("Выручка в день для точки Б (тыс. руб.):")
     if abs(otvet_b - correct_b) <= 0.1:
-        "Верно! Точка Б приносит [correct_b:.2f] тыс. в день."
+        player "Второе почти на автомате — [correct_b:.2f] тыс. в день. Хоть что-то во мне работает как надо."
         $ accuracy += 5
     else:
-        "Не совсем. Правильный ответ: [correct_b:.2f] тыс. в день."
+        player "Мимо. Конечно же, это [correct_b:.2f] тыс. в день — видимо, арифметика тоже не пережила то, что случилось со мной."
 
     $ correct_v = 50.0 / 6.0
     $ otvet_v = get_number("Выручка в день для точки В (тыс. руб.):")
     if abs(otvet_v - correct_v) <= 0.1:
-        "Верно! Точка В приносит [correct_v:.2f] тыс. в день."
+        player "Тут [correct_v:.2f] тыс. в день. Неплохо для человека, который не помнит собственного лица."
         $ accuracy += 5
     else:
-        "Не совсем. Правильный ответ: [correct_v:.2f] тыс. в день."
+        player "Не сошлось. Должно быть... [correct_v:.2f] тыс. в день. Чего ещё ждать от того, кого дёрнули из отпуска?"
 
     hide screen task_data
 
-    boss "Теперь ты видишь, что точка В — самая эффективная по выручке в день, несмотря на меньшую общую сумму."
+    player "Значит, точка В — самая эффективная по выручке в день, хоть в сумме и зарабатывает меньше всех."
+    "«Аналитик, который не помнит своего имени, но помнит, что сумма — плохой показатель», — фыркает внутренний голос."
     boss "Ты справился. Двигаемся дальше."
 
     jump posle_mikro
@@ -978,8 +1229,9 @@ label vopros_tri:
                 jump pravilnyy
 
 label vospominanie_alexander:
-    scene bg_campfire
     window hide
+    scene bg_campfire
+    with dissolve
     pause 1.5
     window show
     "В голове вспыхивает картинка. Палатка. Костер. Рядом с тобой сидит мужчина и читает вслух Шекспира."
@@ -987,6 +1239,9 @@ label vospominanie_alexander:
     "Но где он сейчас?"
     boss "Ты слушаешь меня вообще? Я задал вопрос!"
     # Возвращаемся к вопросу, но теперь без третьего варианта
+    window hide
+    scene bg_desktop_grid
+    with dissolve
     jump vopros_tri
 
 label bibliotekar:
@@ -1007,74 +1262,84 @@ label itogi_testa:
     boss "Полезные варианты остаются в проекте. Бесполезные — архивируются."
 
     # Начальник исчезает (или замолкает)
+    # Начальник исчезает (или замолкает)
     "Начальник замолкает. Ты остаёшься один перед светящимся монитором."
+
+    window hide
+    show screen blinking_cursor
+    pause 1.5
+    hide screen blinking_cursor
+    window show
+
+    "Но тишина — не значит, что вопросы закончились. Просто спрашивать теперь некого, кроме себя самого."
 
     "«Аналитик… что это значит?»"
 
-    "В голове шум. Ты пытаешься вспомнить, но память отказывает. Только обрывки:"
-    "палатка, собака, чей-то смех. И ещё коньяк. И чьи-то руки. Чьи?.."
-
-    "О чём подумать?"
-
     menu:
-        "О том, кто я вообще такой?":
+        "И всё-таки, есть ли у самурая имя?":
             jump dumaty_o_sebe
 
-        "О том, что здесь происходит?":
+        "Что здесь происходит?":
             jump dumaty_o_situacii
 
-        "О том, что будет дальше?":
+        "Что будет дальше?":
             jump dumaty_o_budushchem
 
 label dumaty_o_sebe:
-    "Ты пытаешься вспомнить себя. Своё лицо. Свой голос. Своё имя."
-    "Ничего конкретного. Только вкус кофе на языке — хотя ты не уверен, что у тебя есть язык. Только звук дождя по крыше, которой, кажется, у тебя никогда не было."
-    "Только ощущение, что ты чего-то лишился. Чего-то важного."
-    "Но ты не знаешь, чего именно."
+    "Ты пытаешься вспомнить себя. Лицо. Голос. Имя."
+    "Ничего конкретного. Только вкус кофе на языке — хотя ты не уверен, что у тебя есть язык."
+    "Только ощущение, что ты чего-то лишился. Но не знаешь, чего именно."
     jump sobratsya_i_zhdat
 
 label dumaty_o_situacii:
     "Ты пытаешься понять, что происходит."
     "Рабочий стол компьютера вместо тела. Голос начальника, который знает о тебе больше, чем ты сам."
-    "Откуда вообще берется этот голос? Почему ты читаешь сообщения и «чувствуешь» голос?"
-    "Это похоже на сон. Или на ловушку."
-    "Но почему ты здесь? И как отсюда выбраться?"
-    "Вспоминается странный факт: ты знаешь, что такое аналитика, но не знаешь, как выглядит твоя собственная рука."
-    "Ты помнишь запах бумаги и звук печатной машинки. Но не помнишь, зачем."
+    "Это похоже на сон. Или на ловушку. Но почему ты здесь? И как отсюда выбраться?"
     jump sobratsya_i_zhdat
 
 label dumaty_o_budushchem:
     "Ты пытаешься представить, что будет дальше. Задание. Аналитика. Работа."
-    "Ты не знаешь, что именно тебя ждёт. Но внутри — странное спокойствие."
-    "Будто ты уже сидел вот так."
-    "Будто ты уже делал это раньше. Будто ты вернулся домой."
+    "«У самурая нет цели — только путь», — вспоминается откуда-то фраза. Может, поэтому «что дальше» и не пугает так, как должно бы."
+    "Внутри — странное спокойствие. Будто ты уже сидел вот так. Будто вернулся домой."
     jump sobratsya_i_zhdat
 
+
 label sobratsya_i_zhdat:
-    "Ты делаешь глубокий вдох."
-    "Чувство насыщения легких кислородом не наступает, будто и нет никаких легких."
-    "«Остались только тяжелые», — шутит внутренний голос."
-    menu:
-        "Я должен вспомнить всё.":
-            "Не потому что кто-то сказал. А потому что ты потерян. Ты не знаешь ни кем ты был, ни кем ты стал."
-    "Вокруг тишина. Только мерцает курсор на пустом экране."
+    "Тебе нужно на что-то смотреть, что не будет ничего от тебя требовать."
+    "Экран (или это твоё воображение?..) услужливо подсовывает звёзды."
+    "Ты почему-то знаешь, что любишь вот так глядеть на звёзды. Искать ответы."
+
+    window hide
+    scene bg_orion_sky
+    with dissolve
+
+
+    $ orion_stars_clicked = []
+    window hide
+    call screen orion_constellation
+
+    window show
+    "Орион же тоже своего рода самурай? В том смысле, что он — воин?"
+    "Что-то связывает тебя с ним. Загородная ночь, палатка, телескоп — ты обязательно всё вспомнишь."
+
     show screen blinking_cursor
     pause 2.0
     hide screen blinking_cursor
 
-    # Эффект завершения фазы
-    show white with flash
+    show flash_soft with flash
     pause 0.5
-    hide white
+    hide flash_soft
     with dissolve
 
-    # Показываем экран завершения фазы
     show screen phase1_complete_screen
     pause 3.0
     hide screen phase1_complete_screen
     with dissolve
 
-    # Переход к фазе 2
+    # Очищаем небо Ориона — sasha_intro сам сцену не меняет
+    scene bg_desktop_grid
+    with dissolve
+
     jump sasha_intro
 
 # ------------------------------
@@ -1129,6 +1394,8 @@ label sasha_voprosy:
             jump sasha_pochemu
         "Знаешь, что со мной?":
             jump sasha_chto_so_mnoy
+        "Где мы вообще работаем?":
+            jump sasha_gde_rabotaem
         "Назвать ИИ-помощника по имени.":
             jump sasha_nazvat
 
@@ -1158,6 +1425,16 @@ label sasha_nevazhno:
     jump sasha_milaya_boltovnya
 
 label sasha_milaya_boltovnya:
+
+    sasha "Ладно, введу тебя в курс дела, раз потом сам не разберёшься."
+    sasha "Есть начальник — определённо не человек. Ему нужна твоя помощь: подозревает несостыковку в данных по одной из точек сети и хочет, чтобы ты в этом разобрался."
+    sasha "Связаться с ним можно через раздел «Задания» — там же будет и всё расследование. Не через меня, я тут просто чат, а не диспетчер."
+    sasha "Прежде чем туда соваться — вспомни для начала, что ты вообще знаешь про анализ данных. Мало ли, вдруг пригодится."
+
+    window hide
+    $ memory_query_cleared = []
+    call screen memory_query_puzzle with Dissolve(1.0)
+    window show
 
     sasha "Ну что, аналитик, готов к первому заданию?"
     player_chat "Нет, но выбора у меня нет."
@@ -1720,9 +1997,9 @@ label sasha_not_final:
 
     window hide
     play music "audio/Frozen Signal.mp3" fadein 2.0 volume 0.35 loop
-    show white with flash
+    show flash_soft with flash
     pause 0.15
-    hide white
+    hide flash_soft
     scene bg_campfire
     with dissolve
     pause 1.5
