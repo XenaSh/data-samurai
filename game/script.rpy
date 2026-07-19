@@ -43,15 +43,15 @@ default ending_intuition_threshold = 178
 
 
 define config.window_show_transition = Dissolve(0.2)
-define config.window_hide_transition = Dissolve(0.2)
+define gui.text_font = "fonts/Exo2-Regular.ttf"
+define gui.name_text_font = "fonts/Exo2-Bold.ttf"
+define gui.interface_text_font = "fonts/Exo2-Regular.ttf"
 
 # Приглушённая "вспышка" вместо резкого чисто-белого мигания — снижает риск
 # фотосенситивной реакции. Используем как замену резкому "show flash_soft with flash".
 image flash_soft = Solid("#4a5568")
 define flash = Fade(0.35, 0.0, 0.35)
 
-
-define flash = Fade(0.25, 0.0, 0.25)
 
 define boss = Character("Начальник",
     color="#ffaa00",
@@ -121,6 +121,7 @@ define player_chat = Character("Ты",
 image flash_monitor_glow = "images/flash_monitor_glow.png"
 image bg_terminal = "images/bg_terminal.png"
 image bg_desktop_grid = "images/bg_desktop_grid.png"
+image bg_desktop_grid_prologue = "images/grid_variant_b.png"
 image dock_panel = "images/dock_panel.png"
 image icon_chat = "images/icon_chat.png"
 image icon_tasks = "images/icon_tasks.png"
@@ -138,6 +139,7 @@ image bg_ending_truce = "images/bg_ending_truce.png"
 image bg_arena = "images/bg_arena.png"
 image bg_orion_sky = "images/orion_sky_bg.png"
 image katana_overlay = "images/katana_overlay.png"
+image falling_star = "images/falling_star.png"
 
 # Тёплый оверлей для сцен-воспоминаний
 image sepia_overlay = Solid("#3a260c55")
@@ -150,7 +152,7 @@ transform cursor_blink:
     repeat
 transform monitor_glow_in:
     matrixcolor BrightnessMatrix(1.0)
-    linear 1.2 matrixcolor BrightnessMatrix(0.0)
+    easeout 1.2 matrixcolor BrightnessMatrix(0.0)
 
 screen blinking_cursor():
     add Solid("#00ffcc") xsize 14 ysize 28 xalign 0.5 yalign 0.85 at cursor_blink
@@ -226,11 +228,17 @@ init python:
 
 transform samurai_reveal:
     zoom 0.4 alpha 0.0
-    linear 0.6 zoom 1.0 alpha 1.0
+    easeout 0.6 zoom 1.0 alpha 1.0
 
 transform fly_to_katana(tx, ty, ang):
     xpos 960 ypos 900 xanchor 0.5 yanchor 0.5 alpha 0.0 rotate 0
-    linear 0.7 xpos tx ypos ty alpha 1.0 rotate ang
+    easeout 0.7 xpos tx ypos ty alpha 1.0 rotate ang
+
+transform falling_star_move(start_x, start_y, end_x, end_y):
+    xpos start_x ypos start_y alpha 0.0
+    easein 0.15 alpha 1.0
+    ease 1.0 xpos end_x ypos end_y
+    easeout 0.4 alpha 0.0
 
 screen samurai_constellation():
     modal True
@@ -253,20 +261,40 @@ screen samurai_constellation():
                 xysize (130, 130)
                 background None
                 action Function(click_samurai_letter, i)
-                add Text(samurai_word[i], color="#6fb8e8", size=150, alpha=0.12) at Transform(rotate=s_angle)
-                add Text(samurai_word[i], color="#9ed4f5", size=130, alpha=0.22) at Transform(rotate=s_angle)
-                add Text(samurai_word[i], color="#cdeeff", size=112, alpha=0.4) at Transform(rotate=s_angle)
-                add Text(samurai_word[i], color="#f8fcff", size=96, bold=True) at Transform(rotate=s_angle)
+                add Text(samurai_word[i], color="#eaf6ff", size=100, bold=True) at Transform(rotate=s_angle, align=(0.5, 0.5))
+                add "images/star_bright.png":
+                    pos (12, 8)
+                    zoom 0.28
+                add "images/star_bright.png":
+                    pos (98, 92)
+                    zoom 0.2
 
     if samurai_done:
-        text "ДАТА":
-            xalign 0.5
-            ypos 260
-            color "#00e5ff"
-            size 100
-            bold True
-            italic True
-            at samurai_reveal
+        fixed:
+            text "Д":
+                xpos 820 ypos 250
+                color "#00e5ff"
+                size 100
+                font "fonts/Exo2-Bold.ttf"
+                at samurai_reveal
+            text "А":
+                xpos 900 ypos 225
+                color "#00e5ff"
+                size 100
+                font "fonts/Exo2-Bold.ttf"
+                at samurai_reveal
+            text "Т":
+                xpos 985 ypos 258
+                color "#00e5ff"
+                size 100
+                font "fonts/Exo2-Bold.ttf"
+                at samurai_reveal
+            text "А":
+                xpos 1065 ypos 232
+                color "#00e5ff"
+                size 100
+                font "fonts/Exo2-Bold.ttf"
+                at samurai_reveal
         textbutton "Вот кто я такой.":
             xalign 0.5
             yalign 0.92
@@ -331,6 +359,7 @@ screen memory_query_puzzle():
                         text memory_query_tokens[idx]:
                             color "#8b95a8"
                             size 22
+                            font "fonts/JetBrainsMono-Regular.ttf"
                             xalign 0.5
                             yalign 0.5
     else:
@@ -339,6 +368,7 @@ screen memory_query_puzzle():
             yalign 0.45
             color "#5df0c0"
             size 30
+            font "fonts/JetBrainsMono-Regular.ttf"
         textbutton "Вот что я искал.":
             xalign 0.5
             yalign 0.92
@@ -950,13 +980,6 @@ label data_cleaning_minigame:
 
 label start:
 
-    # Сознание моргает несколько раз, прежде чем стабилизироваться
-
-    show flash_soft with flash
-    pause 0.4
-    hide flash_soft
-    pause 0.6
-
     scene flash_monitor_glow
     with dissolve
 
@@ -972,7 +995,7 @@ label start:
             jump osmotretsya
 
 label osmotretsya:
-    scene bg_desktop_grid
+    scene bg_desktop_grid_prologue
     with dissolve
 
     "Всё чужое."
@@ -988,7 +1011,7 @@ label osmotretsya:
     boss "У тебя есть 10 минут, чтобы доказать, что ты не потерял остатки разума. Отвечай."
 
     "«Это ещё что такое? У меня был начальник? У меня есть начальник?»"
-    "«Меня что, опять дёрнули из отпуска?» — твой мозг пытается судорожно обработать происходящее."
+    "«Меня что, опять дёрнули из отпуска?» — твой мозг пытается обработать происходящее."
 
     player "Мне бы только сначала... мне бы вспомнить."
 
@@ -996,7 +1019,6 @@ label osmotretsya:
 
     "Кто ты? Мысль виляет хвостом, дразнит, но увиливает. А тебе бы только вспомнить, кто ты. Или хотя бы — какая у тебя роль. Кем тебе притворяться в этом конкретном месте."
 
-    "Кто ты?"
     "Кто ты?"
     "{size=+20}{b}КТО ТЫ{/b}{/size}"
 
@@ -1009,6 +1031,7 @@ label osmotretsya:
     call screen samurai_constellation with Dissolve(1.0)
 
     "Самурай..."
+    "Твоя катана — твой разум."
 
     scene bg_orion_sky
     with dissolve
@@ -1047,8 +1070,11 @@ label osmotretsya:
     with dissolve
 
     "«Так вот, значит, кто я», — думаешь ты. — «Не имя. Не лицо. Профессия, натянутая на позвоночник так туго, что стала осанкой»."
+    "Самурай... самурай верно служит своему даймё."
 
-    scene bg_desktop_grid
+    "Даже если даймё — некий абстрактный начальник, которого ты даже не помнишь."
+
+    scene bg_desktop_grid_prologue
     with dissolve
 
     boss "Ты вообще меня слушаешь? Я задал вопрос!"
@@ -1056,23 +1082,23 @@ label osmotretsya:
  # --------------------------------------------
     # Вопрос 1: выбор вещи
     boss "Если бы ты мог взять с собой только одну вещь в неизвестный мир — что бы это было?"
+
+    "«Да уж, будто я снова на рабочем интервью и прохожу соционические тесты у HR», — мелькает в голове."
+
     window hide
     menu:
         "Нож":
             "Ты выбираешь нож."
-
             # Затемнение и мерцание перед воспоминанием
             show flash_soft with flash
             pause 0.15
             hide flash_soft
             show sepia_overlay with dissolve
-
             "{color=#ffcc88}{i}В памяти всплывает картинка: ты сидишь у костра, в руках — нож, ты точишь палку. Рядом кто-то есть. Кто-то смеётся.{/i}{/color}"
-
             pause 0.8
             hide sepia_overlay with dissolve
-
             boss "Практично. Хотя бы инстинкт выживания не отшибло. Дальше."
+            "Ты совсем не собирался выживать в неизвестном мире. Зачем вообще в нём выживать, если можно его исследовать? Разбить палатку, развести костёр?.."
             jump vopros_dva
 
         "Фонарик":
@@ -1080,14 +1106,16 @@ label osmotretsya:
             "«Хоть логотип конторы разгляжу — вдруг вспомню, где я вообще работал»."
             "{color=#ffcc88}{i}Свет на секунду выхватывает из тьмы что-то — кажется, страницу книги. Потом гаснет.{/i}{/color}"
             boss "Ты это всерьёз? Ладно, проехали."
+            "Фонарик светит туда, куда его направишь, а не туда, где ответ."
+            "Какая любопытная мысль, ты бы хотел распробовать её дольше."
             jump vopros_dva
 
         "Дневник":
             "Ты выбираешь дневник."
             "{color=#ffcc88}{i}На обложке — чьи-то инициалы. Не твои. Или твои?{/i}{/color}"
             boss "Интересно. Ты хочешь оставить след. Или боишься забыть? Это… нестандартно. Продолжим."
+            "«Я уже оглянулся и не смог разглядеть следы», — думаешь ты."
             jump vopros_dva
-
     # --------------------------------------------
     # Вопрос 2
 # Экран с данными (исправлен — блочный синтаксис)
@@ -1105,16 +1133,16 @@ screen task_data():
             align (0.5, 0.5)
 
 label vopros_dva:
-
     boss "Три точки. Выручка: 100, 150, 50 тысяч."
+
+    "«Кто вообще такие эти точки? Это торговые точки? Я-то надеялся, я самурай где-то в сфере науки, а не ритейла...»"
+
     boss "Вопрос: что ты думаешь об этих цифрах? Какая точка самая эффективная?"
     "Ты уже готовишься дать ответ, но..."
-
     menu:
         "Не всё так просто":
             pass
-
-    "Мне нужно больше данных."
+    player "Мне нужно больше данных."
     window hide
     boss "Каких?"
     window hide
@@ -1148,7 +1176,6 @@ label nepravilnyy_otvet_2:
     boss "Предыдущая версия тебя запомнила это с первого раза. Идём дальше."
     jump vopros_tri
 
-# Правильный путь — расчёт выручки в день
 # Правильный путь — расчёт выручки в день
 label dannye_po_dnyam:
     boss "Точка А работала 30 дней. Точка Б — 30 дней. Точка В — 6 дней."
@@ -1190,13 +1217,15 @@ label dannye_po_dnyam:
     jump posle_mikro
 
 label posle_mikro:
-    # Здесь будет переход к третьему вопросу
+    "«Двигаемся дальше» — говорит он, а ты всё ещё сидишь с этим ощущением на кончиках пальцев: два числа, поделенные один на другое. Как будто это единственное, что реально произошло за последние пять минут."
+    "Может, в этом и есть весь фокус — не в том, чтобы вспомнить, кто ты, а в том, чтобы найти хоть что-то, что точно твоё. Пусть даже это просто деление. Оно-то у тебя получается."
     jump vopros_tri
 
 # Третий вопрос
 label vopros_tri:
     # Показываем монитор (он мог быть скрыт после второго вопроса)
-    scene bg_desktop_grid
+    scene bg_desktop_grid_prologue
+    with dissolve
 
     "Ты чувствуешь, что начальник следит за каждым твоим словом. Он задаёт следующий вопрос."
     boss "Александр — тихий, скромный и порядочный парень. Очень любит читать и имеет дома собрание сочинений Шекспира. Кем он, скорее всего, работает?"
@@ -1240,7 +1269,7 @@ label vospominanie_alexander:
     boss "Ты слушаешь меня вообще? Я задал вопрос!"
     # Возвращаемся к вопросу, но теперь без третьего варианта
     window hide
-    scene bg_desktop_grid
+    scene bg_desktop_grid_prologue
     with dissolve
     jump vopros_tri
 
@@ -1260,8 +1289,8 @@ label itogi_testa:
     boss "Хм... Твой профиль: точность - [accuracy], интуиция - [intuition]."
     boss "Ты будешь полезен, Аналитик."
     boss "Полезные варианты остаются в проекте. Бесполезные — архивируются."
+    "«К чему была эта оценка? Не помню, чтобы среди моих KPI был некий {i}профиль{/i}», — думаешь ты."
 
-    # Начальник исчезает (или замолкает)
     # Начальник исчезает (или замолкает)
     "Начальник замолкает. Ты остаёшься один перед светящимся монитором."
 
@@ -1271,7 +1300,7 @@ label itogi_testa:
     hide screen blinking_cursor
     window show
 
-    "Но тишина — не значит, что вопросы закончились. Просто спрашивать теперь некого, кроме себя самого."
+    "Но тишина не значит, что вопросы закончились. Просто спрашивать теперь некого, кроме себя самого."
 
     "«Аналитик… что это значит?»"
 
@@ -1294,6 +1323,7 @@ label dumaty_o_sebe:
 label dumaty_o_situacii:
     "Ты пытаешься понять, что происходит."
     "Рабочий стол компьютера вместо тела. Голос начальника, который знает о тебе больше, чем ты сам."
+    "Он сказал «полезные варианты остаются в проекте» — и слово прозвучало не метафорой. Как будто у него есть буквальный, неприятный смысл."
     "Это похоже на сон. Или на ловушку. Но почему ты здесь? И как отсюда выбраться?"
     jump sobratsya_i_zhdat
 
@@ -1306,17 +1336,31 @@ label dumaty_o_budushchem:
 
 label sobratsya_i_zhdat:
     "Тебе нужно на что-то смотреть, что не будет ничего от тебя требовать."
+
+    window hide
+    show expression "falling_star" as fstar1 at falling_star_move(180, 60, 480, 170)
+    pause 2.2
+    window show
+
     "Экран (или это твоё воображение?..) услужливо подсовывает звёзды."
+
+    window hide
+    show expression "falling_star" as fstar2 at falling_star_move(950, 90, 1250, 210)
+    pause 2.2
+    window show
+
     "Ты почему-то знаешь, что любишь вот так глядеть на звёзды. Искать ответы."
 
     window hide
+
+
     scene bg_orion_sky
     with dissolve
 
 
     $ orion_stars_clicked = []
     window hide
-    call screen orion_constellation
+    call screen orion_constellation with Dissolve(1.0)
 
     window show
     "Орион же тоже своего рода самурай? В том смысле, что он — воин?"
