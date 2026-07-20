@@ -53,6 +53,7 @@ image flash_soft = Solid("#4a5568")
 define flash = Fade(0.35, 0.0, 0.35)
 
 
+
 define boss = Character("Начальник",
     color="#ffaa00",
     what_color="#00ffcc",
@@ -213,32 +214,39 @@ screen orion_constellation():
 default samurai_letters_state = {}
 
 define samurai_word = ["С", "А", "М", "У", "Р", "А", "Й"]
-define samurai_start_angles = [90, 45, 135, 45, 90, 135, 45]
+define samurai_target_rot = [-9.5, -9.0, -1.7, 7.2, -8.3, -6.1, 2.8]
+define samurai_x_pos = [465, 613, 814, 940, 1113, 1286, 1490]
+define samurai_y_pos = [447, 562, 487, 442, 455, 544, 540]
+define samurai_start_offsets = [90, 45, 135, 45, 90, 135, 45]
 define samurai_rotation_step = 45
+define samurai_dot_files = {
+    "С": "images/dots_С.png",
+    "А": "images/dots_А.png",
+    "М": "images/dots_М.png",
+    "У": "images/dots_У.png",
+    "Р": "images/dots_Р.png",
+    "Й": "images/dots_Й.png",
+}
 
 init python:
     def click_samurai_letter(i):
         if i not in samurai_letters_state:
-            samurai_letters_state[i] = samurai_start_angles[i]
+            samurai_letters_state[i] = samurai_start_offsets[i]
         if samurai_letters_state[i] != 0:
-            samurai_letters_state[i] = (samurai_letters_state[i] - samurai_rotation_step) % 360
+            samurai_letters_state[i] = max(0, samurai_letters_state[i] - samurai_rotation_step)
             renpy.sound.play("audio/star_click.mp3")
-            if all(samurai_letters_state.get(j, samurai_start_angles[j]) == 0 for j in range(len(samurai_word))):
+            if all(samurai_letters_state.get(j, samurai_start_offsets[j]) == 0 for j in range(len(samurai_word))):
                 renpy.sound.play("audio/constellation_complete.mp3")
-
-transform samurai_reveal:
-    zoom 0.4 alpha 0.0
-    easeout 0.6 zoom 1.0 alpha 1.0
 
 transform fly_to_katana(tx, ty, ang):
     xpos 960 ypos 900 xanchor 0.5 yanchor 0.5 alpha 0.0 rotate 0
-    easeout 0.7 xpos tx ypos ty alpha 1.0 rotate ang
+    linear 0.7 xpos tx ypos ty alpha 1.0 rotate ang
 
 transform falling_star_move(start_x, start_y, end_x, end_y):
     xpos start_x ypos start_y alpha 0.0
-    easein 0.15 alpha 1.0
-    ease 1.0 xpos end_x ypos end_y
-    easeout 0.4 alpha 0.0
+    linear 0.15 alpha 1.0
+    linear 1.0 xpos end_x ypos end_y
+    linear 0.4 alpha 0.0
 
 screen samurai_constellation():
     modal True
@@ -247,54 +255,24 @@ screen samurai_constellation():
     add "images/orion_sky_bg.png"
 
     python:
-        samurai_done = all(samurai_letters_state.get(i, samurai_start_angles[i]) == 0 for i in range(len(samurai_word)))
-        samurai_slot_w = 170
-        samurai_start_x = 960 - (len(samurai_word) - 1) * samurai_slot_w // 2
+        samurai_done = all(samurai_letters_state.get(i, samurai_start_offsets[i]) == 0 for i in range(len(samurai_word)))
 
     fixed:
         for i in range(len(samurai_word)):
-            $ s_angle = samurai_letters_state.get(i, samurai_start_angles[i])
-            $ s_x = samurai_start_x + i * samurai_slot_w
-            $ s_y = 500 + (26 if i % 2 == 0 else -18)
+            $ s_remaining = samurai_letters_state.get(i, samurai_start_offsets[i])
+            $ s_angle = samurai_target_rot[i] + s_remaining
+            $ s_solved = (s_remaining == 0)
+            $ s_x = samurai_x_pos[i]
+            $ s_y = samurai_y_pos[i]
             button:
-                pos (s_x - 65, s_y - 65)
-                xysize (130, 130)
+                pos (s_x - 80, s_y - 100)
+                xysize (160, 200)
                 background None
                 action Function(click_samurai_letter, i)
-                add Text(samurai_word[i], color="#eaf6ff", size=100, bold=True) at Transform(rotate=s_angle, align=(0.5, 0.5))
-                add "images/star_bright.png":
-                    pos (12, 8)
-                    zoom 0.28
-                add "images/star_bright.png":
-                    pos (98, 92)
-                    zoom 0.2
+                add samurai_dot_files[samurai_word[i]] at Transform(rotate=s_angle, align=(0.5, 0.5), matrixcolor=BrightnessMatrix(0.35 if s_solved else 0.0))
 
     if samurai_done:
-        fixed:
-            text "Д":
-                xpos 820 ypos 250
-                color "#00e5ff"
-                size 100
-                font "fonts/Exo2-Bold.ttf"
-                at samurai_reveal
-            text "А":
-                xpos 900 ypos 225
-                color "#00e5ff"
-                size 100
-                font "fonts/Exo2-Bold.ttf"
-                at samurai_reveal
-            text "Т":
-                xpos 985 ypos 258
-                color "#00e5ff"
-                size 100
-                font "fonts/Exo2-Bold.ttf"
-                at samurai_reveal
-            text "А":
-                xpos 1065 ypos 232
-                color "#00e5ff"
-                size 100
-                font "fonts/Exo2-Bold.ttf"
-                at samurai_reveal
+        add "images/samurai_constellation_overlay_v4.png"
         textbutton "Вот кто я такой.":
             xalign 0.5
             yalign 0.92
@@ -1027,14 +1005,14 @@ label osmotretsya:
             pass
 
     window hide
+    scene bg_orion_sky
+    with dissolve
     $ samurai_letters_state = {}
     call screen samurai_constellation with Dissolve(1.0)
 
     "Самурай..."
     "Твоя катана — твой разум."
 
-    scene bg_orion_sky
-    with dissolve
     window show
 
     "{color=#00e5ff}{i}Дата бусидо — твой кодекс чести.{/i}{/color}"
@@ -1054,6 +1032,8 @@ label osmotretsya:
 
     "Стандартное отклонение — не приговор твой. Зеркало твоё."
     show expression Text("Отклонение — зеркало твоё.", color="#dfefff", size=20) as katana6 at fly_to_katana(1300, 130, -12)
+
+    pause 0.9
 
     show katana_overlay
     with dissolve
