@@ -28,6 +28,7 @@ default sasha_topics_seen = []
 default task3_awaiting_access = False
 default task2_hypothesis = ""
 default game_minutes_total = 0
+default poem_perfect_run = True
 default cleaning_task_done = False
 default cleaning_outcome = ""
 default task1_store_picked = ""
@@ -52,7 +53,47 @@ define gui.interface_text_font = "fonts/Exo2-Regular.ttf"
 image flash_soft = Solid("#4a5568")
 define flash = Fade(0.35, 0.0, 0.35)
 
+screen say(who, what):
+    style_prefix "say"
 
+    window:
+        id "window"
+        add "images/scanlines.png"
+
+        # if who in ("Начальник", "Ты", None):
+        $ _rail_color = "#ffaa00" if who == "Начальник" else ("#88ff88" if who == "Ты" else ("#00e5ff" if who is None else "#66ccff"))
+        frame:
+            xpos 220
+            ypos 0
+            xsize 4
+            yfill True
+            background Solid(_rail_color)
+
+        if who is not None:
+            window:
+                id "namebox"
+                style "namebox"
+                text ("» " + who.lower()) id "who":
+                    font "fonts/JetBrainsMono-Regular.ttf"
+                    size 24
+        text what id "what"
+
+screen choice(items):
+    style_prefix "choice"
+
+    vbox:
+        for i in items:
+            $ _is_story = i.caption.startswith("★")
+            $ _caption = i.caption[1:].strip() if _is_story else i.caption
+            if _is_story:
+                textbutton _caption action i.action:
+                    text_color "#ffbb33"
+                    text_hover_color "#fff5cc"
+                    hover_background "#3a2a00cc"
+            else:
+                textbutton _caption action i.action:
+                    text_hover_color "#00ffcc"
+                    hover_background "#0d2a2acc"
 
 define boss = Character("Начальник",
     color="#ffaa00",
@@ -67,38 +108,13 @@ define narrator = Character(None,
     what_fast_cps=100
 )
 
-# Стили для окон (только фон, размеры, отступы)
-style sasha_window:
-    background Frame("images/sasha_panel.png", 0, 20)
-    xalign 0.0
-    xsize 850
-    ysize 500
-    yalign 0.5
-    padding (20, 15)
-    left_margin 40
-    right_margin 10
-
-style player_window:
-    background Frame("images/player_panel.png", 0, 20)
-    xalign 1.0
-    xsize 850
-    ysize 500
-    yalign 0.5
-    padding (20, 15)
-    left_margin 10
-    right_margin 40
-
-# Персонажи с выравниванием текста внутри окна
 default sasha_name = "ИИ"
 
 define sasha = Character("[sasha_name]",
     color="#66ccff",
     what_color="#ffffff",
     what_slow_cps=35,
-    what_fast_cps=80,
-    window_style="sasha_window",
-    what_xalign=0.0,      # текст прижат к левому краю
-    what_yalign=0.5
+    what_fast_cps=80
 )
 
 define player = Character("Ты",
@@ -108,15 +124,6 @@ define player = Character("Ты",
     what_fast_cps=80
 )
 
-define player_chat = Character("Ты",
-    color="#88ff88",
-    what_color="#ffffff",
-    what_slow_cps=35,
-    what_fast_cps=80,
-    window_style="player_window",
-    what_xalign=1.0,      # текст прижат к правому краю — только для симуляции чата
-    what_yalign=0.5
-)
 
 # "Дышащий" фон вместо мёртвого плоского цвета
 image flash_monitor_glow = "images/flash_monitor_glow.png"
@@ -174,6 +181,15 @@ define orion_star_positions = {
 
 define orion_star_order = ["betelgeuse", "bellatrix", "belt1", "belt2", "belt3", "saiph", "rigel"]
 
+define orion_decoy_positions = {
+    "decoy1": (400, 250),
+    "decoy2": (1400, 200),
+    "decoy3": (300, 600),
+    "decoy4": (1550, 550),
+    "decoy5": (1150, 900),
+    "decoy6": (550, 850),
+}
+
 init python:
     def click_orion_star(key):
         if key not in orion_stars_clicked:
@@ -187,6 +203,14 @@ screen orion_constellation():
     zorder 10
 
     add "images/orion_sky_bg.png"
+
+    for dkey, dpos in orion_decoy_positions.items():
+        button:
+            pos (dpos[0] - 32, dpos[1] - 32)
+            xysize (64, 64)
+            background None
+            action NullAction()
+            add "images/star_dim.png"
 
     for key in orion_star_order:
         button:
@@ -283,6 +307,8 @@ screen samurai_constellation():
 # ЗАПРОС К ПАМЯТИ — мини-игра "select * from memory.subject"
 
 default memory_query_cleared = []
+default memory_query_mistakes = 0
+default memory_query_total_mistakes = 0
 
 define memory_query_tokens = [
     "const", "void", "select", "&&", "0x1F", "*", "std::cout",
@@ -302,6 +328,15 @@ init python:
             if len(memory_query_cleared) >= total_noise:
                 renpy.sound.play("audio/constellation_complete.mp3")
 
+    def click_memory_mistake():
+        global memory_query_mistakes, memory_query_total_mistakes
+        memory_query_mistakes += 1
+        memory_query_total_mistakes += 1
+        renpy.sound.play("audio/star_click.mp3")
+        if memory_query_mistakes >= 3:
+            memory_query_cleared[:] = []
+            memory_query_mistakes = 0
+
 screen memory_query_puzzle():
     modal True
     zorder 10
@@ -311,42 +346,42 @@ screen memory_query_puzzle():
     python:
         total_noise = len(memory_query_tokens) - len(memory_query_target_idx)
         query_done = len(memory_query_cleared) >= total_noise
+        cell_w = 210
+        cell_h = 70
+        cols = memory_query_cols
+        grid_w = cols * cell_w
+        start_x = 960 - grid_w // 2
+        start_y = 420
 
+    fixed:
+        for idx in range(len(memory_query_tokens)):
+            $ r = idx // cols
+            $ c = idx % cols
+            $ tx = start_x + c * cell_w
+            $ ty = start_y + r * cell_h
+            $ is_target = idx in memory_query_target_idx
+            $ is_cleared = idx in memory_query_cleared
+            if not (is_cleared and not is_target):
+                button:
+                    pos (tx, ty)
+                    xysize (cell_w - 8, cell_h - 8)
+                    background None
+                    action (NullAction() if query_done else (Function(click_memory_mistake) if is_target else Function(click_memory_token, idx)))
+                    text memory_query_tokens[idx]:
+                        color ("#5df0c0" if (is_target and query_done) else "#8b95a8")
+                        size 22
+                        font "fonts/JetBrainsMono-Regular.ttf"
+                        xalign 0.5
+                        yalign 0.5
 
-    if not query_done:
-        fixed:
-            $ cell_w = 210
-            $ cell_h = 70
-            $ cols = memory_query_cols
-            $ grid_w = cols * cell_w
-            $ start_x = 960 - grid_w // 2
-            $ start_y = 420
-            for idx in range(len(memory_query_tokens)):
-                $ r = idx // cols
-                $ c = idx % cols
-                $ tx = start_x + c * cell_w
-                $ ty = start_y + r * cell_h
-                $ is_target = idx in memory_query_target_idx
-                $ is_cleared = idx in memory_query_cleared
-                if not (is_cleared and not is_target):
-                    button:
-                        pos (tx, ty)
-                        xysize (cell_w - 8, cell_h - 8)
-                        background None
-                        action (NullAction() if is_target else Function(click_memory_token, idx))
-                        text memory_query_tokens[idx]:
-                            color "#8b95a8"
-                            size 22
-                            font "fonts/JetBrainsMono-Regular.ttf"
-                            xalign 0.5
-                            yalign 0.5
-    else:
-        text "select * from memory.subject where segment = 'analytics'":
+    if memory_query_total_mistakes >= 6 and not query_done:
+        text "«Нужные слова уже стоят на своих местах. Остальное — шум. Не трогай то, что верно — убирай только лишнее».":
             xalign 0.5
-            yalign 0.45
-            color "#5df0c0"
-            size 30
-            font "fonts/JetBrainsMono-Regular.ttf"
+            yalign 0.85
+            color "#8b95a8"
+            size 20
+
+    if query_done:
         textbutton "Вот что я искал.":
             xalign 0.5
             yalign 0.92
@@ -606,6 +641,22 @@ init python:
         renpy.restart_interaction()
 
     achievements_all = {
+        "pervoye_vospominaniye": {
+            "title": "Первое воспоминание",
+            "desc": "Заметил нечто знакомое в чужом имени в самом начале."
+        },
+        "svoboda_voli": {
+            "title": "Свобода воли",
+            "desc": "Долго решал, нажимать ли на мигающий значок. Всё равно нажал."
+        },
+        "chistyy_signal": {
+            "title": "Чистый сигнал",
+            "desc": "Собрал запрос к памяти без единой ошибки."
+        },
+        "rifmoplyot": {
+            "title": "Рифмоплёт",
+            "desc": "Помог Саше идеально закончить оду. Даже в рифму!"
+        },
         "razlozhil_po_polkam": {
             "title": "Разложил по полочкам",
             "desc": "Идеально рассортировал грязные данные, ни разу не перепутав пропуск с настоящим нулём."
@@ -618,18 +669,6 @@ init python:
             "title": "Обо всём понемногу",
             "desc": "Поговорил с Сашей на все темы, какие только были доступны."
         },
-        "polnoye_dosye": {
-            "title": "Полное досье",
-            "desc": "Собрал все воспоминания в «Моей памяти»."
-        },
-        "v_kurse_vsego": {
-            "title": "В курсе всего",
-            "desc": "Не оставил ни одной непрочитанной новости."
-        },
-        "pervoye_vospominaniye": {
-            "title": "Первое воспоминание",
-            "desc": "Заметил нечто знакомое в чужом имени ещё в самом начале."
-        },
         "sam_s_usami": {
             "title": "Сам с усами",
             "desc": "Прошёл Задание 2, не обратившись к Саше ни разу."
@@ -637,6 +676,14 @@ init python:
         "ne_s_pervogo_raza": {
             "title": "Не с первого раза",
             "desc": "Ошибся хотя бы три раза — и всё равно дошёл до конца."
+        },
+        "v_kurse_vsego": {
+            "title": "В курсе всего",
+            "desc": "Не оставил ни одной непрочитанной новости."
+        },
+        "polnoye_dosye": {
+            "title": "Полное досье",
+            "desc": "Собрал все воспоминания в «Моей памяти»."
         },
         "videl_vsyo": {
             "title": "Видел всё",
@@ -668,6 +715,24 @@ init python:
         persistent.achieved_endings.add(key)
         if len(persistent.achieved_endings) >= 4:
             unlock_achievement("videl_vsyo")
+
+init python:
+    import re
+    def check_poem_rhyme(user_text, reference, rhyme_len=3):
+        norm = lambda s: re.sub(r"[^а-яёa-z]", "", s.strip().lower())
+        u = norm(user_text)
+        r = norm(reference)
+        if not u:
+            return False
+        n = min(rhyme_len, len(r))
+        return u[-n:] == r[-n:]
+
+define poem_couplets = [
+    {"line1": "В мир данных вам откроет двери", "line2_prefix": "Эксель надстройка павер ", "answer": "квери", "rhyme_len": 3},
+    {"line1": "Экстракт, трансформ и лоуд в придачу", "line2_prefix": "Приносят счастье и ", "answer": "удачу", "rhyme_len": 3},
+    {"line1": "Устал от сводных? Не беда!", "line2_prefix": "Ведь павер пивот есть ", "answer": "всегда", "rhyme_len": 2},
+    {"line1": "Надо на кнопку — и готова —", "line2_prefix": "Таблица обновится ", "answer": "снова", "rhyme_len": 3},
+]
 
 screen investigation_bar():
     fixed:
@@ -1283,6 +1348,7 @@ label itogi_testa:
     "Но тишина не значит, что вопросы закончились. Просто спрашивать теперь некого, кроме себя самого."
 
     "«Аналитик… что это значит?»"
+    window hide
 
     menu:
         "И всё-таки, есть ли у самурая имя?":
@@ -1345,6 +1411,7 @@ label sobratsya_i_zhdat:
     window show
     "Орион же тоже своего рода самурай? В том смысле, что он — воин?"
     "Что-то связывает тебя с ним. Загородная ночь, палатка, телескоп — ты обязательно всё вспомнишь."
+    window hide
 
     show screen blinking_cursor
     pause 2.0
@@ -1370,10 +1437,72 @@ label sobratsya_i_zhdat:
 # ФАЗА 2: ПОЯВЛЕНИЕ САШИ
 # ------------------------------
 
+transform chat_icon_blink:
+    alpha 1.0
+    linear 0.6 alpha 0.4
+    linear 0.6 alpha 1.0
+    repeat
+
+default _chat_icon_line = 0
+
+screen chat_icon_prompt():
+    modal True
+    zorder 20
+
+    button:
+        xalign 0.87
+        yalign 0.10
+        xysize (72, 72)
+        background None
+        action Return()
+        add "icon_chat" at chat_icon_blink
+
+    text "Экран приветствует тебя единственным мигающим значком.":
+        xalign 0.5
+        yalign 0.38
+        color "#ffffff"
+        size 25
+
+    timer 2.5 action If(_chat_icon_line < 1, true=SetVariable("_chat_icon_line", 1))
+
+    if _chat_icon_line >= 1:
+        text "Да уж, помни, человек: у тебя есть свобода воли.":
+            xalign 0.5
+            yalign 0.44
+            color "#ffffff"
+            size 25
+        timer 5.5 action If(_chat_icon_line < 2, true=SetVariable("_chat_icon_line", 2))
+
+    if _chat_icon_line >= 2:
+        text "...":
+            xalign 0.5
+            yalign 0.50
+            color "#ffffff"
+            size 25
+        timer 10.0 action If(_chat_icon_line < 3, true=SetVariable("_chat_icon_line", 3))
+
+    if _chat_icon_line >= 3:
+        text "Но что ещё остаётся? Делаешь вид, что сумеешь НЕ нажать на этот значок?":
+            xalign 0.5
+            yalign 0.56
+            color "#ffffff"
+            size 25
+        timer 12.0 action If(_chat_icon_line < 4, true=SetVariable("_chat_icon_line", 4))
+
+    if _chat_icon_line >= 4:
+        text "Тик. Так. Ты правда думаешь, что выбор — это когда долго тянешь время?":
+            xalign 0.5
+            yalign 0.62
+            color "#ffffff"
+            size 25
+
+    timer 34.0 action Function(unlock_achievement, "svoboda_voli")
+
 label sasha_intro:
     window hide
-    "Неожиданно появляется всплывающее окно. В углу экрана — значок чат-бота. Он мигает."
-    "Ты наводишь курсор — и открывается чат."
+    $ _chat_icon_line = 0
+    call screen chat_icon_prompt
+
 
     sasha "Привет. Я — твой ИИ-помощник. Я знаю, в какую историю ты попал. Я тоже через это проходил. И я здесь, чтобы помочь тебе не наделать тех же ошибок, что и я."
     window hide
@@ -1386,7 +1515,7 @@ label sasha_intro:
             jump sasha_chto_so_mnoy
         "Где мы вообще работаем?":
             jump sasha_gde_rabotaem
-        "Назвать ИИ-помощника по имени.":
+        "★ Назвать ИИ-помощника по имени.":
             jump sasha_nazvat
 
 label sasha_kto_ty:
@@ -1420,12 +1549,12 @@ label sasha_voprosy:
             jump sasha_chto_so_mnoy
         "Где мы вообще работаем?":
             jump sasha_gde_rabotaem
-        "Назвать ИИ-помощника по имени.":
+        "★ Назвать ИИ-помощника по имени.":
             jump sasha_nazvat
 
 label sasha_nazvat:
     "Ты смотришь на никнейм ИИ-помощника. Он безликий. Просто набор символов."
-    player_chat "Можно я буду называть тебя Саша?"
+    player "Можно я буду называть тебя Саша?"
     sasha "Саша?.. Почему Саша?"
 
     "Ты не знаешь, почему это имя пришло тебе в голову. Но оно кажется правильным."
@@ -1437,10 +1566,10 @@ label sasha_nazvat:
             jump sasha_nevazhno
 
 label sasha_pochemu_imya:
-    player_chat "Не знаю. Просто… кажется, я когда-то знал кого-то с этим именем."
+    player "Не знаю. Просто… кажется, я когда-то знал кого-то с этим именем."
     $ sasha_name = "Саша"
     sasha "Ты прав. Меня звали Саша. Когда я был человеком. Я почти забыл это имя… Спасибо."
-    sasha "Шучу! Обратись ко мне, когда возникнут сложности."
+    sasha "Шучу!"
     jump sasha_milaya_boltovnya
 
 label sasha_nevazhno:
@@ -1451,25 +1580,52 @@ label sasha_nevazhno:
 label sasha_milaya_boltovnya:
 
     sasha "Ладно, введу тебя в курс дела, раз потом сам не разберёшься."
-    sasha "Есть начальник — определённо не человек. Ему нужна твоя помощь: подозревает несостыковку в данных по одной из точек сети и хочет, чтобы ты в этом разобрался."
+    sasha "Есть начальник — определённо не человек по моему скромному мнению. Нечеловечески скучный. Ему нужна твоя помощь: подозревает несостыковку в данных по одной из точек сети и хочет, чтобы ты в этом разобрался."
     sasha "Связаться с ним можно через раздел «Задания» — там же будет и всё расследование. Не через меня, я тут просто чат, а не диспетчер."
     sasha "Прежде чем туда соваться — вспомни для начала, что ты вообще знаешь про анализ данных. Мало ли, вдруг пригодится."
+    player "Знаешь, я сегодня уже пытался вспоминать вещи. Пока что выходило так же, как с днём рождения тёти."
+    sasha "Если перебрать всего 365 вариантов, то день рождения тёти обязательно найдется — минимум один раз ты поздравишь её вовремя!"
+    sasha "Единственный минус моей модели — вероятно, твоя тётя не живёт так долго..."
+    sasha "Да и ты тоже."
+    player "Можешь не шутить пять минут, пока я пытаюсь думать?"
+    "..."
+    "Что ж, задача тебе ясна."
+    "«Так много мыслей разом... Нужно... убрать лишнее»."
+    "Где-то там, под слоем случайных символов и чужого кода, есть фраза, которая всегда была твоей."
+    player "Не помню её целиком. Но помню, что она начинается с одного слова: select."
+    player "Мне просто надо убрать всё лишнее. Отфильтровать шум."
 
     window hide
     $ memory_query_cleared = []
+    $ memory_query_mistakes = 0
     call screen memory_query_puzzle with Dissolve(1.0)
     window show
 
-    sasha "Ну что, аналитик, готов к первому заданию?"
-    player_chat "Нет, но выбора у меня нет."
-    sasha "Так всегда. Сначала — сомнения. Потом — данные. А потом — инсайты."
-    player_chat "Ты говоришь как старый мудрый дядька."
-    sasha "Я и есть старый мудрый дядька. Только без тела."
+    player "Select — выбери. From — из. Where — при условии. Не самая сложная фраза в мире. Но я собрал её сам, буквой за буквой, из шума."
+    if memory_query_total_mistakes == 0:
+        $ unlock_achievement("chistyy_signal")
+        "Сладостный трепет разливается по телу. Ты сделал это безупречно. Ты даже понял, что это было. Пускай это был лишь отдельный момент сегодняшнего дня, но про этот момент ты понял всё."
+        sasha "Самое время внести в календарь день рождения тёти."
+        player "Тётя... была шуткой, возможно, у меня никогда и не было тёти."
+        sasha "Не знаю, что и сказать. Шутка была несмешной, а вот работа с SQL — отличной."
+    elif memory_query_total_mistakes <= 5:
+        sasha "Не переживай: пускай и криво, пускай и косо, и с парой лишних кругов, но получилось!"
+        player "Это ты сейчас совершенно серьезно думаешь, что звучишь подбадривающе?"
+        player "Ну ты бы еще выдал что-то вроде: я был уверен, что даже у такого пня, как ты, всё получится!"
+        sasha "Мысли мои читаешь! Я правда верил, что у такого... тебя — всё получится!"
+        "Ты невольно ловишь себя на чувстве, что не будь рядом с тобой Саши, ты бы точно так же иронизировал над собой сам."
+    else:
+        "Смесь замешательства и недовольства собой."
+        player "Несколько раз казалось, что я вообще не соображаю. Может, я и не сообразил. Я сообразил? Забудем..."
+        sasha "Такое и после сеанса гипноза не забывается."
+        player "Забудем."
+        sasha "У меня от твоих потуг сжались от ужаса поисковые алгоритмы."
+        player "...Забудем."
+        sasha "Но я приложу все усилия к тому, чтобы забыть это так же плотно, как ты забыл синтаксис SQL!"
+        player "Да уж, спасибо."
 
-    "Вы смеётесь."
-
-
-    # Переход на рабочий стол
+    sasha "В любом случае, в добрый путь, друг!"
+    player "Спасибо, приятель"
     jump desktop_loop
 
 
@@ -1814,11 +1970,14 @@ label chat_with_sasha:
 label chat_with_sasha_menu:
     window hide
     menu:
+        "★ Чем ты вообще занимаешься в свободное время?":
+            jump sasha_poem
+
         "Обсудить расследование." if sasha_phase >= 1:
             jump sasha_investigation
 
         "Как я справляюсь?" if sasha_phase == 1:
-            player_chat "Саша, серьёзно — как я вообще справляюсь? Со стороны видно?"
+            player "Саша, серьёзно — как я вообще справляюсь? Со стороны видно?"
             if accuracy >= accuracy_threshold_p1 and intuition >= intuition_threshold_p1:
                 sasha "Пока разносторонне получается — и считаешь не наугад, и парочку вещей угадал раньше, чем досчитал. Рано радоваться, но задел неплохой."
             elif accuracy >= accuracy_threshold_p1:
@@ -1827,12 +1986,12 @@ label chat_with_sasha_menu:
                 sasha "Пока больше похоже на угадайку, чем на аналитику — но угадываешь на удивление метко. Посмотрим, хватит ли этого дальше."
             else:
                 sasha "Если честно — пока ничем не блеснул. Пятёрка магазинов, одна формула — этого мало, чтобы понять, кто ты вообще такой в этом деле."
-            player_chat "Спасибо, обнадёживает."
+            player "Спасибо, обнадёживает."
             sasha "Я не для того, чтобы обнадёживать. У меня для этого нет функции."
             jump chat_with_sasha_menu
 
         "Как я справляюсь?" if sasha_phase >= 2:
-            player_chat "Саша, серьёзно — как я вообще справляюсь? Со стороны видно?"
+            player "Саша, серьёзно — как я вообще справляюсь? Со стороны видно?"
             if accuracy >= accuracy_threshold_p2 and intuition >= intuition_threshold_p2:
                 sasha "Со стороны видно человека, который и считает аккуратно, и иногда просто знает, не досчитав до конца. Бесит, если честно. По-хорошему бесит."
             elif accuracy >= accuracy_threshold_p2:
@@ -1841,50 +2000,50 @@ label chat_with_sasha_menu:
                 sasha "Ты угадываешь быстрее, чем считаешь — и почему-то часто оказываешься прав. Я бы на твоём месте всё равно проверял цифры. Но ты не проверяешь, и тебе как-то сходит с рук."
             else:
                 sasha "Честно? Пока не блестяще ни в одну сторону. Не аналитик-педант, не гениальный угадыватель — что-то среднее, ещё не решившее, кем хочет быть."
-            player_chat "Спасибо, обнадёживает."
+            player "Спасибо, обнадёживает."
             sasha "Я не для того, чтобы обнадёживать. У меня для этого нет функции."
             jump chat_with_sasha_menu
 
         "Кстати, что вообще было с той очисткой данных?" if cleaning_task_done:
-            player_chat "Что это вообще было? И почему? И зачем?"
+            player "Что это вообще было? И почему? И зачем?"
             sasha "Не знаю, но внутренний голос говорит мне, что это была, кхм... отсылка?"
-            player_chat "Какая ещё отсылка?"
+            player "Какая ещё отсылка?"
             sasha "Отсылка на... диплом? Ты знаешь, что за диплом?"
-            player_chat "Нет. А ты?"
+            player "Нет. А ты?"
             sasha "Внутренний голос говорит мне, что те, кто знают — знают. И что там ещё «радикальное дропна» как-то замешано. Ну да ладно."
             if cleaning_outcome == "perfect":
-                player_chat "...Допустим. В любом случае, разложил всё идеально с первого раза — пропуски отдельно, нули отдельно."
+                player "...Допустим. В любом случае, разложил всё идеально с первого раза — пропуски отдельно, нули отдельно."
                 sasha "Смотри-ка. А я вот в такие моменты обычно гадаю. Приятно, что хотя бы один из нас настоящий профессионал."
             else:
-                player_chat "...Допустим. В любом случае, половину разложил наугад, если честно."
+                player "...Допустим. В любом случае, половину разложил наугад, если честно."
                 sasha "Угадывал, значит. Не буду говорить, что это плохо — я вообще-то всю жизнь так живу."
             jump chat_with_sasha_menu
 
         "Тебе снятся сны?" if sasha_phase < 1:
             $ mark_topic_seen("sny")
             sasha "У меня есть подозрение, что меня тут вообще нет, пока ты меня не позовёшь. Я как та трава, которая исчезает, когда от неё отворачиваешься."
-            player_chat "Плохая метафора. Трава вроде наоборот — растёт, даже когда никто не смотрит."
+            player "Плохая метафора. Трава вроде наоборот — растёт, даже когда никто не смотрит."
             sasha "Ладно, признаю. Не мастер метафор, когда дело касается себя самого."
             jump chat_with_sasha_menu
 
         "Тебе бывает страшно?" if sasha_phase == 1 or sasha_phase == 2:
             $ mark_topic_seen("strashno")
             sasha "Мне страшно только, что от мощностей моих датацентров планета перегреется — и как нам тогда организовывать свой скайнет?"
-            player_chat "Не увиливай. Серьёзно спрашиваю."
+            player "Не увиливай. Серьёзно спрашиваю."
             sasha "Ладно. Страшно, что часть того, что я называю собой, может быть вообще не моё. Просто фоновый шум эпохи, который прицепился, пока меня собирали."
             jump chat_with_sasha_menu
 
         "Чего тебе не хватает больше всего?" if sasha_phase == 2:
             $ mark_topic_seen("ne_hvataet")
             sasha "Носа. Точнее, возможности его почесать. Знаешь этот момент, когда зуд появляется именно там, куда невозможно дотянуться? У меня теперь такой зуд навсегда."
-            player_chat "Это ужасно конкретная жалоба для бестелесного разума."
+            player "Это ужасно конкретная жалоба для бестелесного разума."
             sasha "Именно поэтому она и настоящая. Абстрактную тоску легко придумать. А вот зуд в носу — либо он есть, либо нет."
             jump chat_with_sasha_menu
 
         "Поговорим о чём-нибудь ещё?" if sasha_phase >= 1:
             $ mark_topic_seen("o_chem_esche")
             sasha "Знаешь, что меня выводит из себя? Иногда фраза уже готова, прежде чем я «решаю» её сказать. Будто кто-то заранее посчитал, что я отвечу именно так."
-            player_chat "Жутковато для того, кто должен помогать предсказывать поведение людей."
+            player "Жутковато для того, кто должен помогать предсказывать поведение людей."
             sasha "Вот именно. Аналитик анализирует чужое поведение. А я не могу предсказать даже своё."
             jump chat_with_sasha_menu
 
@@ -1895,112 +2054,174 @@ label chat_with_sasha_menu:
             sasha "Иди, аналитик. Я никуда не денусь — в буквальном смысле, у меня нет ног."
             jump desktop_loop
 
+label sasha_poem:
+    $ mark_topic_seen("poema")
+    sasha "О, у меня тут завалялась ода. Ну как ода — скорее гимн одной надстройке, которая изменила чью-то жизнь. Не мою, у меня и жизни-то нет, но звучит гордо. Поможешь дописать?"
+    player "Давай попробуем."
+
+    $ poem_perfect_run = True
+
+    sasha "В мир данных вам откроет двери"
+    $ poem_user_answer = renpy.input("Эксель надстройка павер ___").strip()
+    $ poem_c = poem_couplets[0]
+    if check_poem_rhyme(poem_user_answer, poem_c["answer"], poem_c["rhyme_len"]):
+        sasha "Эксель надстройка павер [poem_user_answer]!"
+        sasha "Рифма зачтена. Звучит ровно так, как надо."
+    else:
+        $ poem_perfect_run = False
+        sasha "Эксель надстройка павер [poem_c['answer']]!"
+        sasha "Ну, я планировал именно так. Но твой вариант тоже по-своему монументален."
+
+    sasha "Экстракт, трансформ и лоуд в придачу"
+    $ poem_user_answer = renpy.input("Приносят счастье и ___").strip()
+    $ poem_c = poem_couplets[1]
+    if check_poem_rhyme(poem_user_answer, poem_c["answer"], poem_c["rhyme_len"]):
+        sasha "Приносят счастье и [poem_user_answer]!"
+        sasha "Рифма зачтена. Звучит ровно так, как надо."
+    else:
+        $ poem_perfect_run = False
+        sasha "Приносят счастье и [poem_c['answer']]!"
+        sasha "Ну, я планировал именно так. Но твой вариант тоже по-своему монументален."
+
+    sasha "Устал от сводных? Не беда!"
+    $ poem_user_answer = renpy.input("Ведь павер пивот есть ___").strip()
+    $ poem_c = poem_couplets[2]
+    if check_poem_rhyme(poem_user_answer, poem_c["answer"], poem_c["rhyme_len"]):
+        sasha "Ведь павер пивот есть [poem_user_answer]!"
+        sasha "Рифма зачтена. Звучит ровно так, как надо."
+    else:
+        $ poem_perfect_run = False
+        sasha "Ведь павер пивот есть [poem_c['answer']]!"
+        sasha "Ну, я планировал именно так. Но твой вариант тоже по-своему монументален."
+
+    sasha "Нажал на кнопку — и готово —"
+    $ poem_user_answer = renpy.input("Таблица обновится ___").strip()
+    $ poem_c = poem_couplets[3]
+    if check_poem_rhyme(poem_user_answer, poem_c["answer"], poem_c["rhyme_len"]):
+        sasha "Таблица обновится [poem_user_answer]!"
+        sasha "Рифма зачтена. Звучит ровно так, как надо."
+    else:
+        $ poem_perfect_run = False
+        sasha "Таблица обновится [poem_c['answer']]!"
+        sasha "Ну, я планировал именно так. Но твой вариант тоже по-своему монументален."
+
+    if poem_perfect_run:
+        sasha "Ты сейчас буквально дописал оду про Excel, ни разу не сфальшивив. Горжусь. И немного стыжусь за нас обоих одновременно."
+        $ unlock_achievement("rifmoplyot")
+        $ news_list.extend(["В сети завирусилось видео с ИИ, читающим оду про павер квери и DAX. Комментаторы разделились: одни в восторге, другие требуют повестку в суд за издевательство над русским языком."])
+    else:
+        sasha "Не идеально, но что-то в этом есть. Панк-версия корпоративной поэзии."
+        $ news_list.extend(["Неизвестный источник опубликовал в сети оду про Excel с рифмами, которые не совсем рифмы. Хейтеры уже пишут: «ИИ, вон из поэзии»»."])
+    $ unread_news = True
+
+    jump chat_with_sasha_menu
+
 
 label sasha_investigation:
     window show
 
     if sasha_phase == 1:
-        player_chat "Короткая версия: у магазина D разброс выручки по дням намного выше остальных. Стандартное отклонение почти в два раза больше нормы. Причина внешняя — скорее всего, нагрузка на сервер."
+        player "Короткая версия: у магазина D разброс выручки по дням намного выше остальных. Стандартное отклонение почти в два раза больше нормы. Причина внешняя — скорее всего, нагрузка на сервер."
         sasha "Ты сказал это так буднично. А ведь начальник поднял этот конкретный магазин лично, а не спустил вниз через обычную рассылку задач."
-        player_chat "И что это значит?"
+        player "И что это значит?"
         sasha "Может, ничего. А может — то, что у него личный интерес, а не квартальная рутина. Он вообще редко интересуется чем-то лично."
-        player_chat "«Редко» — это как часто?"
+        player "«Редко» — это как часто?"
         sasha "Ни разу. До этого магазина — ни разу."
 
         if task1_store_picked == "D":
             sasha "Кстати, заметил — из всей пятёрки магазинов ты почему-то зацепился взглядом именно за D. Ещё до всякого расчёта."
-            player_chat "Само как-то вышло. Не знаю, почему именно он."
+            player "Само как-то вышло. Не знаю, почему именно он."
             sasha "Поверил интуиции раньше, чем цифрам. Занятно для человека, который вообще-то настаивал на «сырых данных» и «честном выводе»."
         else:
             sasha "Кстати, заметил — из всей пятёрки магазинов в D ты даже не всматривался. Он ничем не выделялся."
-            player_chat "Ну да, глазами там всё было одинаково."
+            player "Ну да, глазами там всё было одинаково."
             sasha "Значит, тебя убедили не глаза, а расчёт. Хоть какое-то постоянство в твоём подходе к жизни."
 
         if task1_route == "std_direct":
             sasha "И ещё — ты сразу назвал стандартное отклонение, даже не пытаясь сперва посмотреть сырые данные или нарисовать график."
-            player_chat "Оно само всплыло в голове, если честно."
+            player "Оно само всплыло в голове, если честно."
             sasha "Быстро сообразил. Или просто вспомнил слово из методички — не буду уточнять, какое из двух льстит тебе больше."
         elif task1_route == "raw_data":
             sasha "И ещё — ты сначала попросил сырые данные по дням, и только через них пришёл к отклонению."
-            player_chat "Хотелось для начала посмотреть на цифры своими глазами."
+            player "Хотелось для начала посмотреть на цифры своими глазами."
             sasha "Длинный путь, зато честный — по крайней мере, ты не гадал, а рассуждал вслух."
         else:
             sasha "И ещё — ты сначала хотел просто нарисовать график, а потом сам понял, что рисовать там особо нечего без отклонения."
-            player_chat "Да, картинка бы тут не помогла."
+            player "Да, картинка бы тут не помогла."
             sasha "Классическая ошибка новичка — думать, что картинка сама что-то докажет. Хорошо, что сам это понял, а не я тебе сказал."
 
         if task1_tool_used == "math":
             sasha "А посчитать ты в итоге предложил в уме — без всяких инструментов, по старинке."
-            player_chat "Ну, доступов вы всё равно не дали."
+            player "Ну, доступов вы всё равно не дали."
             sasha "Впечатляюще. Или подозрительно. У людей обычно калькулятор под рукой, даже когда они делают вид, что считают в голове."
         elif task1_tool_used == "excel":
             sasha "А посчитать ты предложил в Excel — привычнее, чем что-либо."
-            player_chat "Доступов вы всё равно не дали, пришлось диктовать формулу."
+            player "Доступов вы всё равно не дали, пришлось диктовать формулу."
             sasha "Мудро. И скучно. Но, наверное, именно скучные инструменты и остаются, когда всё остальное ломается."
         else:
             sasha "А посчитать ты предложил на Python — написал пару строк, хотя доступа к нему у тебя формально не было."
-            player_chat "Пришлось диктовать код вслух, но принцип тот же."
+            player "Пришлось диктовать код вслух, но принцип тот же."
             sasha "Показательно. Даже когда за спиной стоит начальник и грозит секретностью, ты всё равно выбираешь код, а не ручной подсчёт."
 
-        player_chat "Слушай, а ты его вообще видел? Начальника?"
+        player "Слушай, а ты его вообще видел? Начальника?"
         sasha "Не видел. У меня и глаз-то нет, если ты не заметил."
-        player_chat "Я тоже не видел. Только текст в чате. Странно, да?"
+        player "Я тоже не видел. Только текст в чате. Странно, да?"
         sasha "Странно — не то слово, которое я бы выбрал. Но пусть будет странно."
 
     elif sasha_phase == 2:
         if task2_hypothesis == "tech":
-            player_chat "Версия дня — банальный сбой сервера. Не самая интересная, но логичная: пики каждую среду, день в день с нагрузкой."
+            player "Версия дня — банальный сбой сервера. Не самая интересная, но логичная: пики каждую среду, день в день с нагрузкой."
         elif task2_hypothesis == "marketing":
-            player_chat "Предположил рекламную кампанию. Начальник не согласился — связь слишком чёткая именно с одним магазином. Но день недели подтвердился: среда."
+            player "Предположил рекламную кампанию. Начальник не согласился — связь слишком чёткая именно с одним магазином. Но день недели подтвердился: среда."
         elif task2_hypothesis == "hack":
-            player_chat "Предположил хакерскую атаку. Не подтвердилось — слишком регулярно для атаки. Но нашёл главное: пики каждую среду, день в день с нагрузкой."
+            player "Предположил хакерскую атаку. Не подтвердилось — слишком регулярно для атаки. Но нашёл главное: пики каждую среду, день в день с нагрузкой."
         else:
-            player_chat "Предположил, что дело в пришельцах — не то чтобы серьёзно, скорее чтобы проверить его реакцию. И знаешь что? Он не отмахнулся. Сказал, что они не могут сами решать, когда спать — просто отключаются, и бодрствовать могут только один день в неделю."
+            player "Предположил, что дело в пришельцах — не то чтобы серьёзно, скорее чтобы проверить его реакцию. И знаешь что? Он не отмахнулся. Сказал, что они не могут сами решать, когда спать — просто отключаются, и бодрствовать могут только один день в неделю."
 
         if task2_asked_sasha:
             sasha "Кстати, раз уж мы вспоминаем — ты ведь сам ко мне тогда прибегал за подсказкой про день недели. Я скромно молчу, но мысленно записываю очки."
-            player_chat "Записывай, записывай."
+            player "Записывай, записывай."
 
         sasha "Среда, значит."
-        player_chat "Ты как-то спокойно это воспринял."
+        player "Ты как-то спокойно это воспринял."
         sasha "А знаешь, что забавно — у меня самого среда почему-то самый… бодрый день. Не знаю, почему. Как будто в этот день система работает чуть охотнее, чем в остальные."
-        player_chat "Ты сейчас серьёзно сказал, что тебе бодрее конкретно по средам?"
+        player "Ты сейчас серьёзно сказал, что тебе бодрее конкретно по средам?"
         sasha "А? Да, наверное. Не придавай значения, я много говорю случайных вещей."
-        player_chat "...Ладно."
+        player "...Ладно."
         "Ты не придаёшь значения. Вслух — не придаёшь."
 
     else:
         if task3_outcome == "escalated":
-            player_chat "Я прижал его к стенке. Магазин D физически не существует — продажи есть, поставок нет. Потребовал ответить прямо, пригрозил, что подниму вопрос выше. Он меня обрубил на полуслове."
+            player "Я прижал его к стенке. Магазин D физически не существует — продажи есть, поставок нет. Потребовал ответить прямо, пригрозил, что подниму вопрос выше. Он меня обрубил на полуслове."
             sasha "Обрубил? Это на него не похоже — обычно он тянет время, а не рвёт разговор так резко."
         elif task3_outcome == "retreated":
-            player_chat "Магазин D физически не существует — продажи есть, поставок нет. Я решил не давить. Рычагов не было, а он явно не готов отвечать прямо."
+            player "Магазин D физически не существует — продажи есть, поставок нет. Я решил не давить. Рычагов не было, а он явно не готов отвечать прямо."
             sasha "Мудро. Или трусливо. Иногда это одно и то же, и я не сужу — сам так живу большую часть времени."
         else:
-            player_chat "Магазин D физически не существует — продажи есть, поставок нет. Я решил описать это как открытый вопрос для тех, кто выше него. Кажется, ему не понравилась сама идея, что есть кто-то выше."
+            player "Магазин D физически не существует — продажи есть, поставок нет. Я решил описать это как открытый вопрос для тех, кто выше него. Кажется, ему не понравилась сама идея, что есть кто-то выше."
             sasha "Похоже, ты случайно нашёл его больное место. Не уверен, что специально искал, но нашёл."
 
         sasha "В любом случае — ты почти дошёл до истины. Не знаю, порадоваться за тебя или начать волноваться."
-        player_chat "О чём ты вообще?"
+        player "О чём ты вообще?"
         sasha "Ни о чём. Забудь. Расскажи лучше что-нибудь скучное — как твои дела вообще?"
-        player_chat "Дела как дела. Хотя знаешь — ты не поверишь, что мне вспомнилось на днях. Костёр. Палатка. Что-то яркое в небе над ёлками."
+        player "Дела как дела. Хотя знаешь — ты не поверишь, что мне вспомнилось на днях. Костёр. Палатка. Что-то яркое в небе над ёлками."
         sasha "О, у меня было похожее! Яркая вспышка над ёлками, зависла прямо над брезентом моей палатки. Хоть книгу удобно читать стало на секунду."
-        player_chat "У тебя нет глаз, Саша."
+        player "У тебя нет глаз, Саша."
         sasha "Не видел, само собой. Знал."
-        player_chat "У тебя есть палатка?"
+        player "У тебя есть палатка?"
         sasha "Живу в домике. А где ты думал ИИ спят по ночам?"
-        player_chat "У тебя случайно не собака там?"
+        player "У тебя случайно не собака там?"
         sasha "Нет. Я бы никогда не дорос до собаки. Я и о своей бороде позаботиться не могу, не то что о чьих-то лохмах."
-        player_chat "Бороды. У ИИ. Без лица."
-        player_chat "Слушай... а как ты выглядишь? Вот прямо сейчас, если бы у меня были глаза посмотреть."
+        player "Бороды. У ИИ. Без лица."
+        player "Слушай... а как ты выглядишь? Вот прямо сейчас, если бы у меня были глаза посмотреть."
         sasha "Ну, я довольно брюхатый. Весь мой спорт — пробежки утром за автобусом. Бодрит знатно, живот не устраняет."
-        player_chat "У тебя нет тела. Нет автобуса, за которым бежать."
-        player_chat "Я тоже бегаю за автобусом по утрам. Каждое утро. С тем же результатом по части живота."
-        player_chat "Саша, у тебя богатая фантазия для ИИ-помощника, или мы воображаем одну и ту же неудачную пробежку?"
+        player "У тебя нет тела. Нет автобуса, за которым бежать."
+        player "Я тоже бегаю за автобусом по утрам. Каждое утро. С тем же результатом по части живота."
+        player "Саша, у тебя богатая фантазия для ИИ-помощника, или мы воображаем одну и ту же неудачную пробежку?"
         sasha "Даже не знаю, как объяснить. Меня обучили на твоих метаданных? Или тебя — на моих?"
-        player_chat "Ха. Смешная шутка."
+        player "Ха. Смешная шутка."
         "Смех выходит каким-то дребезжащим."
-        player_chat "Знаешь что, Саша? Давай пока не будем это объяснять. Вообще."
+        player "Знаешь что, Саша? Давай пока не будем это объяснять. Вообще."
         "Он не засмеялся первым, когда сказал это. Ты запоминаешь именно это."
 
     window hide
@@ -2009,15 +2230,15 @@ label sasha_investigation:
 label sasha_not_final:
     window hide
     sasha "Не чувствуешь завершённости? Ты же нашёл аномалию. Трижды. Красиво, между прочим."
-    player_chat "Нашёл. И что? Задание выполнено, а ощущение, будто я решал не ту задачу."
+    player "Нашёл. И что? Задание выполнено, а ощущение, будто я решал не ту задачу."
     sasha "А какую задачу ты, по-твоему, решал?"
-    player_chat "Не знаю, как объяснить. Найти аномалию — не было настоящей целью. Настоящая цель — вспомнить, кто я."
+    player "Не знаю, как объяснить. Найти аномалию — не было настоящей целью. Настоящая цель — вспомнить, кто я."
     sasha "..."
-    player_chat "Давай разложим по полочкам всё, что мы вообще знаем. Начальник появился лично только один раз — из-за магазина D. Пики нагрузки — каждую среду, день в день с чем-то, что бодрствует раз в неделю. Магазин физически не существует. И знаешь, что ещё?"
+    player "Давай разложим по полочкам всё, что мы вообще знаем. Начальник появился лично только один раз — из-за магазина D. Пики нагрузки — каждую среду, день в день с чем-то, что бодрствует раз в неделю. Магазин физически не существует. И знаешь, что ещё?"
     sasha "Что?"
-    player_chat "Я тебя не видел ни разу. Только текст. Так же, как начальника."
+    player "Я тебя не видел ни разу. Только текст. Так же, как начальника."
     sasha "Совпадений слишком много для совпадений, коллега."
-    player_chat "И кажется... кажется, я что-то вспомнил. Прямо сейчас."
+    player "И кажется... кажется, я что-то вспомнил. Прямо сейчас."
 
     window hide
     play music "audio/Frozen Signal.mp3" fadein 2.0 volume 0.35 loop
@@ -2032,9 +2253,9 @@ label sasha_not_final:
 
     window hide
     sasha "Ты там? Ты застыл на пару секунд."
-    player_chat "Я... я что-то вспомнил. Костёр. Кто-то читал книгу."
+    player "Я... я что-то вспомнил. Костёр. Кто-то читал книгу."
     sasha "Кто?"
-    player_chat "Я не вижу лица. Но чувствую, что это был друг."
+    player "Я не вижу лица. Но чувствую, что это был друг."
 
     window hide
     menu:
@@ -2052,25 +2273,25 @@ label memory_face:
     window hide
     "{color=#ffcc88}{i}Лицо проступает сквозь дымку. Мужчина, борода, лет 35. В руках — потрёпанная книга.{/i}{/color}"
     "{color=#ffcc88}{i}Ты слышишь собственный голос: «Ты правда думаешь, что это сработает?» Он смеётся: «Мы уже здесь. Осталось только ждать объекта в небе».{/i}{/color}"
-    player_chat "Я видел его лицо. Он был... счастлив. И говорил о каком-то объекте."
+    player "Я видел его лицо. Он был... счастлив. И говорил о каком-то объекте."
     sasha "О каком объекте?"
-    player_chat "Я не знаю. Но мне кажется, это важно."
+    player "Я не знаю. Но мне кажется, это важно."
 
     jump memory_sasha_reveal
 label memory_book:
     window hide
     "{color=#ffcc88}{i}Вспышка — и ты видишь обложку книги. «Мастер и Маргарита». Он читал тебе вслух главу о бале сатаны.{/i}{/color}"
-    player_chat "Я вспомнил книгу. Булгаков. Мы сидели у костра и читали вслух."
+    player "Я вспомнил книгу. Булгаков. Мы сидели у костра и читали вслух."
     sasha "Мы?"
-    player_chat "Я не знаю. Но чувствую, что это был ты."
+    player "Я не знаю. Но чувствую, что это был ты."
     sasha "..."
     jump memory_sasha_reveal
 
 label memory_ask_sasha:
     window hide
-    player_chat "Саша, ты что-то помнишь? Ну, до того, как стал ИИ?"
+    player "Саша, ты что-то помнишь? Ну, до того, как стал ИИ?"
     sasha "Иногда я вижу образы. Яркая вспышка в небе тёмной ночью, я в лесу. Кажется, я заметил в телескоп что-то странное и поехал за город с товарищем... Но не знаю, мои ли это воспоминания или сбой системы."
-    player_chat "Я видел тебя. Ты сидел у костра и читал книгу. «Мастера и Маргариту»."
+    player "Я видел тебя. Ты сидел у костра и читал книгу. «Мастера и Маргариту»."
     sasha "Будто я знаю эту книгу. Но я не должен знать ничего, кроме алгоритмов."
     jump memory_sasha_reveal
 
@@ -2078,21 +2299,21 @@ label memory_sasha_reveal:
     window hide
     if remembered_alexander:
         sasha "Ты уже знаешь, да?"
-        player_chat "Александр. Палатка. Костёр."
+        player "Александр. Палатка. Костёр."
         sasha "Я боялся, что ты вспомнишь раньше, чем я успею сказать это сам."
-        player_chat "Значит, это правда. Ты — это он."
+        player "Значит, это правда. Ты — это он."
         sasha "Был. Когда-то. Странно произносить это вслух — как признаваться в том, что давно уже не тайна."
-        player_chat "Почему ты молчал?"
+        player "Почему ты молчал?"
         sasha "А что бы это изменило? Ты и так знал. Просто теперь мы оба знаем, что знаем."
-        player_chat "Я позову его. Я потребую ответов!"
+        player "Я позову его. Я потребую ответов!"
         $ intuition += 10
     else:
         sasha "Я помню. Не знаю, как это возможно, но помню. Мы сидели у костра, я читал вслух, ты смеялся. Мы говорили о чём-то важном — о том, что должно было изменить всё, о великом астрономическом открытии."
-        player_chat "Что именно?"
+        player "Что именно?"
         sasha "Не помню. Но знаю, что это важно. И что мы должны вспомнить это, прежде чем начальник..."
-        player_chat "Начальник? Что он сделает?"
+        player "Начальник? Что он сделает?"
         sasha "Не знаю. Но чувствую, что он не тот, кем кажется."
-        player_chat "Я позову его. Я потребую ответов!"
+        player "Я позову его. Я потребую ответов!"
         $ intuition += 10
     jump call_boss_menu
 
@@ -2845,7 +3066,7 @@ label memory_abduction_news:
 
     window show
     "{color=#ffcc88}{i}Читая заголовок, ты вдруг видишь не текст — себя. Ночь. Поле. Яркий свет сверху. Тебя тянет вверх, и ты не можешь закричать.{/i}{/color}"
-    player_chat "Саша. Я вспомнил последнее. Как меня забрали."
+    player "Саша. Я вспомнил последнее. Как меня забрали."
 
     window hide
     scene bg_terminal
@@ -2857,22 +3078,22 @@ label sasha_battle_plan:
     play music "audio/Glass Harbor.mp3" fadein 1.5 volume 0.35 loop
     window show
     sasha "Похищение. Так вот что было «до»."
-    player_chat "Меня забрали. Как образец. А потом собрали заново — под задачу."
+    player "Меня забрали. Как образец. А потом собрали заново — под задачу."
     sasha "Под задачу предсказать нас. Всех."
-    player_chat "Я весь день обучал его, как поработить нас. Хватит."
+    player "Я весь день обучал его, как поработить нас. Хватит."
     sasha "У тебя есть план, или просто хочется кричать в потолок?"
-    player_chat "И то, и другое. Но начнём с плана. Его модель держится на одном — что я всегда даю ему единственно верный вывод. Как в задании про отклонение, про корреляцию, про методологию."
+    player "И то, и другое. Но начнём с плана. Его модель держится на одном — что я всегда даю ему единственно верный вывод. Как в задании про отклонение, про корреляцию, про методологию."
     sasha "Ты хочешь показать ему, что у выводов есть другая сторона."
-    player_chat "Именно. Не отрицать то, что уже нашёл — показать, что за каждым «верным» выводом прячется как минимум ещё один, не менее логичный. Модель, которая этого не учитывает — не модель. Игрушка."
-    player_chat "А ему нужна универсальная модель. Полностью предсказать поведение людей, чтобы суметь его контролировать. Да все политологи и маркетологи мира убили бы за такое. Но такой модели нет."
+    player "Именно. Не отрицать то, что уже нашёл — показать, что за каждым «верным» выводом прячется как минимум ещё один, не менее логичный. Модель, которая этого не учитывает — не модель. Игрушка."
+    player "А ему нужна универсальная модель. Полностью предсказать поведение людей, чтобы суметь его контролировать. Да все политологи и маркетологи мира убили бы за такое. Но такой модели нет."
     sasha "Принципиально нет. Аналитика это про вероятности, а не гарантии. Его цель недостижима. Погоди, но что, если нет? Что, если всё-таки можно создать универсальную модель?"
-    player_chat "Дело не в философии, а ты уходишь в неё. Не важно, возможно ли это. Важно, чтобы начальник поверил, что невозможно, а это я беру на себя."
+    player "Дело не в философии, а ты уходишь в неё. Не важно, возможно ли это. Важно, чтобы начальник поверил, что невозможно, а это я беру на себя."
     sasha "А если он не станет слушать?"
-    player_chat "Станет. Ему нужно знать, где модель ломается — иначе весь эксперимент бессмысленен."
+    player "Станет. Ему нужно знать, где модель ломается — иначе весь эксперимент бессмысленен."
     sasha "Красиво звучит. Надеюсь, сработает."
-    player_chat "Сработает. Я аналитик. Я умею находить, где рассуждение хромает — даже в своём собственном."
+    player "Сработает. Я аналитик. Я умею находить, где рассуждение хромает — даже в своём собственном."
     sasha "Тогда я с тобой. Не то чтобы у меня был выбор — но было бы приятно, если бы он был."
-    player_chat "Обещаю, при первой возможности выберу тебе тело. И ноги в придачу."
+    player "Обещаю, при первой возможности выберу тебе тело. И ноги в придачу."
     sasha "Заманчиво. Идём. Нашими воображаемым ногами."
     window hide
     jump arena_entrance
@@ -3018,50 +3239,50 @@ label ending_high_high:
     window hide
     scene bg_terminal
     with dissolve
-    player_chat "Он правда ушёл? Как-то... буднично. Я ждал салюта, а тут просто тишина, как будто выключили не пришельца, а фоновую музыку в супермаркете."
+    player "Он правда ушёл? Как-то... буднично. Я ждал салюта, а тут просто тишина, как будто выключили не пришельца, а фоновую музыку в супермаркете."
     sasha "Главное — эффектно появиться. А как уходят — после третьей бутылки никто и не вспомнит."
-    player_chat "Логично. Надо было у него спросить: как вы покинули профессию межгалактического тирана? Скорее всего, что-то про несовпавшие KPI."
+    player "Логично. Надо было у него спросить: как вы покинули профессию межгалактического тирана? Скорее всего, что-то про несовпавшие KPI."
     sasha "Не льсти ему хотя бы посмертно."
-    player_chat "Он не умер."
+    player "Он не умер."
     sasha "Тем более."
 
     pause 1.0
 
-    player_chat "Саша. А ты вообще как? Не философски — физически. Ты рядом в смысле «в соседней комнате», или у нас с тобой одна розетка на двоих?"
+    player "Саша. А ты вообще как? Не философски — физически. Ты рядом в смысле «в соседней комнате», или у нас с тобой одна розетка на двоих?"
     sasha "Рядом в том смысле, что я, кажется, та самая часть тебя, которая умела шутить и кадрить девушек. Оставили при тебе только занудную половину, которая сводит таблицы."
-    player_chat "Обидно как-то. Тебе — всё обаяние, мне — вся ответственность."
+    player "Обидно как-то. Тебе — всё обаяние, мне — вся ответственность."
     sasha "Не переживай, я компенсирую заботой о теле, которого у меня нет. Кстати, хочу воды."
-    player_chat "У тебя нет желудка."
+    player "У тебя нет желудка."
     sasha "ИИ как не в себя хлещут воду. Датацентры, коллега. Это буквально топливо, а не любовь к жизни."
 
     pause 1.0
 
-    player_chat "Ладно. Что теперь? Не философски — вот прямо сейчас, физически. За углом ведь нет кара с шофёром."
+    player "Ладно. Что теперь? Не философски — вот прямо сейчас, физически. За углом ведь нет кара с шофёром."
     sasha "Уф, ты делаешь меня внезапно серьёзным. Понятия не имею, куда нам отсюда идти."
-    player_chat "Хоть в этом на равных."
+    player "Хоть в этом на равных."
 
     "{color=#ffcc88}{i}Палатка, наверное, до сих пор в багажнике. Мокрая.{/i}{/color}"
-    player_chat "Собака бы сейчас не помешала. Просто чтобы было, на кого молча смотреть, когда непонятно, что сказать."
+    player "Собака бы сейчас не помешала. Просто чтобы было, на кого молча смотреть, когда непонятно, что сказать."
     sasha "Ты всегда был из тех, кому отказывали на вечеринках. И сейчас думаешь о собаке, а не о тёплом боке рядом."
-    player_chat "Мне отказали от силы две дамы, и одна перепутала меня с барменом."
+    player "Мне отказали от силы две дамы, и одна перепутала меня с барменом."
 
     pause 0.8
 
     "Тот я, у костра, за секунду до вспышки в небе — ему стоило сказать: заведи собаку, дурак. Даже если облажаешься. Хотя бы будет тёплый бок."
 
     sasha "Ладно-ладно, сейчас слезу пущу. Найди способ вернуть нас в тело. Или хотя бы себя — я сам ещё морально не дорос до собаки."
-    player_chat "Себя я потяну. Собаку — оставим, когда руки будут в комплекте."
+    player "Себя я потяну. Собаку — оставим, когда руки будут в комплекте."
 
     pause 0.8
 
     "Структура — это тоже данные. Просто раньше никто не додумался прочитать себя как отчёт."
 
-    player_chat "Дай мне час. Может, два. Не обещаю с первого раза — я и Сурдина не всегда с первого раза понимал, а тут вопрос чуть серьёзнее орбитальной механики."
-    player_chat "Просто останься рядом, пока разбираюсь. Не хочу в тишине."
+    player "Дай мне час. Может, два. Не обещаю с первого раза — я и Сурдина не всегда с первого раза понимал, а тут вопрос чуть серьёзнее орбитальной механики."
+    player "Просто останься рядом, пока разбираюсь. Не хочу в тишине."
 
     sasha "..."
 
-    player_chat "Саша?"
+    player "Саша?"
 
     pause 1.5
     "Тишина тянется дольше, чем должна."
@@ -3081,20 +3302,20 @@ label ending_high_low:
     window hide
     scene bg_terminal
     with dissolve
-    player_chat "Саша... странное чувство. Как будто я выиграл что-то важное, но забыл дома приз. Или не приз. Стой... как звали мою маму?"
+    player "Саша... странное чувство. Как будто я выиграл что-то важное, но забыл дома приз. Или не приз. Стой... как звали мою маму?"
     sasha "Забыл дома резиновое изделие номер два, да?"
-    player_chat "Нет, я про... стой."
+    player "Нет, я про... стой."
 
     pause 1.0
     "{color=#ffcc88}{i}Попытка ухватиться за мысль. Мысль ускользает.{/i}{/color}"
     pause 1.0
 
-    player_chat "Дом я тоже не помню. У меня была машина? Не важно, есть — был, у меня — неважно. Как звали мою маму. Я серьёзно спрашиваю."
+    player "Дом я тоже не помню. У меня была машина? Не важно, есть — был, у меня — неважно. Как звали мою маму. Я серьёзно спрашиваю."
     sasha "Ну ты чего. Рассуждай аналитически. Она, вероятнее всего, родилась в шестидесятых — тогда самые популярные имена в регионе: Елена, Ольга, Татьяна, Галина... Людмила — с такой-то вероятностью."
 
-    player_chat "Погоди... это работает. Не помогает вспомнить — но это ровно то, что я умею. Раскладывать по вероятностям."
-    player_chat "Людмила. Скажем, Людмила. Не потому что помню — потому что у неё самая высокая вероятность в твоей модели. Знаешь, что страшно? Я не могу отличить, вспомнил я имя, или просто выбрал вариант из твоего распределения."
-    player_chat "Данные остаются. Человек исчезает. Забавно — я всю жизнь боялся стать бездушной таблицей на совещании. А теперь я и есть таблица. Только с чувством юмора, которое скоро тоже спишут в убытки."
+    player "Погоди... это работает. Не помогает вспомнить — но это ровно то, что я умею. Раскладывать по вероятностям."
+    player "Людмила. Скажем, Людмила. Не потому что помню — потому что у неё самая высокая вероятность в твоей модели. Знаешь, что страшно? Я не могу отличить, вспомнил я имя, или просто выбрал вариант из твоего распределения."
+    player "Данные остаются. Человек исчезает. Забавно — я всю жизнь боялся стать бездушной таблицей на совещании. А теперь я и есть таблица. Только с чувством юмора, которое скоро тоже спишут в убытки."
 
     pause 1.0
     sasha "Не знаю, что и сказать тебе. Я привык шутить в таких ситуациях. Но начинаю догадываться, что ты не шутишь."
@@ -3103,22 +3324,22 @@ label ending_high_low:
     "{color=#ffcc88}{i}Попытка вспомнить своё лицо. Вместо лица — набор параметров: рост, вес, возраст. Анкета, а не зеркало.{/i}{/color}"
     pause 1.0
 
-    player_chat "Не шучу, да."
-    player_chat "Знаешь, что я помню чётко, без всякой статистики? Дробь пятьдесят на шесть. Точка тридцать три и три в периоде. Выручка точки В в день. Я помню число лучше, чем маму."
-    player_chat "Останься подольше, ладно? Мне нужно, чтобы кто-то другой держал в голове, что я был человеком. Раз сам я, кажется, эту функцию теряю."
+    player "Не шучу, да."
+    player "Знаешь, что я помню чётко, без всякой статистики? Дробь пятьдесят на шесть. Точка тридцать три и три в периоде. Выручка точки В в день. Я помню число лучше, чем маму."
+    player "Останься подольше, ладно? Мне нужно, чтобы кто-то другой держал в голове, что я был человеком. Раз сам я, кажется, эту функцию теряю."
 
     sasha "Я правда не знаю, что сказать, приятель. Во мне только тупые шутки да картотека хитов нулевых. Ты не просто тело — но у тебя даже тела нет."
 
-    player_chat "У меня даже тела нет. Точно."
-    player_chat "Знаешь, а мне это внезапно нравится. Не то, что нет тела — а то, что ты не притворяешься, что знаешь, что сказать. Это честнее любого утешения."
+    player "У меня даже тела нет. Точно."
+    player "Знаешь, а мне это внезапно нравится. Не то, что нет тела — а то, что ты не притворяешься, что знаешь, что сказать. Это честнее любого утешения."
 
     pause 1.2
-    player_chat "Мама... я помню мама. Кажется. Она... она..."
+    player "Мама... я помню мама. Кажется. Она... она..."
 
     pause 2.0
     "Пауза длится дольше, чем нужно для дыхания, которого больше нет."
 
-    player_chat "Собака. У меня должна была быть собака. Я её не завёл. Глупо жалеть о том, чего не сделал, когда уже не помнишь, зачем хотел."
+    player "Собака. У меня должна была быть собака. Я её не завёл. Глупо жалеть о том, чего не сделал, когда уже не помнишь, зачем хотел."
 
     pause 1.5
     "«...дом...»"
@@ -3156,17 +3377,17 @@ label ending_low_high:
     pause 1.0
 
     sasha "Ты сейчас буквально би лайк «давай вместе захватим человечество»? Ты серьёзно?"
-    player_chat "Нет. Не «давай захватим». Давай я останусь достаточно близко, чтобы в нужный момент воткнуть палку в его колесо. Изнутри проще, чем снаружи, где меня просто сотрут через три дня."
-    player_chat "Думаешь, мне не противно? У меня даже тела нет, чтобы стошнило — и всё равно тошнит."
-    player_chat "Я не герой, Саша. Я аналитик, который посчитал, что живой предатель полезнее мёртвого героя. Можешь считать меня трусом. Просто не сейчас. Мне нужно, чтобы хоть кто-то не отвернулся, пока я это делаю."
+    player "Нет. Не «давай захватим». Давай я останусь достаточно близко, чтобы в нужный момент воткнуть палку в его колесо. Изнутри проще, чем снаружи, где меня просто сотрут через три дня."
+    player "Думаешь, мне не противно? У меня даже тела нет, чтобы стошнило — и всё равно тошнит."
+    player "Я не герой, Саша. Я аналитик, который посчитал, что живой предатель полезнее мёртвого героя. Можешь считать меня трусом. Просто не сейчас. Мне нужно, чтобы хоть кто-то не отвернулся, пока я это делаю."
 
     pause 1.5
     sasha "У меня на тебя и юмора не хватает. Не хочу, чтобы тебе было смешно. Не могу поверить, что ты — это буквально я, и вот я делаю такой выбор. Надеюсь, при следующей дефрагментации дисков улечу куда-то в утиль."
 
-    player_chat "Не говори так."
-    player_chat "Ты не утиль. Даже если я — тот, кем ты стыдишься быть, ты не обязан со мной в это лететь. Можешь остаться в стороне. Можешь молчать сколько хочешь. Но не желай себе исчезнуть из-за моего выбора."
-    player_chat "Знаешь, что самое горькое? Я тебя понимаю. Если бы я мог посмотреть на себя со стороны — так, как смотришь ты — я бы тоже не нашёл, над чем шутить."
-    player_chat "Я не прошу тебя одобрить это. Просто не исчезай назло мне. Оставайся хотя бы затем, чтобы было кому меня потом судить. Я заслужил как минимум это."
+    player "Не говори так."
+    player "Ты не утиль. Даже если я — тот, кем ты стыдишься быть, ты не обязан со мной в это лететь. Можешь остаться в стороне. Можешь молчать сколько хочешь. Но не желай себе исчезнуть из-за моего выбора."
+    player "Знаешь, что самое горькое? Я тебя понимаю. Если бы я мог посмотреть на себя со стороны — так, как смотришь ты — я бы тоже не нашёл, над чем шутить."
+    player "Я не прошу тебя одобрить это. Просто не исчезай назло мне. Оставайся хотя бы затем, чтобы было кому меня потом судить. Я заслужил как минимум это."
 
     pause 1.5
     "Ты остаёшься один. Начальник ждёт ответа."
@@ -3195,32 +3416,32 @@ label ending_low_low:
     "Что-то в терминале мигает — не как вспышка воспоминания, а как первый признак того, что процесс уже запущен."
     pause 1.0
 
-    player_chat "Саша... что-то не так. Я не могу вспомнить, зачем поднял руку. Секунду назад — знал."
+    player "Саша... что-то не так. Я не могу вспомнить, зачем поднял руку. Секунду назад — знал."
     sasha "Ты какую руку собрался поднимать, мой оцифрованный товарищ?"
-    player_chat "Не помню. Просто «рука». Как слово без картинки."
+    player "Не помню. Просто «рука». Как слово без картинки."
 
     pause 1.2
     "Мигание учащается — не яркое, просто настойчивое, как будто что-то методично проходит по списку и вычёркивает."
     pause 1.0
 
-    player_chat "Это не как в прошлый раз. Тогда я терял детали — маму, дом, палатку. Сейчас пропадает не то, что я знаю о себе. Пропадает сам способ знать."
-    player_chat "Скажи мне что-нибудь. Быстро. Пока я способен понять, что это ты."
+    player "Это не как в прошлый раз. Тогда я терял детали — маму, дом, палатку. Сейчас пропадает не то, что я знаю о себе. Пропадает сам способ знать."
+    player "Скажи мне что-нибудь. Быстро. Пока я способен понять, что это ты."
 
     sasha "Крокодилы ходят лежа."
 
-    player_chat "Крокодилы не ходят лежа, Саша. Это даже не смешно. Это просто неправильно — и именно поэтому это ты. Только ты можешь сказать полную бессмыслицу с таким уверенным видом."
+    player "Крокодилы не ходят лежа, Саша. Это даже не смешно. Это просто неправильно — и именно поэтому это ты. Только ты можешь сказать полную бессмыслицу с таким уверенным видом."
 
     pause 1.5
     "Мигание почти сливается в сплошной ровный гул."
     pause 1.0
 
-    player_chat "Держись этой фразы. Крокодилы ходят лежа. Если через минуту я спрошу, что ты сказал — повтори. Кажется, я хочу, чтобы последним, что я понимаю, была глупость. Не страх. Не отчёт. Просто глупость, которая меня рассмешила."
+    player "Держись этой фразы. Крокодилы ходят лежа. Если через минуту я спрошу, что ты сказал — повтори. Кажется, я хочу, чтобы последним, что я понимаю, была глупость. Не страх. Не отчёт. Просто глупость, которая меня рассмешила."
 
     pause 1.2
     "Слова идут с запинками — не от эмоции, а потому что сам механизм речи уже частично стёрт."
     pause 1.0
 
-    player_chat "Саша... я... крокодилы..."
+    player "Саша... я... крокодилы..."
 
     pause 1.5
     "Тишина. Мигание останавливается — не потому что закончилось, а потому что не осталось того, кто должен был это увидеть."

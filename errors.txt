@@ -2,29 +2,10 @@
 errors listed below, and try again.
 
 
-File "game/script.rpy", line 1011: ATL statement contains two expressions in a row; is one of them a misspelled property? If not, separate them with pass.
-    color "#00e5ff"
-                   ^
-
-File "game/script.rpy", line 1017: ATL statement contains two expressions in a row; is one of them a misspelled property? If not, separate them with pass.
-    color "#00e5ff"
-                   ^
-
-File "game/script.rpy", line 1023: ATL statement contains two expressions in a row; is one of them a misspelled property? If not, separate them with pass.
-    color "#00e5ff"
-                   ^
-
-File "game/script.rpy", line 1029: ATL statement contains two expressions in a row; is one of them a misspelled property? If not, separate them with pass.
-    color "#dfefff"
-                   ^
-
-File "game/script.rpy", line 1035: ATL statement contains two expressions in a row; is one of them a misspelled property? If not, separate them with pass.
-    color "#dfefff"
-                   ^
-
-File "game/script.rpy", line 1041: ATL statement contains two expressions in a row; is one of them a misspelled property? If not, separate them with pass.
-    color "#dfefff"
-                   ^
+File "game/script.rpy", line 720: unexpected indent
+        def check_poem_rhyme(user_text, reference, rhyme_len=3):
+        ^
+    
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Fri Jul 17 03:02:07 2026
+Thu Jul 23 07:23:59 2026
