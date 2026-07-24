@@ -1,25 +1,69 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-  File "game/script.rpy", line 2105, in script
-    sasha "Таблица обновится [poem_c['answer']]!"
-KeyError: "'answer'"
+  File "game/script.rpy", line 2100, in script
+    $ poem_answers.append(renpy.call_screen("poem_line_screen", idx=0, prev_answers=poem_answers))
+  File "game/script.rpy", line 2100, in <module>
+    $ poem_answers.append(renpy.call_screen("poem_line_screen", idx=0, prev_answers=poem_answers))
+  File "game/script.rpy", line 737, in execute
+    screen poem_line_screen(idx, prev_answers):
+  File "game/script.rpy", line 737, in execute
+    screen poem_line_screen(idx, prev_answers):
+  File "game/script.rpy", line 743, in execute
+    vbox:
+  File "game/script.rpy", line 748, in execute
+    for i in range(4):
+  File "game/script.rpy", line 751, in execute
+    text "[c['line1']]" color line_color size 26 font "fonts/Exo2-Regular.ttf"
+KeyError: "'line1'"
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/script.rpy", line 2105, in script
-    sasha "Таблица обновится [poem_c['answer']]!"
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 921, in execute
-    renpy.exports.say(who, what, *args, **kwargs)
-  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 1373, in say
-    who(what, *args, **kwargs)
-  File "E:\renpy-8.0.2-sdk\renpy\character.py", line 1253, in __call__
-    what = self.prefix_suffix("what", self.what_prefix, what, self.what_suffix)
-  File "E:\renpy-8.0.2-sdk\renpy\character.py", line 1172, in prefix_suffix
-    return (sub(prefix) + sub(body) + sub(suffix))
-  File "E:\renpy-8.0.2-sdk\renpy\character.py", line 1152, in sub
-    return renpy.substitutions.substitute(s, scope=scope, force=force, translate=translate)[0]
+  File "game/script.rpy", line 2100, in script
+    $ poem_answers.append(renpy.call_screen("poem_line_screen", idx=0, prev_answers=poem_answers))
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1131, in execute
+    renpy.python.py_exec_bytecode(self.code.bytecode, self.hide, store=self.store)
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1052, in py_exec_bytecode
+    exec(bytecode, globals, locals)
+  File "game/script.rpy", line 2100, in <module>
+    $ poem_answers.append(renpy.call_screen("poem_line_screen", idx=0, prev_answers=poem_answers))
+  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 3174, in call_screen
+    rv = renpy.ui.interact(mouse="screen", type="screen", roll_forward=roll_forward)
+  File "E:\renpy-8.0.2-sdk\renpy\ui.py", line 299, in interact
+    rv = renpy.game.interface.interact(roll_forward=roll_forward, **kwargs)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3377, in interact
+    repeat, rv = self.interact_core(preloads=preloads, trans_pause=trans_pause, pause=pause, pause_start=pause_start, **kwargs) # type: ignore
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3804, in interact_core
+    root_widget.visit_all(lambda i : i.per_interact())
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 451, in visit_all
+    callback(self)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3804, in <lambda>
+    root_widget.visit_all(lambda i : i.per_interact())
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 462, in per_interact
+    self.update()
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 653, in update
+    self.screen.function(**self.scope)
+  File "game/script.rpy", line 737, in execute
+    screen poem_line_screen(idx, prev_answers):
+  File "game/script.rpy", line 737, in execute
+    screen poem_line_screen(idx, prev_answers):
+  File "game/script.rpy", line 743, in execute
+    vbox:
+  File "game/script.rpy", line 748, in execute
+    for i in range(4):
+  File "game/script.rpy", line 751, in execute
+    text "[c['line1']]" color line_color size 26 font "fonts/Exo2-Regular.ttf"
+  File "E:\renpy-8.0.2-sdk\renpy\text\text.py", line 1594, in __init__
+    self.set_text(text, scope, substitute)
+  File "E:\renpy-8.0.2-sdk\renpy\text\text.py", line 1712, in set_text
+    i, did_sub = renpy.substitutions.substitute(i, scope, substitute)
   File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 278, in substitute
     s = formatter.vformat(s, (), kwargs) # type: ignore
   File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 165, in vformat
@@ -27,9 +71,9 @@ Full traceback:
   File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 168, in get_field
     obj, arg_used = super(Formatter, self).get_field(field_name, args, kwargs)
   File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 278, in get_field
-KeyError: "'answer'"
+KeyError: "'line1'"
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Thu Jul 23 07:28:50 2026
+Thu Jul 23 18:21:55 2026
