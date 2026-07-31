@@ -47,6 +47,7 @@ default crypto_p1_solved = False
 default graph_reflection_done = False
 default graph_trick_done = False
 
+
 default ending_accuracy_threshold = 185
 default ending_intuition_threshold = 178
 
@@ -657,7 +658,7 @@ screen desktop():
                 ("icon_tasks", "Задания", "tasks_from_boss", False),
                 ("icon_news", "Новости", "show_news", unread_news),
                 ("icon_memory", "Моя память", "memory_archive", False),
-                ("icon_cleaning", "Очистка данных", "data_cleaning_minigame", False),
+                ("icon_cleaning", "Очистка данных", "cleaning_intro", False),
                 ("icon_achievements", "Гордость", "achievements_archive", False),
             ]
 
@@ -1059,65 +1060,90 @@ screen phase2_complete_screen():
                 text "ФАЗА 2 ЗАВЕРШЕНА" color "#00ffcc" size 42 xalign 0.5
                 text "Задания выполнены. Дальше — только он и ты." color "#ffffff" size 18 xalign 0.5
 
-screen cleaning_minigame_screen():
+screen cleaning_phase1_screen():
+    modal True
+    zorder 200
+
+    default cp1_client = None
+    default cp1_amount = None
+    default cp1_time = None
+    default cp1_submitted = False
+
     frame:
         xalign 0.5
         yalign 0.5
-        xsize 1050
-        ysize 620
-        background Solid("#0a0f1acc")
-        padding (25, 25)
-
-        add Solid("#00ffcc") xsize 1000 ysize 2 xalign 0.5 yalign 0.0
+        background Solid("#05161a")
+        padding (36, 30)
 
         vbox:
             spacing 14
-            text "Отсортируй строки выгрузки по трём корзинам" color "#00ffcc" size 22
+            xsize 900
 
-            text "Необработанные записи:" color "#888888" size 15
-            hbox:
-                spacing 10
-                for row_id in cleaning_pool:
-                    $ row = cleaning_rows_by_id[row_id]
-                    frame:
-                        background Solid("#12202f")
-                        padding (10, 10)
-                        xsize 210
+            text "Цель: посчитать честную сумму платежей по каждому клиенту." color "#ffe066" size 20 font "fonts/Exo2-Regular.ttf"
+            text "Для каждого поля отметь: участвует оно в этом расчёте, или нет." color "#7a8a8a" size 15 font "fonts/Exo2-Regular.ttf"
 
-                        add Solid("#00ffcc66") xsize 190 ysize 1 xalign 0.5 yalign 0.0
+            # --- Клиент ---
+            fixed:
+                xsize 900
+                ysize 40
+                text "Клиент (id_client)" color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xpos 0 yalign 0.5
+                textbutton ("Участвует" if cp1_client == True else "Не участвует" if cp1_client == False else "— выбери —"):
+                    xpos 520
+                    yalign 0.5
+                    sensitive not cp1_submitted
+                    text_color ("#5fd9c4" if cp1_client == True else "#e0a3ea" if cp1_client == False else "#7a8a8a")
+                    action CleaningToggle("cp1_client")
 
-                        vbox:
-                            spacing 3
-                            text "Клиент: [row[client]]" color "#e0e0e0" size 13
-                            text "Сумма: [row[amount]]" color "#e0e0e0" size 13
-                            text "Время: [row[time]]" color "#e0e0e0" size 13
-                            text "Статус: [row[status]]" color "#e0e0e0" size 13
-                            hbox:
-                                spacing 4
-                                textbutton "Удалить" action Function(cleaning_move, row_id, "delete") text_size 11 text_color "#ff8888" text_hover_color "#ffaaaa"
-                                textbutton "Ноль" action Function(cleaning_move, row_id, "zero") text_size 11 text_color "#ffcc66" text_hover_color "#ffdd99"
-                                textbutton "Оставить" action Function(cleaning_move, row_id, "keep") text_size 11 text_color "#88ff88" text_hover_color "#aaffaa"
+            # --- Сумма платежа ---
+            fixed:
+                xsize 900
+                ysize 40
+                text "Сумма платежа (amt_payment)" color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xpos 0 yalign 0.5
+                textbutton ("Участвует" if cp1_amount == True else "Не участвует" if cp1_amount == False else "— выбери —"):
+                    xpos 520
+                    yalign 0.5
+                    sensitive not cp1_submitted
+                    text_color ("#5fd9c4" if cp1_amount == True else "#e0a3ea" if cp1_amount == False else "#7a8a8a")
+                    action CleaningToggle("cp1_amount")
 
-            hbox:
-                spacing 25
-                vbox:
-                    text "Удалить" color "#ff8888" size 15
-                    for row_id in cleaning_sorted_delete:
-                        $ row = cleaning_rows_by_id[row_id]
-                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc" text_hover_color "#ffffff"
-                vbox:
-                    text "Заполнить нулём" color "#ffcc66" size 15
-                    for row_id in cleaning_sorted_zero:
-                        $ row = cleaning_rows_by_id[row_id]
-                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc" text_hover_color "#ffffff"
-                vbox:
-                    text "Оставить" color "#88ff88" size 15
-                    for row_id in cleaning_sorted_keep:
-                        $ row = cleaning_rows_by_id[row_id]
-                        textbutton "Клиент [row[client]]" action Function(cleaning_move, row_id, "pool") text_size 12 text_color "#cccccc" text_hover_color "#ffffff"
+            # --- Время оплаты ---
+            fixed:
+                xsize 900
+                ysize 40
+                text "Время оплаты (dtime_pay)" color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xpos 0 yalign 0.5
+                textbutton ("Участвует" if cp1_time == True else "Не участвует" if cp1_time == False else "— выбери —"):
+                    xpos 520
+                    yalign 0.5
+                    sensitive not cp1_submitted
+                    text_color ("#5fd9c4" if cp1_time == True else "#e0a3ea" if cp1_time == False else "#7a8a8a")
+                    action CleaningToggle("cp1_time")
 
-            if not cleaning_pool:
-                textbutton "Готово" action Return(True) text_size 20 text_color "#00ffcc" xalign 0.5
+            if not cp1_submitted:
+                textbutton "Готово":
+                    xalign 0.5
+                    sensitive (cp1_client is not None and cp1_amount is not None and cp1_time is not None)
+                    action SetScreenVariable("cp1_submitted", True)
+                    text_color "#5fd9c4"
+            else:
+                text ("Клиент — участвует: именно по этому полю мы группируем платежи. Без него платёж не попадёт ни в чей персональный итог.") color ("#5fd9c4" if cp1_client == True else "#e0a3ea") size 17 font "fonts/Exo2-Regular.ttf" xsize 850
+                text ("Сумма платежа — участвует: это то самое число, которое мы складываем для каждого клиента.") color ("#5fd9c4" if cp1_amount == True else "#e0a3ea") size 17 font "fonts/Exo2-Regular.ttf" xsize 850
+                text ("Время оплаты — не участвует: считаем сумму по клиенту, а не по датам. Пропуск тут никак не искажает итог.") color ("#5fd9c4" if cp1_time == False else "#e0a3ea") size 17 font "fonts/Exo2-Regular.ttf" xsize 850
+
+                textbutton "Продолжить":
+                    xalign 0.5
+                    action Return((cp1_client, cp1_amount, cp1_time))
+                    text_color "#5fd9c4"
+
+init python:
+    class CleaningToggle(Action):
+        def __init__(self, varname):
+            self.varname = varname
+        def __call__(self):
+            screen = renpy.current_screen()
+            current = screen.scope.get(self.varname)
+            new_val = True if current is None else (False if current is True else True)
+            screen.scope[self.varname] = new_val
+            renpy.restart_interaction()
 
 screen achievements_screen():
     frame:
@@ -3029,6 +3055,138 @@ label chart_trick_round2_mechanism:
     $ graph_trick_done = True
 
     jump chat_with_sasha_menu
+
+label cleaning_intro:
+
+    hide screen desktop
+    hide screen investigation_bar
+    scene bg_terminal
+    with dissolve
+
+    sasha "Есть новости — пришли результаты A/B-теста, который мы запускали для «Изобилия»."
+    player "A/B-теста... секунду. Это что-то из тех штук, которые я как будто знаю, но не понмю."
+    sasha "Хочешь, помогу вспомнить, или ты сам?"
+    player "Дай попробую сам. ...Кажется, это когда часть людей получает одно, часть — другое, и потом сравниваешь, что сработало лучше?"
+    player "Например, одной группе показывали рекламу с котятами, а другой с собачками, и теперь мы смотрим, какое животное будит в человеке шопоголика эффективнее."
+
+    show image "images/cleaning_ab_schema.png" at Transform(fit="contain", size=(1920, 700)):
+        xalign 0.5
+        yalign 0.05
+    with dissolve
+
+    sasha "Почти в точку. Только важное уточнение: люди должны попадать в одну из групп случайно, а не по своему желанию, иначе сравнение нечестное. Тест — та группа, что получает новое, например, котят. Контроль — та, что живёт по-старому и служит точкой отсчёта, любуясь собачками."
+    player "Значит, если тестовая группа как-то отличается по результату — можно сказать, что дело в изменении, а не в том, что там изначально были другие люди."
+    sasha "Именно. При условии, что группы изначально были сопоставимы — но да, суть ты вспомнил верно."
+
+    hide image "images/cleaning_ab_schema.png"
+
+    sasha "Конкретно этот тест — про новую ленту акций на кассах «Изобилия». Части клиентов при оплате показывали ленту с персональными скидками, части — нет. Хотели понять, повышает ли это выручку."
+    player "И как, повышает?"
+    sasha "Вот тут и начинается моя любимая часть: данные, как всегда, пришли кривые-косые."
+    player "Естественно."
+    player "Наверняка, ещё с кучей пропусков, которые мы теперь и должны почистить, да?"
+    sasha "Зришь в корень, приятель!"
+    sasha "Прежде чем разбираться, что с ними делать, нужно определиться, что мы вообще хотим посчитать. Иначе непонятно, какие пропуски критичны, а какие можно спокойно оставить."
+    sasha "Какую метрику будем считать в первую очередь?"
+
+    menu:
+        "Средний чек — сколько в среднем платит один клиент.":
+            player "Если лента подталкивает тратить больше, это будет видно в сумме."
+            $ metric_choice = "avg_check"
+
+        "Конверсию в оплату — долю клиентов, которые заплатили хоть что-то.":
+            player "Может, лента не увеличивает трату, а просто подталкивает не бросать корзину и убегать в панике."
+            $ metric_choice = "conversion"
+
+        "Количество заказов — сколько раз клиенты покупали.":
+            player "Похоже на разумный показатель успеха."
+            $ metric_choice = "order_count"
+
+        "Среднюю оценку магазина клиентами.":
+            player "Это вроде тоже что-то про удовлетворённость?"
+            $ metric_choice = "rating"
+
+        "И чек, и конверсию вместе: раз тест мог повлиять на что-то одно, а не на всё сразу.":
+            player "Если смотреть только на одно, легко упустить эффект, который проявился в другом месте."
+            $ metric_choice = "both"
+
+    if metric_choice == "both":
+        sasha "Правильный инстинкт. Тест мог подвинуть чек и не подвинуть конверсию, или наоборот. Смотреть только на одно — упустить половину картины."
+        $ accuracy += 2
+    elif metric_choice == "avg_check":
+        sasha "Разумно, но однобоко — а если лента не увеличивает сумму покупки, а просто уменьшает число тех, кто уходит без покупки вообще? Это тоже была бы победа, просто не в чеке."
+        $ accuracy += 1
+    elif metric_choice == "conversion":
+        sasha "Разумно, но однобоко — а если лента не меняет, купят или нет, а просто повышает сумму у тех, кто и так бы купил? Тоже эффект, просто в другом месте."
+        $ accuracy += 1
+    elif metric_choice == "order_count":
+        player "Хотя постой. Ты же сказал, что лента показывается на кассе перед оплатой. Вряд ли это могло повлиять на сам факт создания заказа."
+        sasha "Верно, не эта переменная. Предлагаю смотреть на средний чек и конверсию в оплату."
+    else:
+        player "Хотя... у нас вообще есть данные с оценкой магазинов?"
+        sasha "Нет, конечно. Ты как-то не капиталистично мыслишь, что это на тебя нашло?"
+        sasha "Зачем нам нужна оценка магазина клиентами, их деньги — лучшая оценка. Му-ха-ха."
+        player "Тогда, как истинные капиталисты, займёмся средним чеком и конверсией."
+
+    sasha "Хорошая новость: что бы мы в итоге ни сравнивали — чек или конверсию — начинается всё с одного и того же."
+    sasha "Честная сумма платежей по каждому клиенту. Обе метрики можно рассчитать через неё."
+    sasha "Для конверсии — смотрим на итоговую сумму по каждому клиенту, уже после очистки."
+    sasha "Если сумма равна нулю — считаем, что клиент не заплатил. Если больше нуля — заплатил."
+    player "Погоди, что-то я висну... Данные же с пропусками у нас."
+    player "А если ноль получился не сам по себе, а потому что мы сами пропуск в ноль превратили, пытаясь почистить данные от пропусков?"
+    sasha "После очистки это уже не имеет значения. У нас в руках просто число — ноль или не ноль. Историю его происхождения мы туда не тащим."
+
+    show image "images/cleaning_ivanov_petrov.png" at Transform(fit="contain", size=(1920, 700)):
+        xalign 0.5
+        yalign 0.05
+    with dissolve
+
+    player "То есть если у Иванова было три платежа по 500, а у Петрова — пропуск, который мы занулили, для конверсии они выглядят одинаково: у одного ноль, у другого не ноль."
+    sasha "Именно так. А дальше просто считаем долю тех, у кого не ноль, — это и есть конверсия в оплату."
+
+    hide image "images/cleaning_ivanov_petrov.png"
+
+    sasha "Для среднего чека агрегируем с группировкой по клиенту."
+    sasha "Данные, как ты помнишь, кривые-косые, предварительно их нужно очистить."
+    player "И чтобы мы могли это сделать эффективно, нам нужно понять, какие поля вообще будут участвовать в расчёте."
+    sasha "Верно, мой аналитический друг!"
+
+    jump cleaning_phase1
+
+default cleaning_p1_client = None
+default cleaning_p1_amount = None
+default cleaning_p1_time = None
+
+label cleaning_phase1:
+    $ cleaning_p1_client, cleaning_p1_amount, cleaning_p1_time = renpy.call_screen("cleaning_phase1_screen")
+
+    $ cleaning_p1_score = 0
+    if cleaning_p1_client == True:
+        $ cleaning_p1_score += 1
+    if cleaning_p1_amount == True:
+        $ cleaning_p1_score += 1
+    if cleaning_p1_time == False:
+        $ cleaning_p1_score += 1
+
+    $ accuracy += cleaning_p1_score
+
+    if cleaning_p1_amount == True and cleaning_p1_client == True and cleaning_p1_time == False:
+        player "Кажется, я понял, что нам реально нужно для этого расчёта."
+        sasha "Все три ответа в точку. Теперь понятно, какое поле за что отвечает — дальше будет проще решать, что делать с конкретным пропуском."
+
+    elif cleaning_p1_amount == True:
+        player "Сумму я, по крайней мере, угадал правильно."
+        sasha "Это главное. С клиентом или временем промахнулся — не смертельно, они влияют на детали, а не на сам факт, что мы считаем."
+        sasha "А вот сумма это то самое число, без которого дальше нет смысла двигаться."
+
+    else:
+        player "Кажется, я тут больше гадал, чем понимал — и, судя по всему, промахнулся именно с суммой."
+        sasha "Вот это уже серьёзнее. Сумма — то самое число, которое мы в итоге складываем."
+        sasha "Если неясно, что оно вообще участвует в расчёте, дальше будет сложно понять, зачем мы возимся с пропусками именно в нём."
+        player "Ладно. Хорошо, что у меня есть ты. чтобы меня проконтролировать."
+        sasha "Уж будь спокоен."
+
+    jump cleaning_phase2
 
 label sasha_investigation:
     window show
