@@ -2,10 +2,8 @@
 errors listed below, and try again.
 
 
-File "game/script.rpy", line 720: unexpected indent
-        def check_poem_rhyme(user_text, reference, rhyme_len=3):
-        ^
-    
+File "game/script.rpy", line 577: is not terminated with a newline. (Check strings and parenthesis.)
+                                textbutton (f["label"]:
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Thu Jul 23 07:23:59 2026
+Thu Aug  6 03:49:12 2026

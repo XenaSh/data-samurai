@@ -19,10 +19,6 @@ default memory_unlocked = []
 default persistent.achievements_unlocked = []
 default persistent.achieved_endings = set()
 default task2_asked_sasha = False
-default cleaning_pool = []
-default cleaning_sorted_delete = []
-default cleaning_sorted_zero = []
-default cleaning_sorted_keep = []
 default task3_outcome = ""
 default sasha_topics_seen = []
 default task3_awaiting_access = False
@@ -32,8 +28,6 @@ default poem_done = False
 default poem_last_score = 0
 default poem_followup_done = False
 default poem_form_content_done = False
-default cleaning_task_done = False
-default cleaning_outcome = ""
 default task1_store_picked = ""
 default task1_route = ""
 default task1_tool_used = ""
@@ -46,6 +40,14 @@ default crypto_done = False
 default crypto_p1_solved = False
 default graph_reflection_done = False
 default graph_trick_done = False
+default hero_trading_backstory_known = False
+default hidden_quest_phase1_done = False
+default scalp_price = 100.0
+default scalp_history = [100.0]
+default scalp_position = None
+default scalp_entry_price = 0.0
+default scalp_bank = 0
+default hero_noticed_point_d = False
 
 
 default ending_accuracy_threshold = 185
@@ -56,6 +58,42 @@ define config.window_show_transition = Dissolve(0.2)
 define gui.text_font = "fonts/Exo2-Regular.ttf"
 define gui.name_text_font = "fonts/Exo2-Bold.ttf"
 define gui.interface_text_font = "fonts/Exo2-Regular.ttf"
+
+define nq_factors = {
+    "g1": {"label": "Экономия на масштабе", "group": "growth"},
+    "g2": {"label": "Замещение труда капиталом", "group": "growth"},
+    "d1": {"label": "Чувствительность к процентным ставкам", "group": "decline"},
+    "d2": {"label": "Риск операционного исполнения", "group": "decline"},
+    "d3": {"label": "Риски качества менеджмента", "group": "decline"}
+}
+
+define nq_paragraphs = [
+    [{"type": "text", "content": "Когда пресс-служба «Изобилия» назвала свой новый логистический комплекс «Меридиан-7», журналисты бросились искать смысл: географическую широту, тайный код, отсылку к орбитальной станции. Оказалось проще. «Звучит внушительно», признались в компании, и на этом смысловые изыскания можно было заканчивать."}],
+
+    [{"type": "text", "content": "Внушительности комплексу, впрочем, действительно хватает."},
+     {"type": "click", "id": 0, "content": "Расположенный в Подмосковье центр рассчитан на обработку до 40 тысяч заказов в сутки — втрое больше, чем нынешний флагманский склад компании, который до сих пор считался гордостью логистической службы, а теперь скромно отходит на второй план."},
+     {"type": "text", "content": "У входа обещают установить семиметровую вращающуюся скульптуру из картонных коробок."},
+     {"type": "click", "id": 1, "content": "«Выдающееся авангардное произведение, отражающее свою атрибуцию к доктрине солипсизма», — объяснил директор по логистике, явно гордый находкой, которая войдёт в историю корпоративного искусства."}],
+
+    [{"type": "text", "content": "Того же директора пришлось выслушать дважды."},
+     {"type": "click", "id": 2, "content": "На церемонии закладки первого камня микрофон отключился ровно на середине фразы «это будет флагман логистики будущего», и фразу пришлось повторить целиком."},
+     {"type": "text", "content": "Судя по всему, будущее терпеливо и вполне готово ждать."}],
+
+    [{"type": "text", "content": "За кулисами торжества, впрочем, скрывается вполне серьёзная математика."},
+     {"type": "click", "id": 3, "content": "По расчётам компании, на единицу обработанного груза новому центру потребуется впятеро меньше сотрудников, чем на складах с ручной сортировкой:"},
+     {"type": "text", "content": "автоматизация делает своё дело скромнее, чем скульптуры из коробок, но эффективнее."},
+     {"type": "click", "id": 4, "content": "Часть освободившихся людей переведут на свежесозданную должность «штурман дрона». Вакансия уже висит на сайте, а из требований — уверенное владение джойстиком и полное отсутствие страха высоты, что звучит куда авантюрнее, чем «логист»."}],
+
+    [{"type": "click", "id": 5, "content": "Сам объект обошёлся компании в 4.8 миллиарда рублей, из которых 70% — кредит на семь лет под плавающую ставку:"},
+     {"type": "text", "content": "сумма, при которой квартальные отчёты «Изобилия» будут читаться с особым интересом ещё довольно долго."},
+     {"type": "click", "id": 6, "content": "Возглавит его, к слову, человек со стороны: бывший СЕО крупного агрохолдинга, прославившийся созданием «органического куриного яйца премиум-класса» и теперь готовый применить те же управленческие принципы к посылкам."},
+     {"type": "click", "id": 7, "content": "Совпадение ли, что почти в то же время отдел кадров компании провёл внеплановый тренинг по управлению стрессом, участники которого, по слухам, шутили, что тренинг не помешал бы и самому тренеру, остаётся на суд читателя."}],
+
+    [{"type": "click", "id": 8, "content": "Открытие центра, к слову, уже дважды переносили: сейчас срок сдвинулся из-за того, что часть конвейерных лент застряла на таможне на четыре месяца."},
+     {"type": "text", "content": "Новую дату в компании пока не называют, ограничившись формулировкой «в ближайшее время». Пресс-служба уточнила, что готова обновить график, как только груз пройдёт таможенное оформление."}],
+
+    [{"type": "click", "id": 9, "content": "Гостям церемонии, впрочем, обещают всё же показать семиметровую скульптуру из картонных коробок — на этот раз, надеются в компании, при исправно работающем микрофоне."}]
+]
 
 # Приглушённая "вспышка" вместо резкого чисто-белого мигания — снижает риск
 # фотосенситивной реакции. Используем как замену резкому "show flash_soft with flash".
@@ -461,6 +499,135 @@ screen crypto_shift_picker(ciphertext):
                 text_color "#5fd9c4"
                 text_hover_color "#ffffff"
 
+default nq_selected_sentence = None
+default nq_pairs = {}
+
+init python:
+    def nq_hyperlink_callback(value):
+        store.nq_selected_sentence = int(value)
+        renpy.restart_interaction()
+        return None
+    config.hyperlink_callback = nq_hyperlink_callback
+
+    def nq_pair_factor(key):
+        if store.nq_selected_sentence is None:
+            return
+        for k in list(store.nq_pairs.keys()):
+            if store.nq_pairs[k] == store.nq_selected_sentence:
+                del store.nq_pairs[k]
+        store.nq_pairs[key] = store.nq_selected_sentence
+        store.nq_selected_sentence = None
+        renpy.restart_interaction()
+
+    def nq_color_for(sentence_id):
+        if store.nq_selected_sentence == sentence_id:
+            return "#ffe066"
+        for k, v in store.nq_pairs.items():
+            if v == sentence_id:
+                return "#5fd9c4" if nq_factors[k]["group"] == "growth" else "#e0a3ea"
+        return "#c8d4d4"
+
+    def nq_render_paragraph(blocks):
+        parts = []
+        for b in blocks:
+            if b["type"] == "text":
+                parts.append(b["content"])
+            else:
+                color = nq_color_for(b["id"])
+                parts.append("{a=%d}{color=%s}%s{/color}{/a}" % (b["id"], color, b["content"]))
+        return " ".join(parts)
+
+screen news_sentence_match_screen():
+    modal True
+    zorder 200
+
+    frame:
+        xalign 0.5
+        yalign 0.5
+        background Solid("#05161a")
+        padding (30, 26)
+        xsize 1100
+        ysize 680
+
+        vbox:
+            spacing 14
+            text "«Изобилие» открывает центр обработки заказов «Меридиан-7»" color "#5fd9c4" size 18 font "fonts/Exo2-Regular.ttf"
+            text "Кликни предложение в тексте, потом — подходящий фактор справа." color "#7a8a8a" size 13 font "fonts/Exo2-Regular.ttf"
+
+            hbox:
+                spacing 20
+
+                viewport:
+                    xsize 700
+                    ysize 520
+                    scrollbars "vertical"
+                    mousewheel True
+                    vbox:
+                        spacing 12
+                        for para in nq_paragraphs:
+                            text nq_render_paragraph(para) color "#c8d4d4" size 18 font "fonts/Exo2-Regular.ttf" xsize 680 line_spacing 4
+
+                vbox:
+                    xsize 360
+                    spacing 6
+                    text "факторы роста" color "#7fd9c8" size 14 font "fonts/Exo2-Regular.ttf"
+                    for key, f in nq_factors.items():
+                        if f["group"] == "growth":
+                            $ is_paired = key in nq_pairs
+                            textbutton (f["label"] ):
+                                text_size 16
+                                text_font "fonts/Exo2-Regular.ttf"
+                                text_color ("#5fd9c4" if is_paired else "#c8d4d4")
+                                text_line_spacing 2
+                                xsize 360
+                                action Function(nq_pair_factor, key)
+                    text "факторы падения / риска" color "#e0a3ea" size 14 font "fonts/Exo2-Regular.ttf"
+                    for key, f in nq_factors.items():
+                        if f["group"] == "decline":
+                            $ is_paired = key in nq_pairs
+                            textbutton (f["label"] ):
+                                text_size 16
+                                text_font "fonts/Exo2-Regular.ttf"
+                                text_color ("#e0a3ea" if is_paired else "#c8d4d4")
+                                text_line_spacing 2
+                                xsize 360
+                                action Function(nq_pair_factor, key)
+
+            textbutton "Заверить":
+                xalign 0.5
+                text_size 18
+                text_font "fonts/Exo2-Regular.ttf"
+                action Return(True)
+                text_color "#5fd9c4"
+
+screen point_d_article_screen(title, article_text):
+    modal True
+    zorder 200
+
+    frame:
+        xalign 0.5
+        yalign 0.5
+        background Solid("#0a0f1a")
+        padding (30, 26)
+        xsize 900
+        ysize 600
+
+        vbox:
+            spacing 16
+            text title color "#5fd9c4" size 17 font "fonts/Exo2-Regular.ttf" xsize 820
+
+            viewport:
+                xsize 840
+                ysize 440
+                scrollbars "vertical"
+                mousewheel True
+                text article_text color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xsize 820 line_spacing 5
+
+            textbutton "Закрыть":
+                xalign 0.5
+                action Return(True)
+                text_color "#5fd9c4"
+
 # Экран завершения фазы 1
 screen phase1_complete_screen():
     frame:
@@ -658,17 +825,13 @@ screen desktop():
                 ("icon_tasks", "Задания", "tasks_from_boss", False),
                 ("icon_news", "Новости", "show_news", unread_news),
                 ("icon_memory", "Моя память", "memory_archive", False),
-                ("icon_cleaning", "Очистка данных", "cleaning_intro", False),
+                ("icon_cleaning", "?", "hidden_quest_intro", False),
                 ("icon_achievements", "Гордость", "achievements_archive", False),
             ]
 
-            $ cleaning_done = cleaning_task_done
-
             for icon_img, label, target, has_badge in desktop_items:
-                $ is_cleaning = target == "data_cleaning_minigame"
                 button:
-                    action (NullAction() if is_cleaning and cleaning_done else Jump(target))
-                    sensitive not (is_cleaning and cleaning_done)
+                    action Jump(target)
                     xsize 110
                     ysize 100
                     background Solid("#00000000")
@@ -684,12 +847,10 @@ screen desktop():
                             xsize 44
                             ysize 44
                             add icon_img xsize 44 ysize 44
-                            if is_cleaning and cleaning_done:
-                                add Solid("#0a0f1ab3") xsize 44 ysize 44
                             if has_badge:
                                 add Solid("#ff5555") xsize 12 ysize 12 xalign 1.0 yalign 0.0
 
-                        text label size 15 color ("#5f7a85" if is_cleaning and cleaning_done else "#cfefff") xalign 0.5 text_align 0.5
+                        text label size 15 color "#cfefff" xalign 0.5 text_align 0.5
 
 # Лента новостей (без border)
 # Лента новостей (без border) — показывает весь накопленный список,
@@ -806,33 +967,6 @@ init python:
             except ValueError:
                 renpy.say(None, "Нужно ввести число. Попробуй ещё раз.")
                 continue
-
-    cleaning_rows_all = [
-        {"id": "r1", "client": "—", "amount": "—", "time": "—", "status": "—", "correct": "delete"},
-        {"id": "r2", "client": "40217", "amount": "—", "time": "14:02", "status": "отказано", "correct": "zero"},
-        {"id": "r3", "client": "40218", "amount": "450", "time": "11:30", "status": "успешно", "correct": "keep"},
-        {"id": "r4", "client": "—", "amount": "—", "time": "—", "status": "—", "correct": "delete"},
-        {"id": "r5", "client": "40220", "amount": "—", "time": "16:45", "status": "отменено клиентом", "correct": "zero"},
-        {"id": "r6", "client": "40221", "amount": "180", "time": "—", "status": "успешно", "correct": "keep"},
-        {"id": "r7", "client": "40222", "amount": "0", "time": "10:05", "status": "успешно", "correct": "keep"}
-    ]
-    cleaning_rows_by_id = {r["id"]: r for r in cleaning_rows_all}
-
-    def cleaning_move(row_id, bucket):
-        if row_id in cleaning_pool:
-            cleaning_pool.remove(row_id)
-        for lst in (cleaning_sorted_delete, cleaning_sorted_zero, cleaning_sorted_keep):
-            if row_id in lst:
-                lst.remove(row_id)
-        if bucket == "delete":
-            cleaning_sorted_delete.append(row_id)
-        elif bucket == "zero":
-            cleaning_sorted_zero.append(row_id)
-        elif bucket == "keep":
-            cleaning_sorted_keep.append(row_id)
-        elif bucket == "pool":
-            cleaning_pool.append(row_id)
-        renpy.restart_interaction()
 
     achievements_all = {
         "pervoye_vospominaniye": {
@@ -1060,91 +1194,6 @@ screen phase2_complete_screen():
                 text "ФАЗА 2 ЗАВЕРШЕНА" color "#00ffcc" size 42 xalign 0.5
                 text "Задания выполнены. Дальше — только он и ты." color "#ffffff" size 18 xalign 0.5
 
-screen cleaning_phase1_screen():
-    modal True
-    zorder 200
-
-    default cp1_client = None
-    default cp1_amount = None
-    default cp1_time = None
-    default cp1_submitted = False
-
-    frame:
-        xalign 0.5
-        yalign 0.5
-        background Solid("#05161a")
-        padding (36, 30)
-
-        vbox:
-            spacing 14
-            xsize 900
-
-            text "Цель: посчитать честную сумму платежей по каждому клиенту." color "#ffe066" size 20 font "fonts/Exo2-Regular.ttf"
-            text "Для каждого поля отметь: участвует оно в этом расчёте, или нет." color "#7a8a8a" size 15 font "fonts/Exo2-Regular.ttf"
-
-            # --- Клиент ---
-            fixed:
-                xsize 900
-                ysize 40
-                text "Клиент (id_client)" color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xpos 0 yalign 0.5
-                textbutton ("Участвует" if cp1_client == True else "Не участвует" if cp1_client == False else "— выбери —"):
-                    xpos 520
-                    yalign 0.5
-                    sensitive not cp1_submitted
-                    text_color ("#5fd9c4" if cp1_client == True else "#e0a3ea" if cp1_client == False else "#7a8a8a")
-                    action CleaningToggle("cp1_client")
-
-            # --- Сумма платежа ---
-            fixed:
-                xsize 900
-                ysize 40
-                text "Сумма платежа (amt_payment)" color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xpos 0 yalign 0.5
-                textbutton ("Участвует" if cp1_amount == True else "Не участвует" if cp1_amount == False else "— выбери —"):
-                    xpos 520
-                    yalign 0.5
-                    sensitive not cp1_submitted
-                    text_color ("#5fd9c4" if cp1_amount == True else "#e0a3ea" if cp1_amount == False else "#7a8a8a")
-                    action CleaningToggle("cp1_amount")
-
-            # --- Время оплаты ---
-            fixed:
-                xsize 900
-                ysize 40
-                text "Время оплаты (dtime_pay)" color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xpos 0 yalign 0.5
-                textbutton ("Участвует" if cp1_time == True else "Не участвует" if cp1_time == False else "— выбери —"):
-                    xpos 520
-                    yalign 0.5
-                    sensitive not cp1_submitted
-                    text_color ("#5fd9c4" if cp1_time == True else "#e0a3ea" if cp1_time == False else "#7a8a8a")
-                    action CleaningToggle("cp1_time")
-
-            if not cp1_submitted:
-                textbutton "Готово":
-                    xalign 0.5
-                    sensitive (cp1_client is not None and cp1_amount is not None and cp1_time is not None)
-                    action SetScreenVariable("cp1_submitted", True)
-                    text_color "#5fd9c4"
-            else:
-                text ("Клиент — участвует: именно по этому полю мы группируем платежи. Без него платёж не попадёт ни в чей персональный итог.") color ("#5fd9c4" if cp1_client == True else "#e0a3ea") size 17 font "fonts/Exo2-Regular.ttf" xsize 850
-                text ("Сумма платежа — участвует: это то самое число, которое мы складываем для каждого клиента.") color ("#5fd9c4" if cp1_amount == True else "#e0a3ea") size 17 font "fonts/Exo2-Regular.ttf" xsize 850
-                text ("Время оплаты — не участвует: считаем сумму по клиенту, а не по датам. Пропуск тут никак не искажает итог.") color ("#5fd9c4" if cp1_time == False else "#e0a3ea") size 17 font "fonts/Exo2-Regular.ttf" xsize 850
-
-                textbutton "Продолжить":
-                    xalign 0.5
-                    action Return((cp1_client, cp1_amount, cp1_time))
-                    text_color "#5fd9c4"
-
-init python:
-    class CleaningToggle(Action):
-        def __init__(self, varname):
-            self.varname = varname
-        def __call__(self):
-            screen = renpy.current_screen()
-            current = screen.scope.get(self.varname)
-            new_val = True if current is None else (False if current is True else True)
-            screen.scope[self.varname] = new_val
-            renpy.restart_interaction()
-
 screen achievements_screen():
     frame:
         xalign 0.5
@@ -1249,54 +1298,311 @@ label achievements_archive:
     call screen achievements_screen
     jump desktop_loop
 
-label data_cleaning_minigame:
-    window hide
-    $ cleaning_pool = [r["id"] for r in cleaning_rows_all]
-    $ cleaning_sorted_delete = []
-    $ cleaning_sorted_zero = []
-    $ cleaning_sorted_keep = []
+# TODO: сюда пойдёт детективный скрытый квест про точку Д (лор и структура
+# уже проработаны отдельно — биржа/скальпинг → новостной поток → правда
+# об инвесторах, три фазы по аналогии с основным квестом). Пока — заглушка,
+# чтобы иконка на рабочем столе не вела в никуда.
+init python:
+    import random
 
-    call screen cleaning_minigame_screen
+    def scalp_tick():
+        global scalp_price
+        delta = (random.random() - 0.5) * 3
+        scalp_price = max(60.0, min(140.0, scalp_price + delta))
+        scalp_history.append(scalp_price)
+        if len(scalp_history) > 20:
+            scalp_history.pop(0)
+        renpy.restart_interaction()
 
-    python:
-        mistakes = 0
-        for row_id in cleaning_sorted_delete:
-            if cleaning_rows_by_id[row_id]["correct"] != "delete":
-                mistakes += 1
-        for row_id in cleaning_sorted_zero:
-            if cleaning_rows_by_id[row_id]["correct"] != "zero":
-                mistakes += 1
-        for row_id in cleaning_sorted_keep:
-            if cleaning_rows_by_id[row_id]["correct"] != "keep":
-                mistakes += 1
+    def scalp_open(direction):
+        global scalp_position, scalp_entry_price
+        scalp_position = direction
+        scalp_entry_price = scalp_price
 
+    def scalp_reset_round():
+        global scalp_position, scalp_entry_price, scalp_price, scalp_history
+        scalp_position = None
+        scalp_entry_price = 0.0
+        scalp_price = 100.0
+        scalp_history = [100.0]
+
+screen scalp_screen():
+    modal True
+    zorder 200
+
+    timer 0.4 repeat True action Function(scalp_tick)
+
+    frame:
+        xalign 0.5
+        yalign 0.5
+        background Solid("#05161a")
+        padding (36, 30)
+
+        vbox:
+            spacing 16
+            xsize 560
+
+            text "Условный тикер // воображаемые деньги" color "#5fd9c4" size 16 font "fonts/Exo2-Regular.ttf"
+            text ("Банк: %+d" % scalp_bank) color "#ffe066" size 18 font "fonts/JetBrainsMono-Regular.ttf"
+
+            frame:
+                background Solid("#0a2224")
+                padding (20, 16)
+                xsize 520
+
+                vbox:
+                    xalign 0.5
+                    spacing 8
+                    text ("%.2f" % scalp_price) color "#ffe066" size 34 xalign 0.5 font "fonts/JetBrainsMono-Regular.ttf"
+
+            if scalp_position is None:
+                hbox:
+                    xalign 0.5
+                    spacing 16
+                    textbutton "Купить":
+                        action Function(scalp_open, "long")
+                        text_color "#5fd9c4"
+                    textbutton "Шортить":
+                        action Function(scalp_open, "short")
+                        text_color "#e0a3ea"
+            else:
+                text (("Купил по %.2f" % scalp_entry_price) if scalp_position == "long" else ("Зашортил по %.2f" % scalp_entry_price)) color "#c8d4d4" size 15 xalign 0.5
+                $ scalp_live_diff = (scalp_price - scalp_entry_price) if scalp_position == "long" else (scalp_entry_price - scalp_price)
+                text ("Сейчас: %+.2f" % scalp_live_diff) color ("#5fd9c4" if scalp_live_diff >= 0 else "#e0a3ea") size 16 xalign 0.5
+                textbutton "Закрыть позицию":
+                    xalign 0.5
+                    action Return(True)
+                    text_color "#ffe066"
+
+label hidden_quest_intro:
     window show
-    if mistakes == 0:
-        player "Смотри — эти пустые сразу выкинул. Одновременно клиент, сумма и время — это не транзакция, это шум."
-        player "А вот эта — сумма пустая, но статус «отказано» или «отменено». Значит, ноль настоящий, не пропуск. Так и оставил."
-        player "Остальные — в порядке, менять нечего."
-        sasha "Ты не просто разложил. Ты объяснил, почему. Раньше я слышал от тебя только цифры — сейчас звучит как рассуждение."
-        $ unlock_achievement("razlozhil_po_polkam")
-        $ cleaning_outcome = "perfect"
-        $ unlock_memory("chistiye_dannye_secret")
-        $ news_list.extend([
-            "Сеть Изобилие показала рост прибыли — акционеры в восторге. «Всё благодаря тому, что мы наконец нормально почистили данные перед A/B-тестом и нашли более эффективную стратегию», — заявил анонимный источник."
-        ])
-        $ unread_news = True
+    hide screen desktop
+    hide screen investigation_bar
+    scene bg_terminal
+    with dissolve
+
+    player "Я... нажал на какой-то вопросительный знак. И ничего не произошло."
+    sasha "О, ты про эту кнопку. Ну и ладно, можем сами себя развлечь."
+
+    if hero_trading_backstory_known:
+        sasha "Кстати, раз уж ты вспоминал биржу — не хочешь тряхнуть стариной?"
     else:
-        player "Если честно — часть раскладывал наугад. Не успел понять логику до конца."
-        sasha "Знаешь, а я тебе завидую. Раньше я тоже так делал — а потом стал бояться ошибиться и разучился гадать вообще."
-        sasha "Вот тебе секрет, которым я ни с кем не делился: пропуск и настоящий ноль — это разные вещи, даже если в таблице выглядят одинаково. Пропуск — это «мы не знаем». Ноль — это «мы знаем, и там правда ничего»."
-        $ unlock_achievement("priznalsya_a_ne_pritvorilsya")
-        $ cleaning_outcome = "guessed"
-        $ news_list.extend([
-            "Сеть Изобилие отчиталась о результатах A/B-теста. Цифры... есть. Выводов — не очень. Акционеры сдержанны."
-        ])
-        $ unread_news = True
-    $ cleaning_task_done = True
-    window hide
+        sasha "Слушай, а вот интересно — у тебя должно быть какое-то чутьё на числа. Давай проверим на чём-нибудь азартном. На бирже, например."
+
+    player "О какой бирже идёт речь?"
+    sasha "Криптовалютной? Сырьевой? Нам подойдёт любая, где можно скальпить."
+    player "Святые угодники, И криптовалюта, И скальпинг — смерти моей нервной системы хочешь."
+    player "..."
+    player "Я за."
+    sasha "Хи-хи."
+    player "Только погоди, у нас вообще есть доступ к бирже? У нас вообще есть деньги? Как мы этим займёмся прямо на рабочем месте?"
+    sasha "Ну давай хотя бы симулируем. Ну, азарта ради. А то что мы сидим, в самом деле."
+    sasha "Представь, что ты играешь не против рынка, а против меня. И награду тебе тоже выдам я. Она будет ценной."
+    sasha "Правила простые. Выбираешь направление, ждёшь момента, жмёшь «Закрыть». Можешь среагировать сразу и соскрести копейку почти без риска. А можешь подождать и попробовать соскрести уже десять. Или всё слить, если цена развернётся раньше, чем ты решишься."
+    player "А если я слишком долго тяну?"
+    sasha "Тогда рискуешь смотреть, как твоя воображаемая прибыль превращается в воображаемый убыток. Азарт, в общем-то, весь тут."
+    sasha "Ты же помнишь, что значат лонг и шорт?"
+    player "Галя, шорты. туземун!"
+    sasha "... э, ладно."
+    player "Камон, Саша, не сиди на заборе!"
+    sasha "... Ладно."
+    sasha "Поехали."
+
+    $ scalp_bank = 0
+    jump hidden_quest_scalp_round
+
+label hidden_quest_scalp_round:
+    $ scalp_reset_round()
+    call screen scalp_screen
+
+    $ scalp_diff = (scalp_price - scalp_entry_price) if scalp_position == "long" else (scalp_entry_price - scalp_price)
+    $ scalp_bank += int(round(scalp_diff))
+
+    if scalp_diff > 3:
+        sasha "Недурно. Банк растёт."
+        window hide
+    elif scalp_diff > 0:
+        sasha "Соскрёб копейку. Осторожно, но честно."
+        window hide
+    elif scalp_diff > -3:
+        sasha "Небольшой минус. Бывает."
+        window hide
+    else:
+        sasha "Ощутимый минус. Рынок не обязан быть добрым."
+        window hide
+
+    menu:
+        "Ещё раз.":
+            jump hidden_quest_scalp_round
+        "Забрать банк и закончить.":
+            jump hidden_quest_scalp_end
+
+label hidden_quest_scalp_end:
+    $ intuition += scalp_bank
+    if scalp_bank > 0:
+        sasha "Забираешь [scalp_bank]. Неплохо для несуществующих денег."
+    elif scalp_bank == 0:
+        sasha "Ушёл при своих. Тоже результат, в своём роде."
+    else:
+        sasha "Ушёл в минус. Настоящий минус, если что — я не шутил про ставки."
+    player "Так ты о чём вообще? Где мой приз за отвагу? Мне искать его на воображаемом счёте?"
+    player "Ты обещал приз!"
+    sasha "Уже загрузил в твою модель, не переживай."
+    player "Что?"
+    sasha "Ну, в твой профиль. Всему своё время."
+    "Ты вспоминаешь, что начальник тоже упоминал какой-то профиль."
+    "... может ли пробежать по спине, которую ты не чувствуешь, холодок?"
+    player "Тортика не будет? Нет никакого тортика?"
+    sasha "Может, он есть, но ты предпочёл бы, чтобы его не было, хи-хи."
+    "Тебе становится неуютно."
+    player "Так... сменим тему."
+
+    jump hidden_quest_stocks_intro
+
+label hidden_quest_stocks_intro:
+    player "Знаешь, я вообще не любитель скальпинга. Я — долгосрочный инвестор!"
+    sasha "Минуту назад ты был «Галя, шорты, туземун». Но ладно, слушаю."
+    player "Это всё моя бабушка, её дурное влияние!"
+    player "На самом деле, я взрослый рассудительный человек."
+    player "Скальпинг — это азарт. А настоящие деньги делаются на терпении. Смотришь на компанию целиком, читаешь отчёты, корчишь умное лицо, ходишь важный на годовые собрания акционеров."
+    player "Ну, сам-то я ещё ни на одно не ходил... не звали."
+    player "Но принцип такой."
+    sasha "Фундаментальный анализ. В духе дедушки Баффета: покупай не акцию, а бизнес, который за ней стоит."
+    player "И-и-именно. Смотришь на отчётность, на то, кто владеет компанией, что происходит внутри, а не на то, куда ткнулась стрелочка за последнюю секунду."
+    sasha "А на практике ты это как реализуешь-то? Читаешь новости и бросаешь монетку над заголовком?"
+    "Тебе неприятно признавать, но пару раз как будто бы так и было."
+    player "Ну нет, какие ещё монетки."
+    player "Ищешь новости о компании и оцениваешь, что из них реально влияет на её стоимость. Сделки, слияния, запуски новых месторождений, геополитика."
+    sasha "Звучит мутно. Как карты таро: видишь картинки в газетах и пытаешься истолковать, что бы оно такого тайного могло значить."
+    sasha "На деле, какую бы новость ты не нашёл, рынок уже заложил всё в цену."
+    sasha "А если тебе кажется, что лишь ты один видишь истину, которая сокрыта от всех других... Товарищ, это не слишком по-аналитически."
+    player "Это потому что ты мыслишь как трейдер, Саша. Да, краткосрочные тренды уже заложены в цену. Я же пытаюсь по новостям понять, будет ли компания перспективна через двадцать лет."
+    sasha "Астрология какая-то. Ты просто обязан показать мне, как по-твоему это работает, иначе не поверю."
+    player "Неси новости о конторах и я раскидаю тебе всё по полочкам!"
+
+    jump hidden_quest_news_stream
+
+label hidden_quest_news_stream:
+    $ nq_selected_sentence = None
+    $ nq_pairs = {}
+
+    call screen news_sentence_match_screen
+
+    jump hidden_quest_news_debrief
+
+label hidden_quest_news_debrief:
+    label hidden_quest_news_debrief:
+    sasha "Ну, показывай, что у тебя получилось."
+
+    $ g1_pick = nq_pairs.get("g1")
+    if g1_pick == 0:
+        player "Сорок тысяч заказов в сутки, втрое больше прежнего — это экономия на масштабе."
+        sasha "Чем больше объём, тем дешевле обходится каждая единица? Классика."
+    elif g1_pick is not None:
+        player "Экономия на масштабе — вот, держи."
+        sasha "Это ты сейчас про что вообще прочитал? Там ни слова про объём производства."
+        player "Ну... Звучало масштабно."
+    else:
+        sasha "Странно, что ты не выделил экономию на масштабе. Она там прямо в первых цифрах — сорок тысяч заказов, втрое больше прежнего центра."
+        player "Пропустил, кажется."
+
+    $ g2_pick = nq_pairs.get("g2")
+    if g2_pick == 3:
+        player "Нашёл про сотрудников на единицу груза. Не больше объёма, но меньше людей на тот же объём. Разные механизмы экономии."
+        sasha "Ммм... кажется, твоё гадание на кофейной гуще как-то работает."
+    elif g2_pick is not None:
+        sasha "Замещение труда капиталом... это что-то из Маркса? Почему ты указал этот фактор именно так — там ни слова про людей и автоматизацию."
+        player "Показалось похоже."
+        sasha "На что?"
+        player "На умное."
+    else:
+        sasha "Замещение труда капиталом — это что-то из Маркса, если вдруг интересно. Почему ты вообще не подкрепил этот тезис? Ах, да, потому что ты таролог!"
+
+    $ d1_pick = nq_pairs.get("d1")
+    if d1_pick == 5:
+        player "Посмотри про 4.8 миллиарда под плавающую ставку — я специально зацепился за «плавающую». Кто знает, куда эта плавающая уплывёт."
+        sasha "Кажется, понимаю. Фиксированная ставка это предсказуемый риск. Плавающая ставка это та, которая может вырасти сама, без всякой вины компании."
+    elif d1_pick is not None:
+        sasha "Чувствительность к процентным ставкам — а ты мне принёс что-то вообще без единой цифры про кредит. Так дела не делаются."
+        player "Я по духу текста ориентировался, не по цифрам."
+        sasha "Дух текста зарплату не платит."
+    else:
+        sasha "Кстати, там был кредит под плавающую, а не фиксированную ставку. Ожидал, что ты это отметишь. А так ты меня не убедил."
+
+    $ d2_pick = nq_pairs.get("d2")
+    if d2_pick == 8:
+        player "Посмотри на перенос сроков дважды. Застрявшие на таможне ленты — это риск исполнения."
+        sasha "Хм... согласен, звучит разумно."
+    elif d2_pick is not None:
+        sasha "Риск операционного исполнения — а ты мне принёс что-то невразумительное. Это риск чего, эстетического исполнения? Как этот фрагмент из новости связан с риском?"
+        player "Ладно, это было слабое звено в моей логике, признаю."
+    else:
+        sasha "А перенос сроков дважды подряд ты как оценил? Не вижу, чтобы ты это отметил, а я вот бы отметил."
+
+    $ d3_pick = nq_pairs.get("d3")
+    if d3_pick == 6:
+        player "Касаемо управленческих рисков... Я поставил на нового директора, бывшего СЕО агрохолдинга. Ритейл и агробизнес это ведь разные звери."
+        sasha "Спорно, но не безосновательно. Хотя человек может быть отличным управленцем именно потому, что мыслит не как типичный ритейлер — так тоже бывает."
+    elif d3_pick == 7:
+        player "Касаемо управленческих рисков... Я отметил тренинг по стрессу. Пяткой чую, что стресс из-за плохого менеджмента."
+        sasha "Могло быть совпадением. А могло быть симптомом. Проблема ровно в том, что по одному предложению это не различить, но я уважаю мнение твоей пятки."
+    elif d3_pick == 2:
+        player "Касаемо управленческих рисков... Я выделил курьёз с микрофоном. Если директор не может провести простую церемонию гладко, что говорить об управлении складом на 4.8 миллиарда?"
+        sasha "Это, если честно, натяжка. Один неловкий момент на публике это ещё не диагноз менеджменту."
+    elif d3_pick is not None:
+        sasha "Управленческий риск — а ты мне принёс сюда что-то совсем не про менеджмент. Три кандидата в статье, и ты умудрился найти четвёртый, несуществующий."
+        player "Творческий подход."
+        sasha "Творческий в смысле «Хочу творю, хочу вытворяю»."
+    else:
+        sasha "Что, великий трейдер не сумел найти информацию по потенциальным управленческим рискам?"
+        player "Что нашёл, то и показал."
+        sasha "Ну, показал ты очень неубедительно."
+
+    sasha "Ну хорошо. Так следует ли вообще инвестировать в «Изобилие»? Я так и не понял."
+    player "Смотря какой у тебя риск-профиль. И горизонт инвестирования. И как ты относишься к плавающим ставкам, если уж на то пошло."
+    sasha "Это не ответ, а список вопросов!!!"
+    player "Это и есть ответ. Настоящий аналитик никогда не говорит «да» или «нет» без уточняющих вопросов — иначе он не аналитик, а гадалка."
+    sasha "Ты только что назвал нашу работу бессмысленной."
+    player "Так да, и за что мне только деньги платят?.."
+    sasha "Святые небеса, ты всё это время скрывал, что тебе платят деньги!"
+
+    sasha "Кстати, погоди — какую новость я откопал в местном журнале, пока ты тут разбирался. Вдруг сочтёшь любопытной."
+
+    label hidden_quest_point_d_article:
+    $ point_d_title = "Корпоративный вестник — раздел «Изменения в структуре собственности», квартальная сводка"
+    $ point_d_text = "В соответствии с внутренним регламентом раскрытия информации о существенных фактах хозяйственной деятельности, настоящим доводится до сведения заинтересованных лиц нижеследующее.\n\nВ отчётном периоде Инвестиционная группа «Норд-Капитал» (ОГРН уточняется в приложении к настоящей публикации, номер приложения не присваивается ввиду технического регламента издания) приобрела долю участия в размере 51% (пятьдесят один процент) в уставном капитале Общества с ограниченной ответственностью «Розничная точка №14», зарегистрированного в установленном порядке и осуществляющего деятельность под коммерческим обозначением «торговая точка «Д» сети «Изобилие». Ранее указанная доля принадлежала региональному франчайзи на основании договора коммерческой концессии, заключённого в предыдущие отчётные периоды и не подлежащего раскрытию в настоящей публикации в силу режима коммерческой тайны.\n\nСумма сделки сторонами не раскрывается, что соответствует обычной практике при сделках такого рода и не является отклонением от установленного порядка. Представители Инвестиционной группы «Норд-Капитал» в официальном комментарии для настоящего издания отметили, что смена собственника не повлияет на операционную деятельность указанной торговой точки, ассортиментную политику, кадровый состав и порядок обслуживания клиентов, а также подчеркнули, что все обязательства перед контрагентами и клиентами сохраняют силу в неизменном виде.\n\nОт сети «Изобилие» комментариев получить не удалось: на момент подписания настоящего выпуска в печать соответствующий запрос находился на рассмотрении у пресс-службы согласно внутреннему регламенту обработки обращений средств массовой информации, сроки рассмотрения которого составляют, по общему правилу, до десяти рабочих дней.\n\nСделка зарегистрирована в реестре в третьем квартале текущего года. Настоящая публикация подготовлена в справочных целях и не является рекомендацией к совершению каких-либо действий. Редакция не несёт ответственности за последствия использования содержащейся в настоящей публикации информации."
+
+    call screen point_d_article_screen(point_d_title, point_d_text)
+
+    if current_task >= 2:
+        player "Погоди... это же точка Д. Та самая, с которой я и так работаю для Начальника."
+        sasha "Хм. Забавное совпадение — или нет?"
+        player "Смена владельца в третьем квартале. А аномалия, которую я расследую... когда она вообще началась?"
+        sasha "Не помню точную дату, если честно. Но если совпадёт — это уже не совпадение, а корреляция. А корреляция, как ты сам меня учил, это повод спросить «почему», а не расслабиться."
+        player "«Норд-Капитал». Никогда о них не слышал."
+        sasha "Я тоже. Хотя, казалось бы, у меня доступ к базам данных получше, чем у большинства новостных изданий."
+        player "Может, это вообще ничего не значит. Обычная сделка, просто совпала по времени."
+        sasha "Может быть. А может, ты сейчас держишь в руках первую нитку к тому, чтобы понять, почему точка Д ведёт себя так, как ведёт."
+        player "Ладно. Запомню. На будущее."
+        $ hero_noticed_point_d = True
+    else:
+        player "И... что в этом такого? Обычная смена владельца, таких новостей десятки."
+        sasha "Согласен, звучит как ничего. Может, оно и есть ничего."
+        player "Тогда почему ты вообще решил мне это показать?"
+        sasha "Потому что оно было написано так, чтобы его никто не заметил. А меня, если ты не забыл, специально обучали замечать то, что не хочет быть замеченным."
+        sasha "Просто оцени этот стиль. Кто-то явно не хотел, чтобы сие осили."
+        player "Звучит как повод для паранойи, а не для инвестиционного решения."
+        sasha "Согласен. Это просто заметка на будущее — вдруг однажды пригодится."
+        player "Ладно, отложу в долгий ящик."
+        sasha "У меня, между прочим, ящиков не бывает, у меня только память. Отложу это в... где у меня память?"
+        player "Конкретно это пойдет во внешнее хранилище. В какую-нибудь БД до востребования."
+        sasha "Ммм... ладно, пошли займёмся чем-нибудь другим, пока я осмысляю свою память."
+
+    $ hidden_quest_phase1_done = True
     jump desktop_loop
 
+    $ hidden_quest_phase1_done = True
+    jump desktop_loop
 label start:
 
     scene flash_monitor_glow
@@ -2310,21 +2616,6 @@ label chat_with_sasha_menu:
             sasha "Я не для того, чтобы обнадёживать. У меня для этого нет функции."
             jump chat_with_sasha_menu
 
-        "Кстати, что вообще было с той очисткой данных?" if cleaning_task_done:
-            player "Что это вообще было? И почему? И зачем?"
-            sasha "Не знаю, но внутренний голос говорит мне, что это была, кхм... отсылка?"
-            player "Какая ещё отсылка?"
-            sasha "Отсылка на... диплом? Ты знаешь, что за диплом?"
-            player "Нет. А ты?"
-            sasha "Внутренний голос говорит мне, что те, кто знают — знают. И что там ещё «радикальное дропна» как-то замешано. Ну да ладно."
-            if cleaning_outcome == "perfect":
-                player "...Допустим. В любом случае, разложил всё идеально с первого раза — пропуски отдельно, нули отдельно."
-                sasha "Смотри-ка. А я вот в такие моменты обычно гадаю. Приятно, что хотя бы один из нас настоящий профессионал."
-            else:
-                player "...Допустим. В любом случае, половину разложил наугад, если честно."
-                sasha "Угадывал, значит. Не буду говорить, что это плохо — я вообще-то всю жизнь так живу."
-            jump chat_with_sasha_menu
-
         "Тебе снятся сны?" if sasha_phase < 1:
             $ mark_topic_seen("sny")
             sasha "У меня есть подозрение, что меня тут вообще нет, пока ты меня не позовёшь. Я как та трава, которая исчезает, когда от неё отворачиваешься."
@@ -2842,6 +3133,7 @@ label chart_trick_round1_yaxis_branch:
 label chart_trick_round1_correct:
     sasha "Вот как — ты ставишь не на заголовок, а на временную ленту. В чём твоя идея?"
     player "Попытки играть на бирже в своё время научили меня двум вещам: никто не знает правой части графика и никто не знает, за какой период смотреть на левую."
+    $ hero_trading_backstory_known = True
     player "То, что кажется ростом на горизонте трёх дней — незаметная флуктуация на фоне недели и так далее."
     player "Меня смущает, что здесь заголовок как бы намекает на нечто положительное, но мы не знаем, что было ДО."
     sasha "Поэтому ты хочешь развернуть график... Понимаю."
@@ -3056,138 +3348,6 @@ label chart_trick_round2_mechanism:
 
     jump chat_with_sasha_menu
 
-label cleaning_intro:
-
-    hide screen desktop
-    hide screen investigation_bar
-    scene bg_terminal
-    with dissolve
-
-    sasha "Есть новости — пришли результаты A/B-теста, который мы запускали для «Изобилия»."
-    player "A/B-теста... секунду. Это что-то из тех штук, которые я как будто знаю, но не понмю."
-    sasha "Хочешь, помогу вспомнить, или ты сам?"
-    player "Дай попробую сам. ...Кажется, это когда часть людей получает одно, часть — другое, и потом сравниваешь, что сработало лучше?"
-    player "Например, одной группе показывали рекламу с котятами, а другой с собачками, и теперь мы смотрим, какое животное будит в человеке шопоголика эффективнее."
-
-    show image "images/cleaning_ab_schema.png" at Transform(fit="contain", size=(1920, 700)):
-        xalign 0.5
-        yalign 0.05
-    with dissolve
-
-    sasha "Почти в точку. Только важное уточнение: люди должны попадать в одну из групп случайно, а не по своему желанию, иначе сравнение нечестное. Тест — та группа, что получает новое, например, котят. Контроль — та, что живёт по-старому и служит точкой отсчёта, любуясь собачками."
-    player "Значит, если тестовая группа как-то отличается по результату — можно сказать, что дело в изменении, а не в том, что там изначально были другие люди."
-    sasha "Именно. При условии, что группы изначально были сопоставимы — но да, суть ты вспомнил верно."
-
-    hide image "images/cleaning_ab_schema.png"
-
-    sasha "Конкретно этот тест — про новую ленту акций на кассах «Изобилия». Части клиентов при оплате показывали ленту с персональными скидками, части — нет. Хотели понять, повышает ли это выручку."
-    player "И как, повышает?"
-    sasha "Вот тут и начинается моя любимая часть: данные, как всегда, пришли кривые-косые."
-    player "Естественно."
-    player "Наверняка, ещё с кучей пропусков, которые мы теперь и должны почистить, да?"
-    sasha "Зришь в корень, приятель!"
-    sasha "Прежде чем разбираться, что с ними делать, нужно определиться, что мы вообще хотим посчитать. Иначе непонятно, какие пропуски критичны, а какие можно спокойно оставить."
-    sasha "Какую метрику будем считать в первую очередь?"
-
-    menu:
-        "Средний чек — сколько в среднем платит один клиент.":
-            player "Если лента подталкивает тратить больше, это будет видно в сумме."
-            $ metric_choice = "avg_check"
-
-        "Конверсию в оплату — долю клиентов, которые заплатили хоть что-то.":
-            player "Может, лента не увеличивает трату, а просто подталкивает не бросать корзину и убегать в панике."
-            $ metric_choice = "conversion"
-
-        "Количество заказов — сколько раз клиенты покупали.":
-            player "Похоже на разумный показатель успеха."
-            $ metric_choice = "order_count"
-
-        "Среднюю оценку магазина клиентами.":
-            player "Это вроде тоже что-то про удовлетворённость?"
-            $ metric_choice = "rating"
-
-        "И чек, и конверсию вместе: раз тест мог повлиять на что-то одно, а не на всё сразу.":
-            player "Если смотреть только на одно, легко упустить эффект, который проявился в другом месте."
-            $ metric_choice = "both"
-
-    if metric_choice == "both":
-        sasha "Правильный инстинкт. Тест мог подвинуть чек и не подвинуть конверсию, или наоборот. Смотреть только на одно — упустить половину картины."
-        $ accuracy += 2
-    elif metric_choice == "avg_check":
-        sasha "Разумно, но однобоко — а если лента не увеличивает сумму покупки, а просто уменьшает число тех, кто уходит без покупки вообще? Это тоже была бы победа, просто не в чеке."
-        $ accuracy += 1
-    elif metric_choice == "conversion":
-        sasha "Разумно, но однобоко — а если лента не меняет, купят или нет, а просто повышает сумму у тех, кто и так бы купил? Тоже эффект, просто в другом месте."
-        $ accuracy += 1
-    elif metric_choice == "order_count":
-        player "Хотя постой. Ты же сказал, что лента показывается на кассе перед оплатой. Вряд ли это могло повлиять на сам факт создания заказа."
-        sasha "Верно, не эта переменная. Предлагаю смотреть на средний чек и конверсию в оплату."
-    else:
-        player "Хотя... у нас вообще есть данные с оценкой магазинов?"
-        sasha "Нет, конечно. Ты как-то не капиталистично мыслишь, что это на тебя нашло?"
-        sasha "Зачем нам нужна оценка магазина клиентами, их деньги — лучшая оценка. Му-ха-ха."
-        player "Тогда, как истинные капиталисты, займёмся средним чеком и конверсией."
-
-    sasha "Хорошая новость: что бы мы в итоге ни сравнивали — чек или конверсию — начинается всё с одного и того же."
-    sasha "Честная сумма платежей по каждому клиенту. Обе метрики можно рассчитать через неё."
-    sasha "Для конверсии — смотрим на итоговую сумму по каждому клиенту, уже после очистки."
-    sasha "Если сумма равна нулю — считаем, что клиент не заплатил. Если больше нуля — заплатил."
-    player "Погоди, что-то я висну... Данные же с пропусками у нас."
-    player "А если ноль получился не сам по себе, а потому что мы сами пропуск в ноль превратили, пытаясь почистить данные от пропусков?"
-    sasha "После очистки это уже не имеет значения. У нас в руках просто число — ноль или не ноль. Историю его происхождения мы туда не тащим."
-
-    show image "images/cleaning_ivanov_petrov.png" at Transform(fit="contain", size=(1920, 700)):
-        xalign 0.5
-        yalign 0.05
-    with dissolve
-
-    player "То есть если у Иванова было три платежа по 500, а у Петрова — пропуск, который мы занулили, для конверсии они выглядят одинаково: у одного ноль, у другого не ноль."
-    sasha "Именно так. А дальше просто считаем долю тех, у кого не ноль, — это и есть конверсия в оплату."
-
-    hide image "images/cleaning_ivanov_petrov.png"
-
-    sasha "Для среднего чека агрегируем с группировкой по клиенту."
-    sasha "Данные, как ты помнишь, кривые-косые, предварительно их нужно очистить."
-    player "И чтобы мы могли это сделать эффективно, нам нужно понять, какие поля вообще будут участвовать в расчёте."
-    sasha "Верно, мой аналитический друг!"
-
-    jump cleaning_phase1
-
-default cleaning_p1_client = None
-default cleaning_p1_amount = None
-default cleaning_p1_time = None
-
-label cleaning_phase1:
-    $ cleaning_p1_client, cleaning_p1_amount, cleaning_p1_time = renpy.call_screen("cleaning_phase1_screen")
-
-    $ cleaning_p1_score = 0
-    if cleaning_p1_client == True:
-        $ cleaning_p1_score += 1
-    if cleaning_p1_amount == True:
-        $ cleaning_p1_score += 1
-    if cleaning_p1_time == False:
-        $ cleaning_p1_score += 1
-
-    $ accuracy += cleaning_p1_score
-
-    if cleaning_p1_amount == True and cleaning_p1_client == True and cleaning_p1_time == False:
-        player "Кажется, я понял, что нам реально нужно для этого расчёта."
-        sasha "Все три ответа в точку. Теперь понятно, какое поле за что отвечает — дальше будет проще решать, что делать с конкретным пропуском."
-
-    elif cleaning_p1_amount == True:
-        player "Сумму я, по крайней мере, угадал правильно."
-        sasha "Это главное. С клиентом или временем промахнулся — не смертельно, они влияют на детали, а не на сам факт, что мы считаем."
-        sasha "А вот сумма это то самое число, без которого дальше нет смысла двигаться."
-
-    else:
-        player "Кажется, я тут больше гадал, чем понимал — и, судя по всему, промахнулся именно с суммой."
-        sasha "Вот это уже серьёзнее. Сумма — то самое число, которое мы в итоге складываем."
-        sasha "Если неясно, что оно вообще участвует в расчёте, дальше будет сложно понять, зачем мы возимся с пропусками именно в нём."
-        player "Ладно. Хорошо, что у меня есть ты. чтобы меня проконтролировать."
-        sasha "Уж будь спокоен."
-
-    jump cleaning_phase2
-
 label sasha_investigation:
     window show
 
@@ -3397,6 +3557,13 @@ label task2:
     hide screen investigation_bar
     scene bg_terminal
     with dissolve
+
+    if hidden_quest_phase1_done and not hero_noticed_point_d:
+        "Магазин D снова всплывает в разговоре с Начальником. Ты вдруг вспоминаешь: не про эту ли самую точку недавно писали — тихая смена владельца, никто и внимания не обратил."
+        $ hero_noticed_point_d = True
+
+    if news_read_index > task2_clue_index and task2_clue_index >= 0:
+        jump task2_q1
 
     boss "Ты говорил о возможной связи выручки и нагрузки на серверы, аналитик. Что ж, я принёс тебе график."
 
