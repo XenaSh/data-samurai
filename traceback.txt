@@ -1,22 +1,28 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-  File "game/script.rpy", line 1317, in script
-    jump hidden_quest_news_stream
-ScriptError: could not find label 'hidden_quest_news_stream'.
+  File "game/script.rpy", line 2400, in script
+    if task1_route = "raw_data":
+SyntaxError: invalid syntax (game/script.rpy, line 2400)
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/script.rpy", line 1317, in script
-    jump hidden_quest_news_stream
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1974, in execute
-    rv = renpy.game.script.lookup(target)
-  File "E:\renpy-8.0.2-sdk\renpy\script.py", line 927, in lookup
-    raise ScriptError("could not find label '%s'." % str(original))
-ScriptError: could not find label 'hidden_quest_news_stream'.
+  File "game/script.rpy", line 2400, in script
+    if task1_route = "raw_data":
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2115, in execute
+    if renpy.python.py_eval(condition):
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1081, in py_eval
+    code = py_compile(code, 'eval')
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1018, in py_compile
+    raise e
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 970, in py_compile
+    raise orig_e
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 963, in py_compile
+    tree = compile(source, filename, py_mode, ast.PyCF_ONLY_AST | flags, 1)
+SyntaxError: invalid syntax (game/script.rpy, line 2400)
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Sat Aug  1 23:42:58 2026
+Sun Aug  9 01:20:40 2026

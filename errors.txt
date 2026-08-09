@@ -2,8 +2,13 @@
 errors listed below, and try again.
 
 
-File "game/script.rpy", line 577: is not terminated with a newline. (Check strings and parenthesis.)
-                                textbutton (f["label"]:
+File "game/script.rpy", line 2597: menu statement expects a non-empty block.
+    menu:
+        ^
+
+File "game/script.rpy", line 2599: Line is indented, but the preceding window hide statement statement does not expect a block. Please check this line's indentation.
+    "Может, сервер точки D делит канал с чем-то ещё, не связанным напрямую с продажами.":
+    ^
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Thu Aug  6 03:49:12 2026
+Sun Aug  9 02:05:44 2026
