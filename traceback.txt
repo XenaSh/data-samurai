@@ -1,28 +1,96 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-  File "game/script.rpy", line 2400, in script
-    if task1_route = "raw_data":
-SyntaxError: invalid syntax (game/script.rpy, line 2400)
+  File "game/script.rpy", line 1669, in script
+    call screen point_d_article_screen
+  File "renpy/common/000statements.rpy", line 609, in execute_call_screen
+    store._return = renpy.call_screen(name, *args, **kwargs)
+  File "game/script.rpy", line 631, in execute
+    screen point_d_article_screen():
+  File "game/script.rpy", line 631, in execute
+    screen point_d_article_screen():
+  File "game/script.rpy", line 635, in execute
+    frame:
+  File "game/script.rpy", line 642, in execute
+    vbox:
+  File "game/script.rpy", line 649, in execute
+    hbox:
+  File "game/script.rpy", line 678, in execute
+    frame:
+  File "game/script.rpy", line 683, in execute
+    vbox:
+  File "game/script.rpy", line 686, in execute
+    text "[len(pd_selected)] из 4" color "#5fd9c4" size 28
+NameError: Name 'len(pd_selected)' is not defined.
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/script.rpy", line 2400, in script
-    if task1_route = "raw_data":
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2115, in execute
-    if renpy.python.py_eval(condition):
-  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1081, in py_eval
-    code = py_compile(code, 'eval')
-  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1018, in py_compile
-    raise e
-  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 970, in py_compile
-    raise orig_e
-  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 963, in py_compile
-    tree = compile(source, filename, py_mode, ast.PyCF_ONLY_AST | flags, 1)
-SyntaxError: invalid syntax (game/script.rpy, line 2400)
+  File "game/script.rpy", line 1669, in script
+    call screen point_d_article_screen
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2232, in execute
+    self.call("execute")
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2220, in call
+    return renpy.statements.call(method, parsed, *args, **kwargs)
+  File "E:\renpy-8.0.2-sdk\renpy\statements.py", line 281, in call
+    return method(parsed, *args, **kwargs)
+  File "renpy/common/000statements.rpy", line 609, in execute_call_screen
+    store._return = renpy.call_screen(name, *args, **kwargs)
+  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 3174, in call_screen
+    rv = renpy.ui.interact(mouse="screen", type="screen", roll_forward=roll_forward)
+  File "E:\renpy-8.0.2-sdk\renpy\ui.py", line 299, in interact
+    rv = renpy.game.interface.interact(roll_forward=roll_forward, **kwargs)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3377, in interact
+    repeat, rv = self.interact_core(preloads=preloads, trans_pause=trans_pause, pause=pause, pause_start=pause_start, **kwargs) # type: ignore
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3804, in interact_core
+    root_widget.visit_all(lambda i : i.per_interact())
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 451, in visit_all
+    callback(self)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3804, in <lambda>
+    root_widget.visit_all(lambda i : i.per_interact())
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 462, in per_interact
+    self.update()
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 653, in update
+    self.screen.function(**self.scope)
+  File "game/script.rpy", line 631, in execute
+    screen point_d_article_screen():
+  File "game/script.rpy", line 631, in execute
+    screen point_d_article_screen():
+  File "game/script.rpy", line 635, in execute
+    frame:
+  File "game/script.rpy", line 642, in execute
+    vbox:
+  File "game/script.rpy", line 649, in execute
+    hbox:
+  File "game/script.rpy", line 678, in execute
+    frame:
+  File "game/script.rpy", line 683, in execute
+    vbox:
+  File "game/script.rpy", line 686, in execute
+    text "[len(pd_selected)] из 4" color "#5fd9c4" size 28
+  File "E:\renpy-8.0.2-sdk\renpy\text\text.py", line 1594, in __init__
+    self.set_text(text, scope, substitute)
+  File "E:\renpy-8.0.2-sdk\renpy\text\text.py", line 1712, in set_text
+    i, did_sub = renpy.substitutions.substitute(i, scope, substitute)
+  File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 278, in substitute
+    s = formatter.vformat(s, (), kwargs) # type: ignore
+  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 165, in vformat
+  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 205, in _vformat
+  File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 168, in get_field
+    obj, arg_used = super(Formatter, self).get_field(field_name, args, kwargs)
+  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 270, in get_field
+  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 227, in get_value
+  File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 236, in __getitem__
+    raise NameError("Name '{}' is not defined.".format(key))
+NameError: Name 'len(pd_selected)' is not defined.
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Sun Aug  9 01:20:40 2026
+Mon Aug 10 04:09:18 2026

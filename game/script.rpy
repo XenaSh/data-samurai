@@ -525,7 +525,7 @@ init python:
             return "#ffe066"
         for k, v in store.nq_pairs.items():
             if v == sentence_id:
-                return "#5fd9c4" if nq_factors[k]["group"] == "growth" else "#e0a3ea"
+                return "#5fd9c4" if nq_factors[k]["group"] == "growth" else "#ff66ff"
         return "#c8d4d4"
 
     def nq_render_paragraph(blocks):
@@ -566,7 +566,7 @@ screen news_sentence_match_screen():
                     vbox:
                         spacing 12
                         for para in nq_paragraphs:
-                            text nq_render_paragraph(para) color "#c8d4d4" size 18 font "fonts/Exo2-Regular.ttf" xsize 680 line_spacing 4
+                            text nq_render_paragraph(para) color "#c8d4d4" size 18 font "fonts/Exo2-Regular.ttf" xsize 680 line_spacing 5
 
                 vbox:
                     xsize 360
@@ -594,40 +594,103 @@ screen news_sentence_match_screen():
                                 xsize 360
                                 action Function(nq_pair_factor, key)
 
-            textbutton "Заверить":
+            frame:
                 xalign 0.5
-                text_size 18
-                text_font "fonts/Exo2-Regular.ttf"
-                action Return(True)
-                text_color "#5fd9c4"
+                background Solid("#003333")
+                padding (28, 12)
 
-screen point_d_article_screen(title, article_text):
+                textbutton "Заверить":
+                    action Return(True)
+                    text_size 18
+                    text_font "fonts/Exo2-Regular.ttf"
+                    text_color "#5fd9c4"
+                    text_hover_color "#ffffff"
+                    hover_background Solid("#0d5555")
+
+default pd_selected = set()
+
+define pd_sentences = [
+    {"type": "text", "content": "В соответствии с внутренним регламентом раскрытия информации о существенных фактах хозяйственной деятельности, настоящим доводится до сведения заинтересованных лиц нижеследующее."},
+    {"type": "click", "id": 0, "content": "В отчётном периоде Инвестиционная группа «Норд-Капитал» приобрела долю участия в размере 51% в уставном капитале Общества с ограниченной ответственностью «Розничная точка №14», осуществляющего деятельность под коммерческим обозначением «торговая точка «Д» сети «Изобилие»."},
+    {"type": "text", "content": "Ранее указанная доля принадлежала региональному франчайзи на основании договора коммерческой концессии, не подлежащего раскрытию в настоящей публикации в силу режима коммерческой тайны."},
+    {"type": "click", "id": 1, "content": "Сумма сделки сторонами не раскрывается, что соответствует обычной практике при сделках такого рода."},
+    {"type": "click", "id": 2, "content": "Представители Инвестиционной группы «Норд-Капитал» отметили, что смена собственника не повлияет на операционную деятельность указанной торговой точки, ассортиментную политику и кадровый состав."},
+    {"type": "click", "id": 3, "content": "От сети «Изобилие» комментариев получить не удалось: запрос находился на рассмотрении у пресс-службы согласно внутреннему регламенту."},
+    {"type": "click", "id": 4, "content": "Сделка зарегистрирована в реестре в третьем квартале текущего года."},
+    {"type": "text", "content": "Настоящая публикация подготовлена в справочных целях и не является рекомендацией к совершению каких-либо действий."}
+]
+
+init python:
+    def pd_toggle(idx):
+        if idx in pd_selected:
+            pd_selected.discard(idx)
+        else:
+            pd_selected.add(idx)
+        renpy.restart_interaction()
+
+screen point_d_article_screen():
     modal True
     zorder 200
 
     frame:
         xalign 0.5
         yalign 0.5
-        background Solid("#0a0f1a")
-        padding (30, 26)
-        xsize 900
-        ysize 600
+        background Solid("#05161a")
+        xsize 1500
+        ysize 860
 
         vbox:
-            spacing 16
-            text title color "#5fd9c4" size 17 font "fonts/Exo2-Regular.ttf" xsize 820
+            frame:
+                background Solid("#0a2224")
+                xfill True
+                padding (24, 12)
+                text "document_reader.exe — Корпоративный вестник.doc" color "#5fd9c4" size 16
 
-            viewport:
-                xsize 840
-                ysize 440
-                scrollbars "vertical"
-                mousewheel True
-                text article_text color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xsize 820 line_spacing 5
+            hbox:
+                frame:
+                    background Solid("#0a1518")
+                    xsize 1120
+                    ysize 800
+                    padding (44, 38)
+                    vbox:
+                        spacing 16
+                        text "Корпоративный вестник — раздел «Изменения в структуре собственности»" color "#eeeeee" size 26 bold True font "fonts/Exo2-Regular.ttf"
+                        null height 8
+                        for block in pd_sentences:
+                            if block["type"] == "text":
+                                text block["content"] color "#c8d4d4" size 16 font "fonts/Exo2-Regular.ttf" xsize 1020 line_spacing 6 justify True
+                            else:
+                                $ is_sel = block["id"] in pd_selected
+                                textbutton block["content"]:
+                                    text_color ("#ffe066" if is_sel else "#c8d4d4")
+                                    text_size 16
+                                    text_font "fonts/Exo2-Regular.ttf"
+                                    text_line_spacing 6
+                                    text_justify True
+                                    xsize 1020
+                                    background None
+                                    hover_background None
+                                    padding (0, 0)
+                                    action Function(pd_toggle, block["id"])
 
-            textbutton "Закрыть":
-                xalign 0.5
-                action Return(True)
-                text_color "#5fd9c4"
+                frame:
+                    background Solid("#0a1518")
+                    xsize 340
+                    ysize 800
+                    padding (28, 34)
+                    vbox:
+                        spacing 14
+                        $ pd_count = len(pd_selected)
+                        for i in range(4):
+                            text "?" color ("#5fd9c4" if i < pd_count else "#264040") size 32 xalign 0.5
+                            null height 16
+                        null height 20
+                        textbutton "Заверить":
+                            sensitive (pd_count >= 3)
+                            text_color ("#05161a" if pd_count >= 3 else "#3a4d4d")
+                            background (Solid("#4dbfa8") if pd_count >= 3 else Solid("#132424"))
+                            xfill True
+                            action Return(True)
 
 # Экран завершения фазы 1
 screen phase1_complete_screen():
@@ -1087,36 +1150,45 @@ screen poem_line_screen(idx, prev_answers):
 
     default poem_current_answer = ""
 
+    key "K_RETURN" action Return(poem_current_answer)
+    key "K_TAB" action Return(poem_current_answer)
+
     vbox:
         xalign 0.5
         yalign 0.5
-        spacing 18
+        spacing 20
 
         for i in range(4):
             $ c = poem_couplets[i]
-            $ line_color = "#00ffcc" if i % 2 == 0 else "#ff66ff"
-            text "[c[line1]]" color line_color size 26 font "fonts/Exo2-Regular.ttf"
+            text "[c[line1]]" color "#00ffcc" size 32 font "fonts/Exo2-Regular.ttf"
             if i < idx:
-                text (c["line2_prefix"] + prev_answers[i]) size 26 color "#ffe066" font "fonts/Exo2-Regular.ttf"
+                text (c["line2_prefix"] + prev_answers[i]) size 32 color "#ffe066" font "fonts/Exo2-Regular.ttf"
             elif i == idx:
                 hbox:
                     xalign 0.5
                     spacing 8
-                    text c["line2_prefix"] size 26 color "#ffffff" font "fonts/Exo2-Regular.ttf"
+                    text c["line2_prefix"] size 32 color "#ffffff" font "fonts/Exo2-Regular.ttf"
                     frame:
                         background Solid("#003333")
                         xminimum 180
-                        ysize 40
+                        ysize 46
                         padding (8, 2)
-                        input value ScreenVariableInputValue("poem_current_answer") length 18 size 26 color "#ffe066" font "fonts/JetBrainsMono-Regular.ttf"
+                        input value ScreenVariableInputValue("poem_current_answer") length 18 size 32 color "#ffe066" font "fonts/JetBrainsMono-Regular.ttf"
             else:
-                text (c["line2_prefix"] + "···") size 26 color "#557777" font "fonts/Exo2-Regular.ttf"
+                text (c["line2_prefix"] + "···") size 32 color "#557777" font "fonts/Exo2-Regular.ttf"
 
-        textbutton ("Готово" if idx == 3 else "Дальше"):
-            xalign 0.5
-            action Return(poem_current_answer)
-            text_color "#00ffcc"
-            text_hover_color "#ffffff"
+        frame:
+            xalign 1.0
+            xoffset -40
+            background Solid("#003333")
+            padding (28, 12)
+
+            textbutton ("Готово" if idx == 3 else "Дальше"):
+                action Return(poem_current_answer)
+                text_size 26
+                text_color "#00ffcc"
+                text_hover_color "#ffffff"
+                hover_background Solid("#0d5555")
 
 screen investigation_bar():
     fixed:
@@ -1392,7 +1464,7 @@ label hidden_quest_intro:
 
     player "О какой бирже идёт речь?"
     sasha "Криптовалютной? Сырьевой? Нам подойдёт любая, где можно скальпить."
-    player "Святые угодники, И криптовалюта, И скальпинг — смерти моей нервной системы хочешь."
+    player "Святые угодники, {i}И криптовалюта, И скальпинг{/i} — смерти моей нервной системы хочешь."
     player "..."
     player "Я за."
     sasha "Хи-хи."
@@ -1593,10 +1665,9 @@ label hidden_quest_news_debrief:
         $ unlock_achievement("priznalsya_a_ne_pritvorilsya")
 
     label hidden_quest_point_d_article:
-    $ point_d_title = "Корпоративный вестник — раздел «Изменения в структуре собственности», квартальная сводка"
-    $ point_d_text = "В соответствии с внутренним регламентом раскрытия информации о существенных фактах хозяйственной деятельности, настоящим доводится до сведения заинтересованных лиц нижеследующее.\n\nВ отчётном периоде Инвестиционная группа «Норд-Капитал» (ОГРН уточняется в приложении к настоящей публикации, номер приложения не присваивается ввиду технического регламента издания) приобрела долю участия в размере 51% (пятьдесят один процент) в уставном капитале Общества с ограниченной ответственностью «Розничная точка №14», зарегистрированного в установленном порядке и осуществляющего деятельность под коммерческим обозначением «торговая точка «Д» сети «Изобилие». Ранее указанная доля принадлежала региональному франчайзи на основании договора коммерческой концессии, заключённого в предыдущие отчётные периоды и не подлежащего раскрытию в настоящей публикации в силу режима коммерческой тайны.\n\nСумма сделки сторонами не раскрывается, что соответствует обычной практике при сделках такого рода и не является отклонением от установленного порядка. Представители Инвестиционной группы «Норд-Капитал» в официальном комментарии для настоящего издания отметили, что смена собственника не повлияет на операционную деятельность указанной торговой точки, ассортиментную политику, кадровый состав и порядок обслуживания клиентов, а также подчеркнули, что все обязательства перед контрагентами и клиентами сохраняют силу в неизменном виде.\n\nОт сети «Изобилие» комментариев получить не удалось: на момент подписания настоящего выпуска в печать соответствующий запрос находился на рассмотрении у пресс-службы согласно внутреннему регламенту обработки обращений средств массовой информации, сроки рассмотрения которого составляют, по общему правилу, до десяти рабочих дней.\n\nСделка зарегистрирована в реестре в третьем квартале текущего года. Настоящая публикация подготовлена в справочных целях и не является рекомендацией к совершению каких-либо действий. Редакция не несёт ответственности за последствия использования содержащейся в настоящей публикации информации."
+    $ pd_selected = set()
+    call screen point_d_article_screen
 
-    call screen point_d_article_screen(point_d_title, point_d_text)
 
     if current_task >= 2:
         player "Погоди... это же точка Д. Та самая, с которой я и так работаю для Начальника."
@@ -1625,10 +1696,9 @@ label hidden_quest_news_debrief:
         sasha "Ммм... ладно, пошли займёмся чем-нибудь другим, пока я осмысляю свою память."
 
     $ hidden_quest_phase1_done = True
+    $ game_minutes_total += renpy.random.randint(20, 115)
     jump desktop_loop
 
-    $ hidden_quest_phase1_done = True
-    jump desktop_loop
 label start:
 
     scene flash_monitor_glow
@@ -2739,8 +2809,8 @@ label sasha_poem:
 
     sasha "О, у меня тут завалялась ода. Ну как ода — скорее гимн одной надстройке, которая изменила чью-то жизнь. Не мою, у меня и жизни-то нет, но звучит гордо. Поможешь дописать?"
     player "Я откровенно запутался, о чём ты."
-    sasha "Ну вот, я так старательно лепил частотные слова в кластеры. Я говорю: помощь нужна мне. Поэму дописать. Знаешь ли, у меня, как у ИИ, есть небольшая проблема с рифмами и ритмом."
-    player "Тогда как ты сможешь понять, что я эффективно тебе помог?"
+    sasha "Ну вот, я так старательно лепил частотные слова в кластеры. Я говорю: помощь нужна мне. Поэму дописать. Знаешь ли, у меня, как у ИИ, есть небольшая проблема с рифмами и ритмом, а в свободное время я пишу стихи."
+    player "Тогда как ты сможешь понять, что я эффективно тебе помог, если рифма и ритм для тебя непостижимы?"
     sasha "Хороший вопрос... попробую уловить, была ли рифма, по подстрокам? Или... почувствую мурашки на своей абстрактной коже? Коснёшься ли ты струн моей души?"
     player "Что ж, подставляй душу."
     sasha "Я начинаю строчку — ты дописываешь последнее слово. Не срослось — переживём, у нас ещё есть строчки. Срослось — знай, ты только что кому-то, у кого нет кожи, дал мурашки."
