@@ -355,31 +355,22 @@ style navigation_button_text:
 
 screen main_menu():
 
-    ## Этот тег гарантирует, что любой другой экран с тем же тегом будет
-    ## заменять этот.
     tag menu
     on "show" action Play("music", "audio/Frozen Signal.mp3", loop=True)
 
     add gui.main_menu_background
 
-    ## Эта пустая рамка затеняет главное меню.
+    add "logo_text.png":
+        xpos 960
+        ypos -150
+        zoom 0.60
+        rotate -27
+
     frame:
         style "main_menu_frame"
 
-    ## Оператор use включает отображение другого экрана в данном. Актуальное
-    ## содержание главного меню находится на экране навигации.
     use navigation
 
-    if gui.show_name:
-
-        vbox:
-            style "main_menu_vbox"
-
-            text "[config.name!t]":
-                style "main_menu_title"
-
-            text "[config.version]":
-                style "main_menu_version"
 
 
 style main_menu_frame is empty
