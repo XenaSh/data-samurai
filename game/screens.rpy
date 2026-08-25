@@ -361,11 +361,10 @@ screen main_menu():
     add gui.main_menu_background
 
     add "logo_text.png":
-        xpos 960
-        ypos -150
-        zoom 0.60
-        rotate -27
-
+        xpos 660
+        ypos -90
+        zoom 0.95
+        rotate -30
     frame:
         style "main_menu_frame"
 

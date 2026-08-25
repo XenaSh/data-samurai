@@ -230,6 +230,13 @@ image bg_arena = "images/bg_arena.png"
 image bg_orion_sky = "images/orion_sky_bg.png"
 image katana_overlay = "images/katana_overlay.png"
 image falling_star = "images/falling_star.png"
+image bg_task1_briefing = "images/bg_task1_briefing_cyan.png"
+image bg_poem_street = "images/poem/bg_poem_street.png"
+image bg_poem_poplars1 = "images/poem/bg_poem_poplars1.png"
+image bg_poem_field = "images/poem/bg_poem_field.png"
+image bg_poem_runes = "images/poem/bg_poem_runes.png"
+image bg_poem_poplars2 = "images/poem/bg_poem_poplars2.png"
+image bg_poem_tree = "images/poem/bg_poem_tree.png"
 
 # Тёплый оверлей для сцен-воспоминаний
 image sepia_overlay = Solid("#3a260c55")

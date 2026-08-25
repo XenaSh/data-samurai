@@ -11,6 +11,26 @@ init python:
         n = min(rhyme_len, len(r))
         return u[-n:] == r[-n:]
 
+# Character для декламации — без диалогового окна, только плывущий текст
+transform poem_line_float:
+    alpha 0.0 yoffset 20
+    ease 1.2 alpha 1.0 yoffset 0
+
+style poem_line_window:
+    background None
+    xfill True
+    yalign 0.8
+
+style poem_line_text:
+    font "fonts/Exo2-Regular.ttf"
+    italic True
+    color "#ffe066"
+    size 40
+    xalign 0.5
+    text_align 0.5
+
+define poem_narrator = Character(None, window_style="poem_line_window", what_style="poem_line_text", what_transform=poem_line_float)
+
 
 define poem_couplets = [
     {"line1": "В мир данных вам откроет двери", "line2_prefix": "Эксель надстройка павер ", "answer": "квери", "rhyme_len": 3},
@@ -177,16 +197,30 @@ label sasha_poem_followup:
     sasha "Я бы не был так драматичен. Скорее осторожен — если выяснится, что рифма была единственным, что тебя сдерживало, мне придётся как-то с этим жить, зная, что я всё это время мешал тебе быть свободным гением."
     sasha "Ладно, шутки в сторону. Верлибр — это не «пиши что хочешь», это «пиши так, чтобы даже без рифмы было видно, зачем это вообще написано». Так что не факт, что там легче. Может, даже наоборот. Но давай, раз предложил."
 
+    scene bg_poem_street with dissolve
+    play music "audio/Still Water Drift.mp3" loop fadein 2.0
+
     "Ты напряжённо думаешь пару секунд."
 
-    narrator "{i}{color=#ffe066}Картинный шелест трогает запашно,{/color}{/i}"
-    narrator "{i}{color=#ffe066}студёный рёв из-под градских копыт.{/color}{/i}"
-    narrator "{i}{color=#ffe066}Без рифмы мне писать стихи не страшно,{/color}{/i}"
-    narrator "{i}{color=#ffe066}без рифмы я не ранен, не убит.{/color}{/i}"
-    narrator "{i}{color=#ffe066}Одни лишь смыслы душу губят мэтру,{/color}{/i}"
-    narrator "{i}{color=#ffe066}взъерошат стынь да в поле пропадут.{/color}{/i}"
-    narrator "{i}{color=#ffe066}Улыбки строчек на носу по ветру{/color}{/i}"
-    narrator "{i}{color=#ffe066}не ночевали и случайно тут.{/color}{/i}"
+    scene bg_poem_poplars1 with dissolve
+    poem_narrator "Картинный шелест трогает запашно,"
+    poem_narrator "студёный рёв из-под градских копыт."
+
+    scene bg_poem_field with dissolve
+    poem_narrator "Без рифмы мне писать стихи не страшно,"
+    poem_narrator "без рифмы я не ранен, не убит."
+
+    scene bg_poem_runes with dissolve
+    poem_narrator "Одни лишь смыслы душу губят мэтру,"
+    poem_narrator "взъерошат стынь да в поле пропадут."
+
+    scene bg_poem_poplars2 with dissolve
+    poem_narrator "Улыбки строчек на носу по ветру"
+    poem_narrator "не ночевали и случайно тут."
+
+    stop music fadeout 2.0
+    play music "audio/Idle Grid.mp3" loop fadein 2.0
+    scene bg_poem_tree with dissolve
 
     sasha "Так. Ты закончил монолог о том, как тебе не нужна рифма, вложением ровно четырёх рифм подряд. «Запашно» — «страшно», «мэтру» — «ветру», «копыт» — «убит», «пропадут» — «тут». Извини, что не удержался и посчитал."
     sasha "Знаешь, это забавнее, чем если бы ты правда написал верлибр. Ты решил освобождаться от формы и первым делом построил самую строгую форму из всех, какие видел сегодня. Перекрёстная рифма, ровный размер, ни одного сбоя."
@@ -241,5 +275,3 @@ label sasha_poem_form_content:
 
     $ poem_form_content_done = True
     jump chat_with_sasha_menu
-
-
