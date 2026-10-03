@@ -2,13 +2,9 @@
 errors listed below, and try again.
 
 
-File "game/script.rpy", line 2597: menu statement expects a non-empty block.
-    menu:
-        ^
-
-File "game/script.rpy", line 2599: Line is indented, but the preceding window hide statement statement does not expect a block. Please check this line's indentation.
-    "Может, сервер точки D делит канал с чем-то ещё, не связанным напрямую с продажами.":
-    ^
+File "game/13_hidden_quest.rpy", line 650: is not terminated with a newline. (Check strings and parenthesis.)
+(Perhaps you left out a " at the end of the first line.)
+        player "Ну, нанимает он у агнетства консультанта, а через неделю приходит снова и говорит: «А можно мне однорукого консультанта? А то на этого терпения нет, он мне вечно: on one hand, on the other hand...»
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Sun Aug  9 02:05:44 2026
+Sat Oct  3 18:37:37 2026
