@@ -65,11 +65,11 @@ screen news_feed(news_items, read_index=0):
         vbox:
             spacing 10
 
-            text "📰 Лента новостей" color "#00ffcc" size 28 bold True align (0.5, 0.0)
+            text "Лента новостей" color "#00ffcc" size 28 bold True align (0.5, 0.0)
 
             viewport:
-                yfill True
                 xfill True
+                ysize 400
                 scrollbars "vertical"
                 mousewheel True
 
@@ -86,9 +86,15 @@ screen news_feed(news_items, read_index=0):
                                     text "НОВОЕ" color "#00ffcc" size 14 bold True
                                 text news_items[i] color "#e0e0e0" size 18
 
-            hbox:
-                xalign 1.0
-                textbutton "Закрыть" action Return() text_color "#00ffcc" text_size 20
+    button:
+        xpos 1165
+        ypos 749
+        xsize 200
+        ysize 46
+        background Solid("#00ffcc44")
+        hover_background Solid("#00ffcc99")
+        action Return()
+        text "Закрыть" size 22 bold True color "#00ffcc" hover_color "#0a0f1a" xalign 0.5 yalign 0.5
 
 # Экран для ранжирования
 

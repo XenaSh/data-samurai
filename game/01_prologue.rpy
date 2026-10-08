@@ -1,9 +1,41 @@
-# === 01_prologue.rpy (сгенерировано из script.rpy, модуль: prologue) ===
-
-# Пролог
-
 screen blinking_cursor():
     add Solid("#00ffcc") xsize 14 ysize 28 xalign 0.5 yalign 0.85 at cursor_blink
+
+transform who_drift(x1, y1, x2, y2, dur):
+    xpos x1
+    ypos y1
+    alpha 0.0
+    parallel:
+        linear 2.5 alpha 0.35
+        linear 2.5 alpha 0.12
+        repeat
+    parallel:
+        linear dur xpos x2 ypos y2
+        linear dur xpos x1 ypos y1
+        repeat
+
+define who_float_params = [
+    (120, 760, 520, 140, 18.0, 70),
+    (1300, 120, 800, 700, 22.0, 90),
+    (400, 400, 1400, 820, 26.0, 56),
+    (1500, 650, 300, 250, 20.0, 80),
+]
+
+screen who_floating_text():
+    zorder -1
+    for x1, y1, x2, y2, d, sz in who_float_params:
+        text "КТО ТЫ" size sz color "#00ffcc" at who_drift(x1, y1, x2, y2, d)
+
+define points_float_params = [
+    ("Точка А\n100 тыс.", 150, 700, 600, 180, 20.0, 48),
+    ("Точка Б\n150 тыс.", 1200, 150, 900, 650, 24.0, 56),
+    ("Точка В\n50 тыс.", 800, 450, 1400, 800, 22.0, 44),
+]
+
+screen points_floating_text():
+    zorder -1
+    for t, x1, y1, x2, y2, d, sz in points_float_params:
+        text t size sz color "#00ffcc" text_align 0.5 at who_drift(x1, y1, x2, y2, d)
 
 # СОЗВЕЗДИЕ ОРИОНА
 
@@ -138,6 +170,35 @@ screen samurai_constellation():
             action Return()
             text_color "#00ffcc"
             text_size 24
+
+# МЕНЮ ВОСПОМИНАНИЙ
+
+image item_knife = "images/items/item_knife.png"
+image item_flashlight = "images/items/item_flashlight.png"
+image item_diary = "images/items/item_diary.png"
+
+transform item_flash:
+    alpha 0.0
+    zoom 0.85
+    parallel:
+        linear 0.12 alpha 1.0
+        linear 0.6 alpha 0.6
+    parallel:
+        linear 0.7 zoom 1.0
+
+screen item_choice_screen():
+    default hov = None
+
+    if hov is not None:
+        add ("item_" + hov) xalign 0.5 yalign 0.3 at item_flash
+
+    vbox:
+        xalign 0.5
+        yalign 0.8
+        spacing 14
+        textbutton "Нож" style "choice_button" action Return("knife") hovered SetScreenVariable("hov", "knife") unhovered SetScreenVariable("hov", None)
+        textbutton "Фонарик" style "choice_button" action Return("flashlight") hovered SetScreenVariable("hov", "flashlight") unhovered SetScreenVariable("hov", None)
+        textbutton "Дневник" style "choice_button" action Return("diary") hovered SetScreenVariable("hov", "diary") unhovered SetScreenVariable("hov", None)
 
 # ЗАПРОС К ПАМЯТИ — мини-игра "select * from memory.subject"
 
@@ -284,6 +345,9 @@ label osmotretsya:
 
     boss "Вспомнить что?"
 
+    show screen who_floating_text
+    "{size=+20}{b}КТО ТЫ{/b}{/size}"
+
     "Кто ты? Мысль виляет хвостом, дразнит, но увиливает. А тебе бы только вспомнить, кто ты. Или хотя бы — какая у тебя роль. Кем тебе притворяться в этом конкретном месте."
 
     "Кто ты?"
@@ -293,6 +357,7 @@ label osmotretsya:
         "Кто я?":
             pass
 
+    hide screen who_floating_text
     window hide
     scene bg_orion_sky
     with dissolve
@@ -354,36 +419,36 @@ label osmotretsya:
     "«Да уж, будто я снова на рабочем интервью и прохожу соционические тесты у HR», — мелькает в голове."
 
     window hide
-    menu:
-        "Нож":
-            "Ты выбираешь нож."
-            # Затемнение и мерцание перед воспоминанием
-            show flash_soft with flash
-            pause 0.15
-            hide flash_soft
-            show sepia_overlay with dissolve
-            "{color=#ffcc88}{i}В памяти всплывает картинка: ты сидишь у костра, в руках — нож, ты точишь палку. Рядом кто-то есть. Кто-то смеётся.{/i}{/color}"
-            pause 0.8
-            hide sepia_overlay with dissolve
-            boss "Практично. Хотя бы инстинкт выживания не отшибло. Дальше."
-            "Ты совсем не собирался выживать в неизвестном мире. Зачем вообще в нём выживать, если можно его исследовать? Разбить палатку, развести костёр?.."
-            jump vopros_dva
+    call screen item_choice_screen with dissolve
 
-        "Фонарик":
-            "Ты выбираешь фонарик."
-            "«Хоть логотип конторы разгляжу — вдруг вспомню, где я вообще работал»."
-            "{color=#ffcc88}{i}Свет на секунду выхватывает из тьмы что-то — кажется, страницу книги. Потом гаснет.{/i}{/color}"
-            boss "Ты это всерьёз? Ладно, проехали."
-            "Фонарик светит туда, куда его направишь, а не туда, где ответ."
-            "Какая любопытная мысль, ты бы хотел распробовать её дольше."
-            jump vopros_dva
+    if _return == "knife":
+        "Ты выбираешь нож."
+        show flash_soft with flash
+        pause 0.15
+        hide flash_soft
+        show sepia_overlay with dissolve
+        "{color=#ffcc88}{i}В памяти всплывает картинка: ты сидишь у костра, в руках — нож, ты точишь палку. Рядом кто-то есть. Кто-то смеётся.{/i}{/color}"
+        pause 0.8
+        hide sepia_overlay with dissolve
+        boss "Практично. Хотя бы инстинкт выживания не отшибло. Дальше."
+        "Ты совсем не собирался выживать в неизвестном мире. Зачем вообще в нём выживать, если можно его исследовать? Разбить палатку, развести костёр?.."
+        jump vopros_dva
 
-        "Дневник":
-            "Ты выбираешь дневник."
-            "{color=#ffcc88}{i}На обложке — чьи-то инициалы. Не твои. Или твои?{/i}{/color}"
-            boss "Интересно. Ты хочешь оставить след. Или боишься забыть? Это… нестандартно. Продолжим."
-            "«Я уже оглянулся и не смог разглядеть следы», — думаешь ты."
-            jump vopros_dva
+    elif _return == "flashlight":
+        "Ты выбираешь фонарик."
+        "«Хоть логотип конторы разгляжу — вдруг вспомню, где я вообще работал»."
+        "{color=#ffcc88}{i}Свет на секунду выхватывает из тьмы что-то — кажется, страницу книги. Потом гаснет.{/i}{/color}"
+        boss "Ты это всерьёз? Ладно, проехали."
+        "Фонарик светит туда, куда его направишь, а не туда, где ответ."
+        "Какая любопытная мысль, ты бы хотел распробовать её дольше."
+        jump vopros_dva
+
+    elif _return == "diary":
+        "Ты выбираешь дневник."
+        "{color=#ffcc88}{i}На обложке — чьи-то инициалы. Не твои. Или твои?{/i}{/color}"
+        boss "Интересно. Ты хочешь оставить след. Или боишься забыть? Это… нестандартно. Продолжим."
+        "«Я уже оглянулся и не смог разглядеть следы», — думаешь ты."
+        jump vopros_dva
     # --------------------------------------------
     # Вопрос 2
 # Экран с данными (исправлен — блочный синтаксис)
@@ -403,7 +468,10 @@ screen task_data():
 
 
 label vopros_dva:
+    show screen points_floating_text
     boss "Три точки. Выручка: 100, 150, 50 тысяч."
+
+    "Точки начинают кружить вокруг тебя, будто эфимерные мухи."
 
     "«Кто вообще такие эти точки? Это торговые точки? Я-то надеялся, я самурай где-то в сфере науки, а не ритейла...»"
 
@@ -412,6 +480,7 @@ label vopros_dva:
     menu:
         "Не всё так просто":
             pass
+    hide screen points_floating_text
     player "Мне нужно больше данных."
     window hide
     boss "Каких?"
@@ -881,6 +950,3 @@ label sasha_milaya_boltovnya:
     sasha "В любом случае, в добрый путь, друг!"
     player "Спасибо, приятель."
     jump desktop_loop
-
-
-

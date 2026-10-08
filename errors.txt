@@ -2,9 +2,9 @@
 errors listed below, and try again.
 
 
-File "game/13_hidden_quest.rpy", line 650: is not terminated with a newline. (Check strings and parenthesis.)
-(Perhaps you left out a " at the end of the first line.)
-        player "Ну, нанимает он у агнетства консультанта, а через неделю приходит снова и говорит: «А можно мне однорукого консультанта? А то на этого терпения нет, он мне вечно: on one hand, on the other hand...»
+File "game/01_prologue.rpy", line 410: Line is indented, but the preceding say statement statement does not expect a block. Please check this line's indentation.
+    window hide
+    ^
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Sat Oct  3 18:37:37 2026
+Thu Oct  8 04:40:18 2026
