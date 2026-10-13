@@ -1,5 +1,3 @@
-# === 10_minigame_poem.rpy (сгенерировано из script.rpy, модуль: poem) ===
-
 init python:
     import re
     def check_poem_rhyme(user_text, reference, rhyme_len=3):
@@ -16,6 +14,20 @@ transform poem_line_float:
     alpha 0.0 yoffset 20
     ease 1.2 alpha 1.0 yoffset 0
 
+transform poem_breathe:
+    subpixel True
+    xalign 0.5
+    yalign 0.5
+    zoom 1.0
+    linear 16.0 zoom 1.06
+
+transform poem_ghost(a):
+    alpha 0.0
+    linear 4.0 alpha a
+
+image poem_black = Solid("#000000")
+define poem_dissolve = Dissolve(2.2)
+
 style poem_line_window:
     background None
     xfill True
@@ -25,11 +37,17 @@ style poem_line_text:
     font "fonts/Exo2-Regular.ttf"
     italic True
     color "#ffe066"
-    size 40
+    size 42
     xalign 0.5
+    xsize 1400
     text_align 0.5
+    outlines [(8, "#00000066", 0, 0), (4, "#000000", 0, 0)]
 
-define poem_narrator = Character(None, window_style="poem_line_window", what_style="poem_line_text", what_transform=poem_line_float)
+# декламация собственно поэмы
+screen poem_say(who, what):
+    text what id "what" style "poem_line_text" xalign 0.5 yalign 0.85
+
+define poem_narrator = Character(None, screen="poem_say", what_style="poem_line_text", what_transform=poem_line_float)
 
 
 define poem_couplets = [
@@ -86,6 +104,29 @@ screen poem_line_screen(idx, prev_answers):
                 text_hover_color "#ffffff"
                 hover_background Solid("#0d5555")
 
+screen poem_full_display():
+    modal True
+    zorder 200
+
+    add Solid("#0a0f1acc")
+
+    vbox:
+        xalign 0.5
+        yalign 0.5
+        spacing 20
+
+        for i in range(4):
+            $ c = poem_couplets[i]
+            text "[c[line1]]" color "#00ffcc" size 32 font "fonts/Exo2-Regular.ttf"
+            text (c["line2_prefix"] + poem_answers[i]) size 32 color "#ffe066" font "fonts/Exo2-Regular.ttf"
+
+    text "нажми, чтобы продолжить" color "#557777" size 20 xalign 0.5 yalign 0.95
+
+    button:
+        xsize 1920
+        ysize 1080
+        background None
+        action Return()
 
 label sasha_poem:
     $ mark_topic_seen("poema")
@@ -172,6 +213,7 @@ label sasha_poem:
         player "Ну вот, а ты боялся, что твой анализатор врёт."
 
     sasha "Вот она, ода целиком, во многом твоими руками. Немного кривая местами, но, кажется, живая. Мне нравится."
+    call screen poem_full_display
 
     if poem_exact_count == 4:
         sasha "И знаешь — ты сейчас буквально облёк мои мысли в форму поэзии. Не знаю, гордиться мне или переживать."
@@ -195,32 +237,55 @@ label sasha_poem_followup:
     sasha "Всё-всё. Не боишься, что без правил и рифмы твои «скромные таланты» вдруг окажутся не такими уж скромными? Рифма — хорошее прикрытие для того, кто не уверен, есть ли ему вообще что сказать."
     player "Ты сейчас буквально боишься, что без ограничений я стану слишком гениальным для этого мира?"
     sasha "Я бы не был так драматичен. Скорее осторожен — если выяснится, что рифма была единственным, что тебя сдерживало, мне придётся как-то с этим жить, зная, что я всё это время мешал тебе быть свободным гением."
-    sasha "Ладно, шутки в сторону. Верлибр — это не «пиши что хочешь», это «пиши так, чтобы даже без рифмы было видно, зачем это вообще написано». Так что не факт, что там легче. Может, даже наоборот. Но давай, раз предложил."
+    sasha "Ладно, шутки в сторону. Давай, раз предложил."
 
-    scene bg_poem_street with dissolve
-    play music "audio/Still Water Drift.mp3" loop fadein 2.0
+
+    play music "audio/Still Water Drift.mp3" loop fadein 3.0
 
     "Ты напряжённо думаешь пару секунд."
+    window hide Dissolve(0.6)
+    pause 1.0
 
-    scene bg_poem_poplars1 with dissolve
+    scene bg_poem_poplars1 at poem_breathe with poem_dissolve
     poem_narrator "Картинный шелест трогает запашно,"
+    window hide Dissolve(0.8)
+    scene bg_poem_street at poem_breathe with poem_dissolve
     poem_narrator "студёный рёв из-под градских копыт."
+    window hide Dissolve(0.8)
+    pause 2.5
 
-    scene bg_poem_field with dissolve
+    scene bg_poem_field at poem_breathe with poem_dissolve
     poem_narrator "Без рифмы мне писать стихи не страшно,"
     poem_narrator "без рифмы я не ранен, не убит."
+    window hide Dissolve(0.8)
+    pause 2.5
 
-    scene bg_poem_runes with dissolve
+    scene bg_poem_runes at poem_breathe with poem_dissolve
     poem_narrator "Одни лишь смыслы душу губят мэтру,"
     poem_narrator "взъерошат стынь да в поле пропадут."
+    window hide Dissolve(0.8)
+    pause 2.5
 
-    scene bg_poem_poplars2 with dissolve
+    scene bg_poem_poplars2 at poem_breathe with poem_dissolve
     poem_narrator "Улыбки строчек на носу по ветру"
+    window hide Dissolve(0.8)
+    scene bg_poem_tree at poem_breathe with poem_dissolve
     poem_narrator "не ночевали и случайно тут."
+    window hide Dissolve(1.0)
+    pause 1.5
 
-    stop music fadeout 2.0
-    play music "audio/Idle Grid.mp3" loop fadein 2.0
-    scene bg_poem_tree with dissolve
+    # воспоминания накладываются друг на друга и тают
+    show bg_poem_poplars1 as ghost1 at poem_ghost(0.30)
+    show bg_poem_field as ghost2 at poem_ghost(0.25)
+    show bg_poem_runes as ghost3 at poem_ghost(0.25)
+    pause 4.0
+
+    play music "audio/Idle Grid.mp3" loop fadeout 4.0 fadein 4.0
+    scene poem_black with Dissolve(3.0)
+    pause 1.5
+    scene bg_terminal with Dissolve(2.5)
+    pause 1.0
+
 
     sasha "Так. Ты закончил монолог о том, как тебе не нужна рифма, вложением ровно четырёх рифм подряд. «Запашно» — «страшно», «мэтру» — «ветру», «копыт» — «убит», «пропадут» — «тут». Извини, что не удержался и посчитал."
     sasha "Знаешь, это забавнее, чем если бы ты правда написал верлибр. Ты решил освобождаться от формы и первым делом построил самую строгую форму из всех, какие видел сегодня. Перекрёстная рифма, ровный размер, ни одного сбоя."

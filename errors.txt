@@ -2,9 +2,7 @@
 errors listed below, and try again.
 
 
-File "game/01_prologue.rpy", line 410: Line is indented, but the preceding say statement statement does not expect a block. Please check this line's indentation.
-    window hide
-    ^
+File "game/03_task1.rpy", line 472: Indentation mismatch.
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Thu Oct  8 04:40:18 2026
+Thu Oct  8 09:02:05 2026

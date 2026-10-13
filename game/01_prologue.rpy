@@ -528,7 +528,7 @@ label dannye_po_dnyam:
 
     $ correct_a = 100.0 / 30.0
     $ otvet_a = get_number("Выручка в день для точки А (тыс. руб.):")
-    if abs(otvet_a - correct_a) <= 0.001:
+    if abs(otvet_a - correct_a) <= 0.005:
         player "Я, может, не помню своего имени, но считать в уме ещё умею. [correct_a:.2f] тыс. в день."
         $ accuracy += 5
     else:
@@ -536,7 +536,7 @@ label dannye_po_dnyam:
 
     $ correct_b = 150 / 30
     $ otvet_b = get_number("Выручка в день для точки Б (тыс. руб.):")
-    if abs(otvet_b - correct_b) <= 0.001:
+    if abs(otvet_b - correct_b) <= 0.005:
         player "Второе почти на автомате — [correct_b:.2f] тыс. в день. Хоть что-то во мне работает как надо."
         $ accuracy += 5
     else:
@@ -544,7 +544,7 @@ label dannye_po_dnyam:
 
     $ correct_v = 50.0 / 6.0
     $ otvet_v = get_number("Выручка в день для точки В (тыс. руб.):")
-    if abs(otvet_v - correct_v) <= 0.001:
+    if abs(otvet_v - correct_v) <= 0.01:
         player "Тут [correct_v:.2f] тыс. в день. Неплохо для человека, который не помнит собственного лица."
         $ accuracy += 5
     else:
