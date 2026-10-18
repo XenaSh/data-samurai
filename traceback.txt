@@ -1,32 +1,22 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-  File "game/03_task1.rpy", line 486, in script
-    show screen mech_board(mech_solved, False) with dissolve
-  File "renpy/common/000statements.rpy", line 588, in execute_show_screen
-    renpy.show_screen(name, *args, **kwargs)
-Exception: Screen mech_board is not known.
-
+  File "game/12_minigame_chart_tricks.rpy", line 473, in script
+    player "Пересчитаем: возьмём долю каждого варианта от общей суммы — и получим что-то вроде 30%, 27%, 25%, 19%. Сумма ровно сто."
+ValueError: unsupported format character ',' (0x2c) at index 86
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/03_task1.rpy", line 486, in script
-    show screen mech_board(mech_solved, False) with dissolve
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2232, in execute
-    self.call("execute")
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2220, in call
-    return renpy.statements.call(method, parsed, *args, **kwargs)
-  File "E:\renpy-8.0.2-sdk\renpy\statements.py", line 281, in call
-    return method(parsed, *args, **kwargs)
-  File "renpy/common/000statements.rpy", line 588, in execute_show_screen
-    renpy.show_screen(name, *args, **kwargs)
-  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 1185, in show_screen
-    raise Exception("Screen %s is not known.\n" % (name[0],))
-Exception: Screen mech_board is not known.
-
+  File "game/12_minigame_chart_tricks.rpy", line 473, in script
+    player "Пересчитаем: возьмём долю каждого варианта от общей суммы — и получим что-то вроде 30%, 27%, 25%, 19%. Сумма ровно сто."
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 921, in execute
+    renpy.exports.say(who, what, *args, **kwargs)
+  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 1362, in say
+    what = what % tag_quoting_dict
+ValueError: unsupported format character ',' (0x2c) at index 86
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 1.0
-Thu Oct  8 08:41:11 2026
+Sun Oct 18 12:53:17 2026

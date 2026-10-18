@@ -382,7 +382,7 @@ label task2_hack_scene:
     sasha_q "Я всегда знаю, что ты хочешь спросить. Не спрашивай. Слушай."
     player "...{nw}"
     sasha_q "Нет, не спрашивай."
-    sasha_q "Нужно по данным понять, какие события происходят со строгой периодичностью. Помнишь SQL?"
+    sasha_q "Нужно по данным понять, какие события происходят строго каждые семь дней. Помнишь SQL?"
 
     if memory_query_total_mistakes == 0:
         $ task2_sql_level = 2
@@ -427,10 +427,10 @@ label task2_hack_alarm:
     pause 1.6
     hide screen hack_alarm
 
-    "ТЕКСТ: соединение сброшено, терминал гаснет."
-    boss "ТЕКСТ: аналитик, зачем ты запрашиваешь журналы целиком?"
-    player "ТЕКСТ: рутинная проверка целостности. Честно-честно."
-    sasha_q "ТЕКСТ: тише. с начала."
+    "Соединение сброшено."
+    boss "Аналитик, наша система безопастности на что-то ругается."
+    player "Рутинная проверка целостности. Честно-честно. Не делаю ничего такого."
+    sasha_q "Тише. с начала."
 
     $ hack_reset()
     if HACK_REPLAY_INTRO:
@@ -443,13 +443,13 @@ label task2_hack_exit:
     $ hack_points = max(HACK_MIN_POINTS, HACK_MAX_POINTS - hack_mistakes)
     $ accuracy += hack_points
     if hack_mistakes == 0:
-        sasha_q "ТЕКСТ: чисто, с первого раза."
+        sasha_q "Чисто, с первого раза."
 
     $ renpy.music.set_volume(1.0, delay=1.5)
-    scene bg_terminal with Dissolve(1.5)
+    scene bg_task1_briefing with Dissolve(1.5)
     show image "images/revenue_and_load.png" at Transform(fit="contain", size=(1920, 700)):
         xalign 0.5
         yalign 0.05
     with dissolve
-    player "ТЕКСТ: возврат к графику, гипотезу держим в секрете."
+    player "Гипотезу держим в секрете: ни к чему боссу знать, что мы копошились там, где нам не надо. Пики на графиках — каждые семь дней. Ревизия кабачковой икры, чем бы она ни была, тоже каждые семь дней, во вторник."
     return

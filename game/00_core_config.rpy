@@ -1,5 +1,3 @@
-# === 00_core_config.rpy (сгенерировано из script.rpy, модуль: core) ===
-
 style vscrollbar:
     xsize 4
     top_bar Solid("#0a1518")
@@ -103,6 +101,8 @@ default scalp_bank = 0
 default ending_accuracy_threshold = 185
 
 default ending_intuition_threshold = 178
+
+default task2_intro_done = False
 
 
 
