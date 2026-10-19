@@ -1,4 +1,3 @@
-# === 02_shared_screens.rpy (сгенерировано из script.rpy, модуль: shared) ===
 
 screen desktop():
 
@@ -22,7 +21,7 @@ screen desktop():
                 ("icon_tasks", "Задания", "tasks_from_boss", False),
                 ("icon_news", "Новости", "show_news", unread_news),
                 ("icon_memory", "Моя память", "memory_archive", False),
-                ("icon_cleaning", "?", "hidden_quest_intro", False),
+                ("icon_cleaning", "?", "hidden_quest_start", False),
                 ("icon_achievements", "Гордость", "achievements_archive", False),
             ]
 
