@@ -3,7 +3,6 @@
 define HQ2_FONT = "fonts/JetBrainsMono-Regular.ttf"
 define HQ2_ACC_MAX = 5
 define HQ2_ACC_MIN = 1
-define HQ2_INT_GUESS = 2
 
 define HQ2_LOGS = [
     ("freezer", "Журнал: температура в морозильных камерах"),
@@ -18,14 +17,8 @@ define HQ2_LOGS = [
 default hidden_quest_phase2_done = False
 default hq2_slider = 0.2
 default hq2_wrong_locks = 0
-default hq2_guess = ""
 default hq2_hint_shown = False
 default hq2_viewed = []
-
-transform hq2_dot:
-    anchor (0.5, 0.5)
-    zoom 0.14
-
 
 init python:
     import math
@@ -92,8 +85,20 @@ init python:
             return "half"
         return "miss"
 
-    def hq2_seg(x1, y1, x2, y2):
-        return math.hypot(x2 - x1, y2 - y1), math.degrees(math.atan2(y2 - y1, x2 - x1))
+    def hq2_steps(line):
+        rects = []
+        bw = 1400 / 8.0
+        prev = None
+        for fc, m in line:
+            b = int(fc * 8)
+            x = 40 + b * bw
+            y = 560 - (m - 6) / 10.0 * 230
+            rects.append((int(x), int(y) - 2, int(bw), 4))
+            if prev is not None and prev[0] == b - 1:
+                top = min(prev[1], y)
+                rects.append((int(x) - 2, int(top) - 2, 4, int(abs(prev[1] - y)) + 4))
+            prev = (b, y)
+        return rects
 
     def hq2_points(wrong):
         return max(HQ2_ACC_MIN, HQ2_ACC_MAX - wrong)
@@ -120,12 +125,12 @@ screen hq2_logs(live=False):
                     text title font HQ2_FONT size 20 color ("#cfe9e3" if key not in hq2_viewed else "#6f8a99") xoffset 14 yalign 0.5
 
 
-screen hq2_fold():
-    modal True
+screen hq2_fold(live=True):
     zorder 30
     $ P = hq2_period()
     $ pts, line, score = hq2_fold(P)
     $ quality = "размыто" if score < 2.5 else ("проступает" if score < 5.0 else "чётко")
+    $ steps = hq2_steps(line)
 
     fixed:
         pos (210, 30)
@@ -134,55 +139,66 @@ screen hq2_fold():
 
         text "sky_log: яркость объекта по ночам" pos (28, 18) font HQ2_FONT size 20 color "#6f8a99"
         text "90 ночей, наблюдалась примерно половина" pos (1000, 20) font HQ2_FONT size 18 color "#6f8a99"
+        text "ряд как есть: одна точка — одна ночь, выше — ярче" pos (28, 52) font HQ2_FONT size 16 color "#6f8a99"
 
         add Solid("#1b2535") pos (40, 190) xysize (1400, 2)
         for t, y in zip(HQ2_T, HQ2_Y):
-            add "images/star_dim.png" pos (40 + t / 89.0 * 1400, 190 - (y - 6) / 10.0 * 134) at hq2_dot
+            $ dx = int(40 + t / 89.0 * 1400)
+            $ dy = int(190 - (y - 6) / 10.0 * 134)
+            add Solid("#4fc9b0") pos (dx - 6, dy - 1) xysize (12, 2)
+            add Solid("#4fc9b0") pos (dx - 1, dy - 6) xysize (2, 12)
+            add Solid("#cfe9e3") pos (dx - 2, dy - 2) xysize (4, 4)
         text "0" pos (40, 198) font HQ2_FONT size 16 color "#6f8a99"
         text "90 суток" pos (1340, 198) font HQ2_FONT size 16 color "#6f8a99"
 
-        text "сложить по периоду" pos (28, 226) font HQ2_FONT size 18 color "#6f8a99"
-        bar value VariableValue("hq2_slider", 1.0) pos (28, 258) xysize (1100, 26)
+        text "наша догадка: через сколько суток объект повторяется" pos (28, 226) font HQ2_FONT size 18 color "#6f8a99"
+        if live:
+            bar value VariableValue("hq2_slider", 1.0) pos (28, 258) xysize (1100, 26)
+        else:
+            bar value StaticValue(hq2_slider, 1.0) pos (28, 258) xysize (1100, 26)
         text (("%.2f" % P).replace(".", ",") + " суток") pos (1160, 248) font HQ2_FONT size 30 color "#8ff0dc"
         hbox:
             pos (1160, 296)
             spacing 8
-            textbutton "-0,05" action SetVariable("hq2_slider", max(0.0, hq2_slider - 0.05 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
-            textbutton "-0,01" action SetVariable("hq2_slider", max(0.0, hq2_slider - 0.01 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
-            textbutton "+0,01" action SetVariable("hq2_slider", min(1.0, hq2_slider + 0.01 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
-            textbutton "+0,05" action SetVariable("hq2_slider", min(1.0, hq2_slider + 0.05 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
+            textbutton "-0,05" sensitive live action SetVariable("hq2_slider", max(0.0, hq2_slider - 0.05 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
+            textbutton "-0,01" sensitive live action SetVariable("hq2_slider", max(0.0, hq2_slider - 0.01 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
+            textbutton "+0,01" sensitive live action SetVariable("hq2_slider", min(1.0, hq2_slider + 0.01 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
+            textbutton "+0,05" sensitive live action SetVariable("hq2_slider", min(1.0, hq2_slider + 0.05 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
+
+        text "тот же ряд, сложенный по этому периоду: одинаковые фазы лежат друг над другом" pos (28, 330) font HQ2_FONT size 16 color "#6f8a99"
+        text ("картина: " + quality) pos (28, 300) font HQ2_FONT size 18 color "#8ff0dc"
 
         add Solid("#1b2535") pos (40, 560) xysize (1400, 2)
         for f, y in pts:
-            add "images/star_bright.png" pos (40 + f * 1400, 560 - (y - 6) / 10.0 * 260) at hq2_dot
-        for i in range(len(line) - 1):
-            $ sx1 = 40 + line[i][0] * 1400
-            $ sy1 = 560 - (line[i][1] - 6) / 10.0 * 260
-            $ sx2 = 40 + line[i + 1][0] * 1400
-            $ sy2 = 560 - (line[i + 1][1] - 6) / 10.0 * 260
-            $ seg_len, seg_ang = hq2_seg(sx1, sy1, sx2, sy2)
-            add Solid("#BA7517") xysize (seg_len, 4) pos (sx1, sy1) anchor (0.0, 0.5) transform_anchor True rotate seg_ang
+            $ fx = int(40 + f * 1400)
+            $ fy = int(560 - (y - 6) / 10.0 * 230)
+            add Solid("#8ff0dc") pos (fx - 6, fy - 1) xysize (12, 2)
+            add Solid("#8ff0dc") pos (fx - 1, fy - 6) xysize (2, 12)
+            add Solid("#ffffff") pos (fx - 2, fy - 2) xysize (4, 4)
+        for rx, ry, rw, rh in steps:
+            add Solid("#BA7517") pos (rx, ry) xysize (rw, rh)
         text "начало периода" pos (40, 568) font HQ2_FONT size 16 color "#6f8a99"
         text "конец" pos (1390, 568) font HQ2_FONT size 16 color "#6f8a99"
-        text ("картина: " + quality) pos (28, 300) font HQ2_FONT size 18 color "#8ff0dc"
+        text "янтарная ступенька — среднее яркости в каждом из 8 столбцов" pos (700, 568) font HQ2_FONT size 16 color "#BA7517"
 
         button:
             pos (28, 620)
             xysize (360, 44)
             background Solid("#12303a")
             hover_background Solid("#1b3040")
+            sensitive live
             action Return("lock")
             text "зафиксировать период" font HQ2_FONT size 20 color "#8ff0dc" align (0.5, 0.5)
 
 
 label hidden_quest_start:
     if hidden_quest_phase2_done:
-        "ТЕКСТ: здесь пока больше нет ничего нового."
+        "Здесь больше нет ничего нового."
         jump desktop_loop
     if hidden_quest_phase1_done and task2_secret_access:
         jump hidden_quest2_intro
     if hidden_quest_phase1_done:
-        "ТЕКСТ: здесь пока ничего нового."
+        "Ничего нового."
         jump desktop_loop
     jump hidden_quest_intro
 
@@ -275,28 +291,25 @@ label hidden_quest2_logs:
 
 
 label hidden_quest2_sky:
+    show screen hq2_fold(False)
+    with dissolve
     sasha "Ну, это явно нам неинтересно. Что мы понимаем в этих цветных точках."
     player "На самом деле, я должен признаться тебе, что я — астроном-любитель."
     player "Если честно, звёздное небо — это буквально последнее, что я помню, перед тем как очнуться здесь. И мне кажется... я готовился совершить открытие. За этим я и поехал за город, когда... всё произошло."
     player "Меня вот ещё что интересует: зачем супермаркетам наблюдения за звёздным небом? Нет, мы обязаны это разгадать."
     sasha "Но как? На что мы вообще смотрим? Это же ерунда какая-то, как из этого сделать смысл?"
-    player "ТЕКСТ: объясняет, что такое подбор периода и зачем он нужен."
+    player "Смотрим мы на яркость какого-то объекта. Одна точка — одна ночь. Выше точка — ярче объект. Часть ночей пропущена: облака, лень, поломки."
+    sasha "И что тут можно понять? Мигает как попало."
+    player "Как попало — это пока смотрим на ряд по порядку. Но если у объекта есть ритм, он повторяется через одно и то же число суток. Это называется периодом."
+    player "Зачем он нужен? Если знаешь период, знаешь, когда объект станет ярче в следующий раз. А если ритм есть, значит, у него есть причина."
+    sasha "Допустим. А как найти период в такой каше?"
+    player "Угадать и проверить. Берём догадку: пусть период — пять суток. Режем весь ряд на куски по пять суток и кладём куски стопкой друг на друга."
+    sasha "Как слоёный пирог."
+    player "Именно. Если период угадан, яркие ночи лягут в одно место, и на пироге вырастет горб. Если нет, получится каша."
+    player "Ползунок внизу — наша догадка про период. Нижний график — результат наложения. Янтарные ступеньки — среднее в каждом столбце. А надпись «картина» показывает, насколько точки собрались вместе."
+    sasha "То есть крутим, пока не проступит."
+    player "Крутим и смотрим. И не забываем: «чётко» не всегда значит «верно»."
     sasha "Ну давай. Впечатли меня."
-
-    "Прежде чем крутить ползунок, ты прикидываешь на глаз."
-    menu:
-        "Объект мигает раз в сутки: небо ведь крутится.":
-            $ hq2_guess = "day"
-            player "Суточный ритм. Небо вращается, вот и мигает."
-        "Что-то в этом чувствуется недельное.":
-            $ hq2_guess = "week"
-            player "Не знаю почему. Просто чувствуется недельный ритм."
-        "Раз в месяц, как Луна.":
-            $ hq2_guess = "month"
-            player "Лунный ритм. Хотя на этот объект вряд ли похоже."
-        "Не знаю. Надо искать.":
-            $ hq2_guess = "none"
-            player "Гадать не будем. Будем искать."
 
     $ hq2_wrong_locks = 0
     $ hq2_hint_shown = False
@@ -305,7 +318,8 @@ label hidden_quest2_sky:
 
 
 label hidden_quest2_fold_loop:
-    call screen hq2_fold
+    call screen hq2_fold(True)
+    show screen hq2_fold(False)
     $ hq2_P = hq2_period()
     $ hq2_kind = hq2_lock_kind(hq2_P)
     if hq2_kind == "ok":
@@ -324,17 +338,16 @@ label hidden_quest2_fold_loop:
         player "ТЕКСТ: каша. Точки лежат как попало."
     if hq2_wrong_locks >= 2 and not hq2_hint_shown:
         $ hq2_hint_shown = True
-        sasha "ТЕКСТ: смотри на янтарную линию. Она должна вздыматься одним горбом."
+        sasha "ТЕКСТ: смотри на янтарные ступеньки. Они должны вздыматься одним горбом."
     jump hidden_quest2_fold_loop
 
 
 label hidden_quest2_fold_ok:
     $ hq2_pts = hq2_points(hq2_wrong_locks)
     $ accuracy += hq2_pts
-    if hq2_guess == "week":
-        $ intuition += HQ2_INT_GUESS
     $ hidden_quest_phase2_done = True
 
+    hide screen hq2_fold
     player "ТЕКСТ: семь суток. Ровно неделя. Яркость объекта растёт по расписанию, как пики нагрузки у точки Д."
     sasha "ТЕКСТ: совпадение? Я начинаю уставать от этого слова."
     player "ТЕКСТ: у магазина и у объекта в небе один и тот же ритм. Что у них может быть общего?"
