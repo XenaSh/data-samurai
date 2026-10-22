@@ -2,7 +2,9 @@
 errors listed below, and try again.
 
 
-File "game/03_task1.rpy", line 472: Indentation mismatch.
+File "game/13b_hidden_quest_p2.rpy", line 155: 'sensitive' is not a keyword argument or valid child for the bar statement.
+    bar value VariableValue("hq2_slider", 1.0) pos (28, 258) xysize (1100, 26) sensitive live
+                                                                                        ^
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Thu Oct  8 09:02:05 2026
+Wed Oct 21 10:23:16 2026

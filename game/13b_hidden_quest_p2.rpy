@@ -23,8 +23,12 @@ default hq2_viewed = []
 init python:
     import math
 
+    HQ2_N = 120
+    HQ2_NOISE_MID = 3.9
+    HQ2_NOISE_HIGH = 8.0
+
     def hq2_make_sky():
-        seed = [11]
+        seed = [28]
         def rnd():
             seed[0] = (seed[0] * 1664525 + 1013904223) % 4294967296
             return seed[0] / 4294967296.0
@@ -34,12 +38,12 @@ init python:
             return math.sqrt(-2 * math.log(u)) * math.cos(2 * math.pi * v)
         T = []
         Y = []
-        for t in range(90):
+        for t in range(HQ2_N):
             if rnd() < 0.55:
                 ph = (t % 7) / 7.0
-                d = min(abs(ph - 0.2857), 1 - abs(ph - 0.2857))
+                d = min(abs(ph - 2 / 7.0), 1 - abs(ph - 2 / 7.0))
                 T.append(t)
-                Y.append(10 + gauss() * 1.3 + 3.0 * math.exp(-0.5 * (d / 0.06) ** 2))
+                Y.append(10 + gauss() * 1.3 + 5.0 * math.exp(-0.5 * (d / 0.13) ** 2))
         return T, Y
 
     HQ2_T, HQ2_Y = hq2_make_sky()
@@ -47,12 +51,32 @@ init python:
     def hq2_period():
         return 2.0 + 14.0 * store.hq2_slider
 
-    def hq2_fold(P):
+    def hq2_rx(t):
+        return int(40 + t / float(HQ2_N - 1) * 1400)
+
+    def hq2_ry(y):
+        return int(190 - (y - 6) / 13.0 * 110)
+
+    def hq2_fy(y):
+        return int(560 - (y - 6) / 13.0 * 190)
+
+    def hq2_cuts(P):
+        out = []
+        k = 0
+        while k * P <= HQ2_N - 1:
+            out.append(hq2_rx(k * P))
+            k += 1
+        return out
+
+    def hq2_fold(P, T=None, Y=None):
+        if T is None:
+            T = HQ2_T
+            Y = HQ2_Y
         bins = 8
         pts = []
         sums = [0.0] * bins
         cnt = [0] * bins
-        for t, y in zip(HQ2_T, HQ2_Y):
+        for t, y in zip(T, Y):
             f = (t % P) / P
             pts.append((f, y))
             b = min(bins - 1, int(f * bins))
@@ -62,9 +86,9 @@ init python:
         for b in range(bins):
             if cnt[b]:
                 line.append(((b + 0.5) / bins, sums[b] / cnt[b]))
-        n = len(HQ2_Y)
-        mean = sum(HQ2_Y) / n
-        sst = sum((y - mean) ** 2 for y in HQ2_Y)
+        n = len(Y)
+        mean = sum(Y) / n
+        sst = sum((y - mean) ** 2 for y in Y)
         ssb = sum(sums[b] ** 2 / cnt[b] for b in range(bins) if cnt[b]) - n * mean ** 2
         k = len(line)
         ssw = sst - ssb
@@ -73,32 +97,56 @@ init python:
             score = (ssb / (k - 1)) / (ssw / (n - k))
         return pts, line, score
 
-    def hq2_lock_kind(P):
-        d = abs(P - 7.0)
-        if d <= 0.07:
-            return "ok"
-        if d <= 0.2:
-            return "near"
-        if abs(P - 14.0) <= 0.4:
-            return "x2"
-        if abs(P - 3.5) <= 0.03:
-            return "half"
-        return "miss"
+    def hq2_quality(score):
+        if score < HQ2_NOISE_MID:
+            return "размыто"
+        if score < HQ2_NOISE_HIGH:
+            return "проступает"
+        return "чётко"
 
-    def hq2_steps(line):
+    def hq2_meter(score):
+        fill = int(min(score / 20.0, 1.0) * 300)
+        mark = int(HQ2_NOISE_HIGH / 20.0 * 300)
+        return fill, mark
+
+    def hq2_steps(line, x0=40, width=1400):
         rects = []
-        bw = 1400 / 8.0
+        bw = width / 8.0
         prev = None
         for fc, m in line:
             b = int(fc * 8)
-            x = 40 + b * bw
-            y = 560 - (m - 6) / 10.0 * 230
-            rects.append((int(x), int(y) - 2, int(bw), 4))
+            x = x0 + b * bw
+            y = hq2_fy(m)
+            rects.append((int(x), y - 2, int(bw), 4))
             if prev is not None and prev[0] == b - 1:
                 top = min(prev[1], y)
-                rects.append((int(x) - 2, int(top) - 2, 4, int(abs(prev[1] - y)) + 4))
+                rects.append((int(x) - 2, top - 2, 4, abs(prev[1] - y) + 4))
             prev = (b, y)
         return rects
+
+    def hq2_lock_kind(P):
+        d = abs(P - 7.0)
+        if d <= 0.10:
+            return "ok"
+        if d <= 0.35:
+            return "near"
+        if abs(P - 14.0) <= 0.5:
+            return "x2"
+        if abs(P - 3.5) <= 0.05:
+            return "half"
+        return "miss"
+
+    def hq2_run_sweep():
+        steps = []
+        for k in range(19):
+            steps.append((3.0 + 0.2 * k, 0.04))
+        for k in range(31):
+            steps.append((6.7 + 0.02 * k, 0.06))
+        for k in range(19):
+            steps.append((7.5 + 0.2 * k, 0.04))
+        for P, d in steps:
+            store.hq2_slider = (P - 2.0) / 14.0
+            renpy.pause(d, hard=True)
 
     def hq2_points(wrong):
         return max(HQ2_ACC_MIN, HQ2_ACC_MAX - wrong)
@@ -129,8 +177,10 @@ screen hq2_fold(live=True):
     zorder 30
     $ P = hq2_period()
     $ pts, line, score = hq2_fold(P)
-    $ quality = "размыто" if score < 2.5 else ("проступает" if score < 5.0 else "чётко")
+    $ quality = hq2_quality(score)
     $ steps = hq2_steps(line)
+    $ cuts = hq2_cuts(P)
+    $ m_fill, m_mark = hq2_meter(score)
 
     fixed:
         pos (210, 30)
@@ -138,18 +188,21 @@ screen hq2_fold(live=True):
         add Solid("#0b1018f2")
 
         text "sky_log: яркость объекта по ночам" pos (28, 18) font HQ2_FONT size 20 color "#6f8a99"
-        text "90 ночей, наблюдалась примерно половина" pos (1000, 20) font HQ2_FONT size 18 color "#6f8a99"
-        text "ряд как есть: одна точка — одна ночь, выше — ярче" pos (28, 52) font HQ2_FONT size 16 color "#6f8a99"
+        text "120 ночей, наблюдалась примерно половина" pos (1000, 20) font HQ2_FONT size 18 color "#6f8a99"
+        text "ряд как есть: по горизонтали номер ночи, по вертикали яркость. Янтарные линии режут ряд на куски длиной в период" pos (28, 52) font HQ2_FONT size 16 color "#6f8a99"
 
+        for cx in cuts:
+            add Solid("#BA751766") pos (cx, 80) xysize (2, 110)
         add Solid("#1b2535") pos (40, 190) xysize (1400, 2)
         for t, y in zip(HQ2_T, HQ2_Y):
-            $ dx = int(40 + t / 89.0 * 1400)
-            $ dy = int(190 - (y - 6) / 10.0 * 134)
+            $ dx = hq2_rx(t)
+            $ dy = hq2_ry(y)
             add Solid("#4fc9b0") pos (dx - 6, dy - 1) xysize (12, 2)
             add Solid("#4fc9b0") pos (dx - 1, dy - 6) xysize (2, 12)
             add Solid("#cfe9e3") pos (dx - 2, dy - 2) xysize (4, 4)
-        text "0" pos (40, 198) font HQ2_FONT size 16 color "#6f8a99"
-        text "90 суток" pos (1340, 198) font HQ2_FONT size 16 color "#6f8a99"
+        for n in range(0, 121, 20):
+            text str(n) pos (hq2_rx(n) - 8, 196) font HQ2_FONT size 14 color "#6f8a99"
+        text "ночь" pos (1390, 196) font HQ2_FONT size 14 color "#6f8a99"
 
         text "наша догадка: через сколько суток объект повторяется" pos (28, 226) font HQ2_FONT size 18 color "#6f8a99"
         if live:
@@ -165,21 +218,25 @@ screen hq2_fold(live=True):
             textbutton "+0,01" sensitive live action SetVariable("hq2_slider", min(1.0, hq2_slider + 0.01 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
             textbutton "+0,05" sensitive live action SetVariable("hq2_slider", min(1.0, hq2_slider + 0.05 / 14.0)) text_font HQ2_FONT text_size 18 text_color "#cfe9e3"
 
-        text "тот же ряд, сложенный по этому периоду: одинаковые фазы лежат друг над другом" pos (28, 330) font HQ2_FONT size 16 color "#6f8a99"
         text ("картина: " + quality) pos (28, 300) font HQ2_FONT size 18 color "#8ff0dc"
+        add Solid("#1b2535") pos (330, 304) xysize (300, 12)
+        add Solid("#8ff0dc") pos (330, 304) xysize (max(2, m_fill), 12)
+        add Solid("#e0a030") pos (330 + m_mark, 298) xysize (2, 24)
+        text "порог шума" pos (330 + m_mark - 36, 322) font HQ2_FONT size 14 color "#e0a030"
+        text "тот же ряд, сложенный по этому периоду: одинаковые фазы лежат друг над другом" pos (28, 340) font HQ2_FONT size 16 color "#6f8a99"
 
         add Solid("#1b2535") pos (40, 560) xysize (1400, 2)
         for f, y in pts:
             $ fx = int(40 + f * 1400)
-            $ fy = int(560 - (y - 6) / 10.0 * 230)
+            $ fy = hq2_fy(y)
             add Solid("#8ff0dc") pos (fx - 6, fy - 1) xysize (12, 2)
             add Solid("#8ff0dc") pos (fx - 1, fy - 6) xysize (2, 12)
             add Solid("#ffffff") pos (fx - 2, fy - 2) xysize (4, 4)
         for rx, ry, rw, rh in steps:
             add Solid("#BA7517") pos (rx, ry) xysize (rw, rh)
-        text "начало периода" pos (40, 568) font HQ2_FONT size 16 color "#6f8a99"
-        text "конец" pos (1390, 568) font HQ2_FONT size 16 color "#6f8a99"
-        text "янтарная ступенька — среднее яркости в каждом из 8 столбцов" pos (700, 568) font HQ2_FONT size 16 color "#BA7517"
+        text "0" pos (40, 568) font HQ2_FONT size 16 color "#6f8a99"
+        text (("%.2f" % P).replace(".", ",") + " суток") pos (1300, 568) font HQ2_FONT size 16 color "#6f8a99"
+        text "янтарная ступенька — среднее яркости в каждом из 8 столбцов" pos (500, 568) font HQ2_FONT size 16 color "#BA7517"
 
         button:
             pos (28, 620)
@@ -191,14 +248,55 @@ screen hq2_fold(live=True):
             text "зафиксировать период" font HQ2_FONT size 20 color "#8ff0dc" align (0.5, 0.5)
 
 
+screen hq2_halves():
+    zorder 30
+    $ h = len(HQ2_T) // 2
+    $ pts1, line1, sc1 = hq2_fold(7.0, HQ2_T[:h], HQ2_Y[:h])
+    $ pts2, line2, sc2 = hq2_fold(7.0, HQ2_T[h:], HQ2_Y[h:])
+    $ steps1 = hq2_steps(line1, 40, 640)
+    $ steps2 = hq2_steps(line2, 780, 640)
+
+    fixed:
+        pos (210, 30)
+        xysize (1500, 690)
+        add Solid("#0b1018f2")
+
+        text "проверка: ряд пополам, каждая половина отдельно, период 7 суток" pos (28, 18) font HQ2_FONT size 20 color "#6f8a99"
+        text "первая половина (ночи 0–59)" pos (40, 300) font HQ2_FONT size 18 color "#8ff0dc"
+        text "вторая половина (ночи 60–119)" pos (780, 300) font HQ2_FONT size 18 color "#8ff0dc"
+
+        add Solid("#1b2535") pos (40, 560) xysize (640, 2)
+        add Solid("#1b2535") pos (780, 560) xysize (640, 2)
+        for f, y in pts1:
+            $ fx = int(40 + f * 640)
+            $ fy = hq2_fy(y)
+            add Solid("#8ff0dc") pos (fx - 6, fy - 1) xysize (12, 2)
+            add Solid("#8ff0dc") pos (fx - 1, fy - 6) xysize (2, 12)
+            add Solid("#ffffff") pos (fx - 2, fy - 2) xysize (4, 4)
+        for f, y in pts2:
+            $ fx = int(780 + f * 640)
+            $ fy = hq2_fy(y)
+            add Solid("#8ff0dc") pos (fx - 6, fy - 1) xysize (12, 2)
+            add Solid("#8ff0dc") pos (fx - 1, fy - 6) xysize (2, 12)
+            add Solid("#ffffff") pos (fx - 2, fy - 2) xysize (4, 4)
+        for rx, ry, rw, rh in steps1:
+            add Solid("#BA7517") pos (rx, ry) xysize (rw, rh)
+        for rx, ry, rw, rh in steps2:
+            add Solid("#BA7517") pos (rx, ry) xysize (rw, rh)
+        text "0" pos (40, 568) font HQ2_FONT size 16 color "#6f8a99"
+        text "7 суток" pos (620, 568) font HQ2_FONT size 16 color "#6f8a99"
+        text "0" pos (780, 568) font HQ2_FONT size 16 color "#6f8a99"
+        text "7 суток" pos (1360, 568) font HQ2_FONT size 16 color "#6f8a99"
+
+
 label hidden_quest_start:
     if hidden_quest_phase2_done:
-        "Здесь больше нет ничего нового."
+        "ТЕКСТ: здесь пока больше нет ничего нового."
         jump desktop_loop
     if hidden_quest_phase1_done and task2_secret_access:
         jump hidden_quest2_intro
     if hidden_quest_phase1_done:
-        "Ничего нового."
+        "ТЕКСТ: здесь пока ничего нового."
         jump desktop_loop
     jump hidden_quest_intro
 
@@ -298,23 +396,53 @@ label hidden_quest2_sky:
     player "Если честно, звёздное небо — это буквально последнее, что я помню, перед тем как очнуться здесь. И мне кажется... я готовился совершить открытие. За этим я и поехал за город, когда... всё произошло."
     player "Меня вот ещё что интересует: зачем супермаркетам наблюдения за звёздным небом? Нет, мы обязаны это разгадать."
     sasha "Но как? На что мы вообще смотрим? Это же ерунда какая-то, как из этого сделать смысл?"
-    player "Смотрим мы на яркость какого-то объекта. Одна точка — одна ночь. Выше точка — ярче объект. Часть ночей пропущена: облака, лень, поломки."
-    sasha "И что тут можно понять? Мигает как попало."
-    player "Как попало — это пока смотрим на ряд по порядку. Но если у объекта есть ритм, он повторяется через одно и то же число суток. Это называется периодом."
-    player "Зачем он нужен? Если знаешь период, знаешь, когда объект станет ярче в следующий раз. А если ритм есть, значит, у него есть причина."
-    sasha "Допустим. А как найти период в такой каше?"
-    player "Угадать и проверить. Берём догадку: пусть период — пять суток. Режем весь ряд на куски по пять суток и кладём куски стопкой друг на друга."
-    sasha "Как слоёный пирог."
-    player "Именно. Если период угадан, яркие ночи лягут в одно место, и на пироге вырастет горб. Если нет, получится каша."
-    player "Ползунок внизу — наша догадка про период. Нижний график — результат наложения. Янтарные ступеньки — среднее в каждом столбце. А надпись «картина» показывает, насколько точки собрались вместе."
-    sasha "То есть крутим, пока не проступит."
-    player "Крутим и смотрим. И не забываем: «чётко» не всегда значит «верно»."
+    player "Думаю, мы смотрим на такую штуку, которая называется «периодограмма»."
+    sasha "Ты не сделал мне смысл."
+
+    window hide
+    menu:
+        "Звучать солидно.":
+            player "Ну, Санёк, это же просто. Периодограмма — это оценка спектральной плотности мощности, основанная на вычислении квадрата модуля преобразования Фурье последовательности данных."
+            sasha "Тебе там учительница в школе матешу объясняла, да?"
+        "Звучать искренне.":
+            player "Ну, Санёк... Представь тёмную комнату, а в ней одновременно тикают все часы мира. Периодограмма — это такой слух, который слышит, какие часы тикают громче всех. Ну и ещё немного магии."
+            sasha "У тебя в голове, видимо, живёт часовщик с поэтическим уклоном."
+
+    player "Ладно, давай проще. Есть такая штука — переменная звезда. У неё блеск меняется со временем: то ярче, то тусклее. Вот такие картинки астрономы и рисуют, чтобы понять, как именно."
+    player "Странно... Имени своего не помню, а как с такими рядами работать — помню. Руки помнят лучше головы."
+    player "Одна точка — одна ночь. Выше точка — ярче объект. Часть ночей пропущена: облака, лень, поломки."
+    sasha "И что тут можно понять?"
+    player "Например, регулярные у нас изменения яркости или нерегулярные."
+    sasha "Ну, тут явно нерегулярные."
+    player "А вот и нет. Смотри."
+
+    call hq2_demo_sweep
+
+    sasha "Стой. Вернись. Там что-то мелькнуло."
+    player "Вот именно. Мелькнуло и пропало."
+    player "Вообще-то настоящая периодограмма всё считает сама. Но у нас дырявый ряд и никаких инструментов, поэтому делаем то же самое руками."
+    player "Смотри. Ползунок — наша догадка про период. Мы режем весь ряд на куски такой длины и кладём куски друг на друга, как слои пирога. Попали в период — яркие ночи лягут в одно место, и вырастет горб. Не попали — каша."
+    player "Янтарные линии наверху показывают, где мы режем ряд. Нижний график — результат наложения, янтарные ступеньки на нём — среднее в каждом столбце. А надпись «картина» и шкала рядом показывают, насколько точки собрались вместе. Жёлтая отметка на шкале — порог шума: ниже неё картина вполне может быть случайной."
+    sasha "То есть крутим, пока не вырастет горб."
+    player "Крутим и не обманываемся: «чётко» не всегда значит «верно»."
     sasha "Ну давай. Впечатли меня."
 
     $ hq2_wrong_locks = 0
     $ hq2_hint_shown = False
     $ hq2_slider = 0.2
     jump hidden_quest2_fold_loop
+
+
+label hq2_demo_sweep:
+    window hide
+    $ renpy.block_rollback()
+    $ hq2_slider = 1.0 / 14.0
+    $ renpy.pause(0.7, hard=True)
+    $ hq2_run_sweep()
+    $ renpy.pause(0.6, hard=True)
+    $ hq2_slider = 0.2
+    window show
+    return
 
 
 label hidden_quest2_fold_loop:
@@ -348,7 +476,13 @@ label hidden_quest2_fold_ok:
     $ hidden_quest_phase2_done = True
 
     hide screen hq2_fold
-    player "ТЕКСТ: семь суток. Ровно неделя. Яркость объекта растёт по расписанию, как пики нагрузки у точки Д."
+    show screen hq2_halves
+    with dissolve
+    player "ТЕКСТ: проверим честно. Разрежем ряд пополам и сложим каждую половину отдельно."
+    sasha "ТЕКСТ: и обе дают горб в одном и том же месте. Это уже не шум."
+    hide screen hq2_halves
+    with dissolve
+    player "ТЕКСТ: ровно семь суток. Природа так не считает: ей всё равно на человеческие недели. Значит, у этого ритма есть расписание."
     sasha "ТЕКСТ: совпадение? Я начинаю уставать от этого слова."
     player "ТЕКСТ: у магазина и у объекта в небе один и тот же ритм. Что у них может быть общего?"
     sasha "ТЕКСТ: или кто. Но это уже вопрос для другого дня."
