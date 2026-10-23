@@ -279,6 +279,8 @@ default memory_query_mistakes = 0
 
 default memory_query_total_mistakes = 0
 
+default task3_break_chat_seen = False
+
 
 define memory_query_target_idx = [2, 5, 8, 11, 13, 16, 18, 21]
 
