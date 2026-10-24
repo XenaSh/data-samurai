@@ -202,6 +202,105 @@ screen memory_detail_screen(key):
                     text memory_articles[key]["text"] color "#e0e0e0" size 18
             textbutton "Назад" action Return() text_size 18 text_color "#ff8888" xalign 0.5
 
+# окно финальной дедукции
+
+transform nf_twinkle(lo, hi, per, delay):
+    alpha lo
+    pause delay
+    block:
+        easein per alpha hi
+        easeout per alpha lo
+        repeat
+
+transform nf_appear(delay):
+    alpha 0.0
+    pause delay
+    easein 0.9 alpha 1.0
+
+transform nf_still:
+    alpha 1.0
+
+screen nf_sky():
+    for bg in NF_BG:
+        $ x, y, s, lo, hi, per, d = bg
+        add Solid("#cfe9ff") xysize (s, s) pos (x, y) at nf_twinkle(lo, hi, per, d)
+
+screen nf_constellation(avail, links, p=0.0, sel=None, appear=True, labels=True):
+    $ linked = set(k for pr in links for k in pr)
+    $ boost = 0.55 + 0.45 * p
+
+    for pr in links:
+        $ a, b = tuple(pr)
+        $ ax, ay = nf_xy(a, avail, p)
+        $ bx, by = nf_xy(b, avail, p)
+        $ L, ang = nf_line(ax, ay, bx, by)
+        $ mx, my = (ax + bx) // 2, (ay + by) // 2
+        add Solid("#00ffcc") xysize (L, 8) pos (mx, my) anchor (0.5, 0.5) rotate ang rotate_pad False alpha (0.10 + 0.12 * p)
+        add Solid("#00ffcc") xysize (L, 2) pos (mx, my) anchor (0.5, 0.5) rotate ang rotate_pad False alpha boost
+
+    for k in avail:
+        $ x, y = nf_xy(k, avail, p)
+        $ col = "#00ffcc" if k in linked else "#d8f3ee"
+        fixed:
+            at (nf_appear(0.25 * avail.index(k)) if appear else nf_still)
+            add Solid(col) xysize (26, 2) pos (x - 13, y - 1)
+            add Solid(col) xysize (2, 26) pos (x - 1, y - 13)
+            add Solid("#ffffff") xysize (8, 8) pos (x - 4, y - 4)
+            if labels:
+                text NF_SHORT[k] size 17 color ("#9fe8d8" if k in linked else "#8fa6a8") xcenter x ypos (y + 22) text_align 0.5
+        if sel == k:
+            add Solid("#ffaa00") xysize (46, 2) pos (x - 23, y - 23)
+            add Solid("#ffaa00") xysize (46, 2) pos (x - 23, y + 21)
+            add Solid("#ffaa00") xysize (2, 46) pos (x - 23, y - 23)
+            add Solid("#ffaa00") xysize (2, 46) pos (x + 21, y - 23)
+
+screen nf_board(avail, links, msg):
+    default sel = None
+    default hov = None
+
+    add Solid("#04060c")
+    use nf_sky
+    use nf_constellation(avail, links, 0.0, sel)
+
+    text "СОЗВЕЗДИЕ ПРАВДЫ" size 30 color "#00ffcc" xalign 0.5 ypos 40
+    text "Не найти на небе, только в твоих мыслях" size 20 color "#9fe8d8" xalign 0.5 ypos 82
+
+    for k in avail:
+        $ sx, sy = nf_xy(k, avail, 0.0)
+        button:
+            xysize (96, 96)
+            pos (sx - 48, sy - 48)
+            background None
+            hovered SetScreenVariable("hov", k)
+            unhovered SetScreenVariable("hov", None)
+            action If(sel is None, SetScreenVariable("sel", k), If(sel == k, SetScreenVariable("sel", None), Return((sel, k))))
+
+    $ shown = NF_TEXT[hov] if hov else msg
+    text shown size 28 color "#ffffff" xalign 0.5 ypos 905 xmaximum 1500 text_align 0.5
+
+    textbutton "Свести всё вместе":
+        xalign 0.5
+        ypos 985
+        sensitive len(links) >= 4
+        action Return("done")
+        text_font gui.text_font
+        text_size 28
+        text_color "#00ffcc"
+        text_insensitive_color "#3b4a52"
+
+screen nf_finale(avail, links):
+    default p = 0.0
+    timer 0.03 repeat True action SetScreenVariable("p", min(1.0, p + 0.0065))
+    timer 6.0 action Return(True)
+    key "dismiss" action Return(True)
+
+    add Solid("#04060c")
+    use nf_sky
+    use nf_constellation(avail, links, p, None, False)
+
+    if p > 0.55:
+        text "СОЗВЕЗДИЕ ПРАВДЫ" size (34 + int(12 * p)) color "#ffffff" xalign 0.5 ypos 900 at nf_appear(0)
+
 
 label desktop_loop:
     if renpy.music.get_playing() != "audio/Idle Grid.mp3":
@@ -387,7 +486,7 @@ label chat_with_sasha_menu:
             sasha "Я не для того, чтобы обнадёживать. У меня для этого нет функции."
             jump chat_with_sasha_menu
 
-        "Как я справляюсь?" if sasha_phase >= 2:
+        "Как я справляюсь?" if sasha_phase = 2:
             player "Саша, серьёзно — как я вообще справляюсь? Со стороны видно?"
             if accuracy >= accuracy_threshold_p2 and intuition >= intuition_threshold_p2:
                 sasha "Со стороны видно человека, который и считает аккуратно, и иногда просто знает, не досчитав до конца. Бесит, если честно. По-хорошему бесит."
@@ -557,135 +656,85 @@ label sasha_not_final:
     sasha "А что чувствуешь?"
     player "Нашёл какую-то аномалию, о которой начальник и так знал и просто наблюдал, как именно я буду её искать. Ощущение, будто я решал не ту задачу."
     sasha "А какую задачу ты, по-твоему, решал?"
-    player "Не знаю, как объяснить. Найти аномалию — не было настоящей целью ровно как и её исследовать."
+    player "Не знаю, как объяснить. Найти аномалию не было настоящей целью ровно как и её исследовать."
     sasha "..."
     player "Давай разложим по полочкам всё, что мы вообще знаем."
-    jump nf_shelf
 
-
-label nf_shelf:
     window hide
-    menu:
-        "Что положим на полку?"
+    scene black with Dissolve(1.0)
+    play music "audio/Frozen Signal.mp3" fadein 2.0 volume 0.2 loop
+    $ nf_avail = nf_available()
+    $ nf_links = []
+    $ nf_msg = "Что с чем связано?"
+    jump nf_board_loop
 
-        "Я очнулся здесь без памяти и без тела." if "nf_awoke" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_awoke")
-            player "С этого всё началось: терминал, ни тела, ни прошлого."
-            sasha "Это мы знаем с первой минуты. Что ещё?"
-            jump nf_shelf
 
-        "Сегодня среда, и пики D по средам." if "nf_wed" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_wed")
-            player "ТЕКСТ: Часы на столе показывают среду. Пики выручки D тоже по средам."
-            sasha "ТЕКСТ: Совпадение дня недели или причина?"
-            jump nf_shelf
-
-        "Выручка D идёт вместе с нагрузкой на сервер." if "nf_load" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_load")
-            player "ТЕКСТ: r = 0,76. Пики выручки совпадают с пиками нагрузки."
-            sasha "ТЕКСТ: Связь есть. А причина?"
-            jump nf_shelf
-
-        "В D нет ни одной заявки на поставку." if "nf_supply" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_supply")
-            player "ТЕКСТ: Продажи есть, поставок в учёте нет. Это мне сказал босс."
-            sasha "ТЕКСТ: Со слов босса. Запомни, откуда это."
-            jump nf_shelf
-
-        "Босс не расследовал D. Он смотрел, как расследую я." if "nf_studied" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_studied")
-            player "ТЕКСТ: Его интересовало, какой метод я выберу и в каком порядке."
-            sasha "ТЕКСТ: Подопытный кролик смотрит на экспериментатора."
-            jump nf_shelf
-
-        "Когда я рассказал методологию, он потерял интерес." if "nf_bored" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_bored")
-            player "ТЕКСТ: Порядок этапов объяснил, и расследование «окончено»."
-            sasha "ТЕКСТ: Он получил, что хотел."
-            jump nf_shelf
-
-        "Он оговаривался: земные коллеги, ретрансляторы, похищения." if "nf_slips" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_slips")
-            player "ТЕКСТ: Три оговорки в одну сторону. Одна случайность, три уже закономерность."
-            sasha "ТЕКСТ: А как проверить?"
-            jump nf_shelf
-
-        "В новостях тоже что-то про пришельцев." if news_read_index > 0 and "nf_news" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_news")
-            player "ТЕКСТ: Я читал ленту. Шутки, но слишком много про орбиту и небо."
-            sasha "ТЕКСТ: Новости это фон. Опора, а не доказательство."
-            jump nf_shelf
-
-        "Я астроном-любитель. Я ехал смотреть какой-то объект." if hidden_quest_phase2_done and "nf_origin" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_origin")
-            player "ТЕКСТ: Я признался тебе в этом в журналах. Загородная поездка, телескоп."
-            sasha "ТЕКСТ: Ты ехал не просто так."
-            jump nf_shelf
-
-        "Изобилие следит за небом: объект ярче раз в семь суток." if hidden_quest_phase2_done and "nf_sky" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_sky")
-            player "ТЕКСТ: sky_log: яркость растёт каждые 7 суток. По средам."
-            sasha "ТЕКСТ: Тот же такт, что у D."
-            jump nf_shelf
-
-        "По средам D закрыт для покупателей." if "wishes" in hq2_viewed and "nf_closed" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_closed")
-            player "ТЕКСТ: Галина Петровна ходит каждую среду. Каждую среду закрыто."
-            sasha "ТЕКСТ: А выручка в среду максимальная. Из чего она сложена?"
-            jump nf_shelf
-
-        "Норд-Капитал контролирует D." if hidden_quest_phase1_done and "nf_nord" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_nord")
-            player "ТЕКСТ: 51% с третьего квартала. Управляющая фирма, о которой никто ничего не знает."
-            sasha "ТЕКСТ: Самая скучная статья из всех. Может быть, потому и самая важная."
-            jump nf_shelf
-
-        "Журнал открылся раньше, чем я задал вопрос." if task2_secret_access and "nf_ahead" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_ahead")
-            player "ТЕКСТ: Кто-то отвечал мне раньше, чем я спрашивал."
-            sasha "ТЕКСТ: Я тебе это уже говорил: не я."
-            jump nf_shelf
-
-        "Вспышка пришла ночью, как я предсказал." if hq2_confirmed and "nf_night" not in sasha_topics_seen:
-            $ mark_topic_seen("nf_night")
-            player "ТЕКСТ: Я назвал ночь. Он вспыхнул тогда."
-            sasha "ТЕКСТ: Расписание есть. Только не у нас."
-            jump nf_shelf
-
-        "Свести всё вместе." if len([k for k in sasha_topics_seen if k.startswith("nf_")]) >= 5:
-            jump nf_conclusion
+label nf_board_loop:
+    call screen nf_board(nf_avail, nf_links, nf_msg)
+    $ nf_r = _return
+    if nf_r == "done":
+        $ renpy.music.set_volume(0.6, delay=1.5)
+        call screen nf_finale(nf_avail, nf_links)
+        jump nf_conclusion
+    $ nf_pair = frozenset(nf_r)
+    if nf_pair in nf_links:
+        $ nf_msg = "Это я уже связал."
+    elif nf_pair in NF_EDGES:
+        $ nf_links.append(nf_pair)
+        $ nf_msg = NF_EDGES[nf_pair]
+        $ renpy.music.set_volume(min(0.6, 0.2 + 0.04 * len(nf_links)), delay=0.6)
+    else:
+        $ nf_msg = "Не вижу связи."
+    jump nf_board_loop
 
 
 label nf_conclusion:
+    scene bg_terminal with Dissolve(0.8)
+    $ renpy.music.set_volume(0.35, delay=1.5)
     window show
-    sasha "ТЕКСТ: Ну? Что у нас получается?"
+
     player "Начальник... не человек."
     player "И мы сейчас не на Земле. Мы в чёртовой летающей тарелке!"
-    sasha "ТЕКСТ: реакция на возглас, юмор."
+    sasha "..."
+    sasha "Нет, я не буду над тобой смеяться."
 
-    if "nf_nord" in sasha_topics_seen:
+    if nf_has("peaks", "nosupply"):
+        player "Выручка есть, поставок нет. D — не магазин, а прикрытие."
+
+    if hidden_quest_phase1_done and nf_has("nord", "nosupply"):
         player "«Норд-Капитал», вероятно, подставная фирма, которую контролируют пришельцы. Они получили контроль над небольшим магазином сети и используют его как свою земную базу."
+    elif hidden_quest_phase1_done:
+        player "Норд-Капитал — единственная нить к владельцу."
     else:
-        player "ТЕКСТ: Магазин D — прикрытие для чего-то. Для чего именно, я не знаю."
+        player "Магазин D — прикрытие для чего-то. Для чего именно, я не знаю."
 
-    if "nf_sky" in sasha_topics_seen and "nf_closed" in sasha_topics_seen:
-        player "ТЕКСТ: Объект в небе ярче раз в семь суток. По средам D закрыт для людей, а выручка именно по средам, без поставок и при двойной нагрузке. Это не торговля."
-    elif "nf_wed" in sasha_topics_seen and "nf_supply" in sasha_topics_seen:
-        player "ТЕКСТ: Пики по средам, продажи без поставок. Это не торговля."
+    if nf_has("sky", "peaks") and nf_has("closed", "peaks"):
+        player "Объект в небе ярче раз в семь суток. По средам D закрыт для людей, а выручка именно по средам. Это не торговля."
 
-    if "nf_night" in sasha_topics_seen:
-        player "ТЕКСТ: Он вспыхнул, когда я сказал. Расписание у них, а не у меня."
+    if nf_has("flash", "sky"):
+        player "Расписание... чего? Бодрствования пришельцев?"
+
+    if nf_has("ahead", "studied"):
+        player "Кто-то — кто? — в журнале отвечал раньше, чем я спрашивал... это мне ещё предстоит осмыслить..."
+
+    if nf_has("awoke", "astro"):
+        player "И ведь я ехал смотреть именно этот объект. Меня забрали не случайно."
+
+    if user_reflection != "":
+        player "Я ведь сам написал: «[user_reflection]». Хах."
 
     player "Цель моей работы сегодня была не в том, чтобы расследовать магазин, а в том, чтобы показать пришельцам, как именно земляне проводят расследования: что им кажется подозрительным, на что они обращают внимание и как потенциально смогут выйти на тайную деятельность пришельцев."
     player "Я был подопытным кроликом. Это не я работал с данными, это данные собирались по мне."
     sasha "..."
+    "Ты будто чувствуешь кожей, как твой друг молчит."
+    "Друг? Он уже стал твоим другом?"
+    "..."
     player "И кажется... кажется, я что-то вспомнил. Прямо сейчас."
     jump nf_flash
 
 
 label nf_flash:
     window hide
-    play music "audio/Frozen Signal.mp3" fadein 2.0 volume 0.35 loop
     show flash_soft with flash
     pause 0.15
     hide flash_soft
@@ -693,9 +742,6 @@ label nf_flash:
     with dissolve
     pause 1.5
 
-    "{color=#ffcc88}{i}В темноте возникает образ. Ты сидишь у костра. Рядом — кто-то. Он читает вслух книгу, и ты смеёшься. Пахнет деревом и дымом.{/i}{/color}"
-
-    window hide
     sasha "Ты там? Ты застыл на пару секунд."
     player "Я... я что-то вспомнил. Костёр. Кто-то читал книгу."
     sasha "Кто?"
@@ -736,7 +782,7 @@ label memory_book:
 
 label memory_ask_sasha:
     window hide
-    player "Саша, ты что-то помнишь? Ну, до того, как стал ИИ?"
+    player "Саша, ты что-то помнишь? Ну, до того...?"
     sasha "Иногда я вижу образы. Яркая вспышка в небе тёмной ночью, я в лесу. Кажется, я заметил в телескоп что-то странное и поехал за город с товарищем... Но не знаю, мои ли это воспоминания или сбой системы."
     player "Я видел тебя. Ты сидел у костра и читал книгу. «Мастера и Маргариту»."
     sasha "Будто я знаю эту книгу. Но я не должен знать ничего, кроме алгоритмов."
@@ -746,21 +792,29 @@ label memory_ask_sasha:
 label memory_sasha_reveal:
     window hide
     if remembered_alexander:
+        sasha "..."
         sasha "Ты уже знаешь, да?"
+        sasha "Ты уже всё понял."
         player "Александр. Палатка. Костёр."
-        sasha "Я боялся, что ты вспомнишь раньше, чем я успею сказать это сам."
+        sasha "..."
         player "Значит, это правда. Ты — это он."
-        sasha "Был. Когда-то. Странно произносить это вслух — как признаваться в том, что давно уже не тайна."
+        sasha "Значит, почти всё. Хэх."
+        sasha "Был. Когда-то."
         player "Почему ты молчал?"
-        sasha "А что бы это изменило? Ты и так знал. Просто теперь мы оба знаем, что знаем."
+        sasha "А что бы это изменило? Ты и так знал. Ты всегда знал, в каждый момент своего безвременного существования. Просто теперь мы оба знаем, что знаем."
+        "Тебе хочется сказать так много, что ты не говоришь ничего."
+        "Сейчас нужно не чувствовать и даже не думать. Действовать."
         player "Я позову его. Я потребую ответов!"
         $ intuition += 10
     else:
-        sasha "Я помню. Не знаю, как это возможно, но помню. Мы сидели у костра, я читал вслух, ты смеялся. Мы говорили о чём-то важном — о том, что должно было изменить всё, о великом астрономическом открытии."
-        player "Что именно?"
-        sasha "Не помню. Но знаю, что это важно. И что мы должны вспомнить это, прежде чем начальник..."
-        player "Начальник? Что он сделает?"
-        sasha "Не знаю. Но чувствую, что он не тот, кем кажется."
+        sasha "..."
+        sasha "Ты уже знаешь, да?"
+        sasha "Ты уже всё понял."
+        sasha "Я помню. Мы сидели у костра, я читал вслух, ты смеялся. Мы говорили о чём-то важном — о том, что должно было изменить всё, о великом астрономическом открытии."
+        player "Мы? Я и ты? Физически сидели рядом?"
+        sasha "Однажды ты поймёшь абсолютно всё. Видимо, не прямо сейчас."
+        "Тебе хочется сказать так много, что ты не говоришь ничего."
+        "Сейчас нужно не чувствовать и даже не думать. Действовать."
         player "Я позову его. Я потребую ответов!"
         $ intuition += 10
     jump call_boss_menu

@@ -5,10 +5,8 @@ style vscrollbar:
     thumb_shadow None
     unscrollable "hide"
 
-define accuracy = 100
-
-define intuition = 100
-
+default accuracy = 100
+default intuition = 100
 
 default remembered_alexander = False
 
@@ -66,13 +64,10 @@ default task1_route = ""
 
 default task1_tool_used = ""
 
-default accuracy_threshold_p1 = 120
-
-default intuition_threshold_p1 = 110
-
-default accuracy_threshold_p2 = 140
-
-default intuition_threshold_p2 = 120
+define accuracy_threshold_p1 = 135
+define intuition_threshold_p1 = 110
+define accuracy_threshold_p2 = 155
+define intuition_threshold_p2 = 116
 
 default cipher_mentioned = False
 
@@ -98,9 +93,8 @@ default scalp_entry_price = 0.0
 
 default scalp_bank = 0
 
-default ending_accuracy_threshold = 185
-
-default ending_intuition_threshold = 178
+define ending_accuracy_threshold = 220
+define ending_intuition_threshold = 160
 
 default task2_intro_done = False
 
@@ -295,6 +289,9 @@ default nq_pairs = {}
 
 default pd_selected = set()
 
+default nf_links = []
+default nf_avail = []
+
 
 init python:
     def unlock_memory(key):
@@ -451,8 +448,196 @@ init python:
         if len(persistent.achieved_endings) >= 4:
             unlock_achievement("videl_vsyo")
 
+init python:
+    import math
+    import random
+
+    NF_TEXT = {
+        "studied":  "Босс исследовал не точку D, а меня.",
+        "bored":    "Узнал мою методологию — и закрыл дело",
+        "slips":    "Оговорки: земные коллеги, ретрансляторы, похищения",
+        "news":     "В новостях упоминались пришельцы... кажется",
+        "today":    "Сегодня среда",
+        "peaks":    "Пики выручки D — по средам",
+        "load":     "Выручка идёт вместе с нагрузкой на сервер",
+        "nosupply": "Продажи есть, заявок на поставку нет",
+        "closed":   "По средам D закрыт для покупателей",
+        "nord":     "Норд-Капитал контролирует D",
+        "sky":      "Объект в небе ярче раз в семь суток",
+        "awoke":    "Очнулся здесь без памяти и... без тела?",
+        "astro":    "Я астроном-любитель, ехал смотреть объект за городом",
+        "ahead":    "Журнал кто-то открыл и этот кто-то будто читал мои мысли",
+        "flash":    "Вспышка пришла ночью, как я предсказал",
+    }
+
+    NF_SHORT = {
+        "studied": "босс изучал меня", "bored": "закрыл дело", "slips": "оговорки",
+        "news": "новости", "today": "сегодня среда", "peaks": "пики по средам",
+        "load": "нагрузка", "nosupply": "нет поставок", "closed": "закрыт по средам",
+        "nord": "Норд-Капитал", "sky": "объект в небе", "awoke": "очнулся здесь",
+        "astro": "астроном", "ahead": "журнал знал заранее", "flash": "вспышка ночью",
+    }
+
+    NF_POS = {
+        "studied": (520, 380), "bored": (300, 260), "ahead": (760, 250),
+        "slips": (480, 600), "news": (250, 700), "awoke": (780, 650),
+        "astro": (1020, 790), "sky": (1380, 680), "flash": (1620, 540),
+        "peaks": (1120, 420), "today": (960, 260), "load": (1420, 270),
+        "closed": (1360, 430), "nosupply": (1010, 570), "nord": (1190, 610),
+    }
+
+    # мысли героя при верной связи (черновик, перепиши под свой голос)
+    NF_EDGES = {
+        frozenset(["today", "peaks"]):    "Сегодня именно тот день: выручка D пиковая по средам.",
+        frozenset(["peaks", "load"]):     "Две кривые идут вместе. По средам что-то грузит сервер.",
+        frozenset(["peaks", "nosupply"]): "Выручка есть, поставок нет. Это не торговля.",
+        frozenset(["studied", "bored"]):  "Он получил, что хотел: мой метод. Дело ему было не нужно.",
+        frozenset(["studied", "slips"]):  "Он не человек. Он изучает человека. Я его подопытный.",
+        frozenset(["news", "slips"]):     "Не одна оговорка: небо и космос повсюду.",
+        frozenset(["closed", "peaks"]):   "Закрыто для людей, а выручка максимальная. Кто кому платит?",
+        frozenset(["sky", "peaks"]):      "Объект и D живут в одном ритме: семь суток, среда.",
+        frozenset(["astro", "sky"]):      "Я ехал смотреть именно этот объект.",
+        frozenset(["awoke", "astro"]):    "Я ехал смотреть объект и очнулся здесь. Это связано.",
+        frozenset(["nord", "nosupply"]):  "Владелец, которому поставки не нужны. Владелец занят не торговлей.",
+        frozenset(["ahead", "studied"]):  "Система слушала меня раньше, чем я говорил.",
+        frozenset(["flash", "sky"]):      "Расписание...",
+        frozenset(["awoke", "slips"]):    "Он говорил о похищениях. А я очнулся здесь без тела.",
+        frozenset(["studied", "peaks"]):  "Аномалия была приманкой. Изучали меня.",
+    }
+
+    def nf_available():
+        a = ["studied", "bored", "slips", "today", "peaks", "load", "nosupply", "awoke"]
+        if news_read_index > 0: a.append("news")
+        if hidden_quest_phase2_done: a += ["astro", "sky"]
+        if "wishes" in hq2_viewed: a.append("closed")
+        if hidden_quest_phase1_done: a.append("nord")
+        if task2_secret_access: a.append("ahead")
+        if hq2_confirmed: a.append("flash")
+        return a
+
+    def nf_has(a, b):
+        return frozenset([a, b]) in nf_links
+
+    def nf_line(x1, y1, x2, y2):
+        dx, dy = x2 - x1, y2 - y1
+        return max(2, int(math.hypot(dx, dy))), math.degrees(math.atan2(dy, dx))
+
+    def nf_center(avail):
+        xs = [NF_POS[k][0] for k in avail]
+        ys = [NF_POS[k][1] for k in avail]
+        return sum(xs) / float(len(xs)), sum(ys) / float(len(ys))
+
+    def nf_xy(k, avail, p):
+        cx, cy = nf_center(avail)
+        x, y = NF_POS[k]
+        x += 960 - cx
+        y += 500 - cy
+        e = p * p * (3 - 2 * p)
+        f = 1.0 - 0.45 * e
+        return int(960 + (x - 960) * f), int(500 + (y - 500) * f)
+
+    def nf_make_bg():
+        r = random.Random(11)
+        out = []
+        for i in range(110):
+            out.append((r.randint(10, 1910), r.randint(10, 1070), r.choice([1, 1, 2, 2, 3]),
+                        r.uniform(0.12, 0.3), r.uniform(0.45, 0.9), r.uniform(1.5, 4.0), r.uniform(0.0, 3.0)))
+        return out
+
+    NF_BG = nf_make_bg()
 
 default _chat_icon_line = 0
 
 
 default call_boss_count = 0
+
+init python:
+    CR_FONT = "fonts/JetBrainsMono-Regular.ttf"
+    CR_SPEED = 70.0
+    CR_COL = {"player": "#00ffcc", "sasha": "#d650be"}
+    CR_WHO = {"player": "ТЫ", "sasha": "САША"}
+    CR_H = {"title": 70, "name": 54, "sub": 40, "msg": 54, "gap": 44, "big": 64, "pause": 380}
+
+    CR_ITEMS = [
+        ("title", "Этот проект стал возможен благодарям им. Спасибо:"), ("gap", ""),
+        ("name", "Анне"), ("sub", "за яркий логотип и дизайн"), ("gap", ""),
+        ("name", "Ольге"), ("sub", "за дизайн и промпт-инжиниринг"), ("gap", ""),
+        ("name", "Лере"), ("sub", "за координационную поддержку и связи"), ("gap", ""),
+        ("name", "Але"), ("sub", "за эстетическое консультирование"), ("gap", ""),
+        ("name", "Нейросетям"), ("sub", "за помощь и поиск проблем"), ("pause", 1),
+        ("name", "Мне"), ("sub", "мои ручки старались и написали для вас пару тысяч строк"), ("pause", 2),
+        ("title", "Отдельные благодарности:"), ("gap", ""),
+        ("name", "Маме"), ("sub", "мам, люблю тебя. Однажды я найду нормальную работу. Честно."), ("gap", ""),
+        ("name", "Бро"), ("sub", "сам знаешь, за что, ты же мой бро"), ("pause", 3),
+        ("sub", "Игра выполнена на бесплатном движке Ren'Py"), ("pause", 4),
+        ("msg", "Любите аналитику, любите данные, любите человечество"), ("gap", ""),
+        ("msg", "Будьте на стороне людей"), ("gap", ""),
+        ("msg", "Берегите себя"), ("pause", 5),
+        ("big", "Спасибо"), ("pause", 6),
+    ]
+
+    def cr_layout():
+        y = 0
+        marks = {}
+        rows = []
+        for kind, payload in CR_ITEMS:
+            if kind == "pause":
+                marks[payload] = y
+            rows.append((kind, payload, y))
+            y += CR_H[kind]
+        return rows, marks, y
+
+    CR_ROWS, CR_MARKS, CR_END = cr_layout()
+
+    def run_credits(lines):
+        cur = 0
+        renpy.show_screen("cr_roll", 1080, 1080, 0.01)
+        renpy.pause(0.6, hard=True)
+        for k in sorted(CR_MARKS):
+            target = 380 + CR_MARKS[k]
+            t = (target - cur) / CR_SPEED
+            renpy.show_screen("cr_roll", int(1080 - cur), int(1080 - target), t)
+            renpy.pause(t, hard=True)
+            cur = target
+            for who, what in lines.get(k, []):
+                renpy.show_screen("cr_say", who, what)
+                renpy.pause(max(2.4, 0.05 * len(what) + 1.4))
+                renpy.hide_screen("cr_say")
+                renpy.pause(0.4, hard=True)
+        renpy.pause(1.0, hard=True)
+        renpy.show_screen("cr_out")
+        renpy.pause(1.6, hard=True)
+        renpy.hide_screen("cr_roll")
+        renpy.hide_screen("cr_out")
+
+define eplayer = Character("ТЫ", screen="end_say", who_color="#00ffcc", what_color="#00ffcc")
+define esasha = Character("САША", screen="end_say", who_color="#d650be", what_color="#d650be")
+define eboss = Character("НАЧАЛЬНИК", screen="end_say", who_color="#ff6b6b", what_color="#ff6b6b")
+define enar = Character(None, screen="end_say", what_color="#8a949a", what_italic=True)
+
+transform card_fade:
+    alpha 0.0
+    easein 2.0 alpha 1.0
+
+screen end_say(who, what):
+    zorder 100
+    vbox:
+        xalign 0.5
+        ypos 780
+        spacing 10
+        xmaximum 1300
+        if who is not None:
+            text who id "who" font CR_FONT size 22 xalign 0.5
+        text what id "what" font CR_FONT size 30 xalign 0.5 text_align 0.5
+
+screen ending_card(title, sub):
+    zorder 110
+    add Solid("#000000")
+    vbox:
+        at card_fade
+        xalign 0.5
+        yalign 0.5
+        spacing 26
+        text title font CR_FONT size 64 color "#ffffff" kerning 10 xalign 0.5
+        add Solid("#00ffcc") xysize (420, 2) xalign 0.5
+        text sub font CR_FONT size 24 color "#8a949a" xalign 0.5 text_align 0.5 xmaximum 1200

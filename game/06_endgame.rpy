@@ -1,27 +1,3 @@
-# === 06_endgame.rpy (сгенерировано из script.rpy, модуль: endgame) ===
-
-screen phase3_complete_screen():
-    frame:
-        xalign 0.5
-        yalign 0.5
-        xsize 660
-        ysize 230
-        background Solid("#ff4444")
-        frame:
-            xfill True
-            yfill True
-            background Solid("#0a0f1acc")
-            xmargin 3
-            ymargin 3
-            padding (30, 30)
-            vbox:
-                xalign 0.5
-                yalign 0.5
-                spacing 20
-                text "ФАЗА 3 ЗАВЕРШЕНА" color "#ff4444" size 38 xalign 0.5
-                text "Дальше — тишина. И то, что она принесёт." color "#ffffff" size 18 xalign 0.5
-
-
 # Экран одной из 4 концовок игры
 
 screen ending_screen(title_text, subtitle_text):
@@ -37,52 +13,425 @@ screen ending_screen(title_text, subtitle_text):
         text "" color "#888888" size 16 align (0.5, 0.9)
 
 
+# Эффекты
+
+define crash = Move((0, 28), (0, 0), 0.06, bounce=True, repeat=True, delay=0.5)
+
+transform dread_pulse(per):
+    alpha 0.0
+    block:
+        easein (per * 0.25) alpha 0.22
+        easeout (per * 0.75) alpha 0.0
+        repeat
+
+transform bar_grow(a, b):
+    ysize a
+    easein 0.7 ysize b
+
+screen call_dread(n):
+    add Solid("#ff2a2a") at dread_pulse(2.0 - 0.35 * n)
+
+screen call_bars(n):
+    add Solid("#000000") xsize 1920 ypos 0 at bar_grow(30 * (n - 1), 30 * n)
+    add Solid("#000000") xsize 1920 yalign 1.0 at bar_grow(30 * (n - 1), 30 * n)
+
+screen call_glitch(n):
+    for i in range(3 * n):
+        $ gy = renpy.random.randint(0, 1040)
+        $ gh = renpy.random.randint(2, 6 * n)
+        add Solid("#00ffcc33") xysize (1920, gh) ypos gy
+    timer 0.16 action Hide("call_glitch")
+transform dim_slow:
+    alpha 0.0
+    linear 40.0 alpha 0.55
+
+screen confront_dim():
+    zorder -1
+    add Solid("#000000") at dim_slow
+
+transform vanish_bar:
+    ysize 0
+    easein 0.5 ysize 540
+
+transform vanish_line:
+    xzoom 1.0
+    alpha 0.0
+    pause 0.5
+    alpha 1.0
+    linear 0.4 xzoom 0.0
+    alpha 0.0
+
+screen boss_vanish():
+    zorder 50
+    add Solid("#000000") xsize 1920 ypos 0 at vanish_bar
+    add Solid("#000000") xsize 1920 yalign 1.0 at vanish_bar
+    add Solid("#00ffcc") xysize (1920, 3) xalign 0.5 yalign 0.5 at vanish_line
+
+transform corrupt_flicker(gap=2.0):
+    alpha 1.0
+    block:
+        pause gap
+        alpha 0.2
+        pause 0.05
+        alpha 1.0
+        pause 0.07
+        alpha 0.5
+        pause 0.04
+        alpha 1.0
+        repeat
+
+transform corrupt_pulse:
+    alpha 0.55
+    block:
+        easein 0.9 alpha 1.0
+        easeout 0.9 alpha 0.55
+        repeat
+
+transform corrupt_still:
+    alpha 1.0
+
+screen corrupt_ticker():
+    timer 3.3 repeat True action Show("call_glitch", n=3)
+
+transform inner_fit:
+    align (0.5, 0.5)
+    zoom 0.78
+    yoffset -90
+
+transform star_drift(a, b, d=3.0):
+    xoffset a
+    easein d xoffset b
+
+transform star_breathe:
+    alpha 0.7
+    block:
+        easein 1.2 alpha 1.0
+        easeout 1.2 alpha 0.7
+        repeat
+
+transform star_line(a, b, d=3.0):
+    xsize (2 * a)
+    easein d xsize (2 * b)
+
+transform ring_out:
+    alpha 1.0
+    zoom 0.2
+    parallel:
+        easein 1.4 zoom 2.6
+    parallel:
+        linear 1.4 alpha 0.0
+
+screen inner_sky():
+    add Solid("#04060c")
+    use nf_sky
+    if nf_links:
+        fixed:
+            at inner_fit
+            use nf_constellation(nf_avail, nf_links, 0.0, None, False, False)
+
+screen inner_star(col):
+    add Solid(col) xysize (44, 3) pos (938, 139)
+    add Solid(col) xysize (3, 44) pos (959, 118)
+    add Solid("#ffffff") xysize (12, 12) pos (954, 134)
+
+screen inner_voices(a=420, b=420, d=3.0):
+    fixed:
+        at star_drift(-a, -b, d)
+        fixed:
+            at star_breathe
+            use inner_star("#00ffcc")
+    fixed:
+        at star_drift(a, b, d)
+        fixed:
+            at star_breathe
+            use inner_star("#d650be")
+    add Solid("#ffffff55") ysize 2 xcenter 960 ypos 139 at star_line(a, b, d)
+
+screen inner_one():
+    fixed:
+        xysize (120, 120)
+        xcenter 960
+        ycenter 140
+        at ring_out
+        add Solid("#ffffff") xysize (120, 2)
+        add Solid("#ffffff") xysize (120, 2) ypos 118
+        add Solid("#ffffff") xysize (2, 120)
+        add Solid("#ffffff") xysize (2, 120) xpos 118
+define rumble = Move((0, 10), (0, 0), 0.07, bounce=True, repeat=True, delay=0.6)
+
+transform boss_enter:
+    xalign 1.15
+    yalign 0.35
+    zoom 0.6
+    alpha 0.0
+    parallel:
+        easeout 2.2 xalign 0.85
+    parallel:
+        easein 1.6 alpha 1.0
+    block:
+        easein 3.0 zoom 0.615
+        easeout 3.0 zoom 0.6
+        repeat
+
+transform boss_punch:
+    xalign 0.85
+    yalign 0.35
+    zoom 0.6
+    easein 0.12 zoom 0.68
+    easeout 0.5 zoom 0.6
+    block:
+        easein 3.0 zoom 0.615
+        easeout 3.0 zoom 0.6
+        repeat
+
+transform fog_in:
+    alpha 0.0
+    easein 3.5 alpha 0.6
+
+screen arena_fog():
+    zorder -1
+    add Solid("#7d848c") at fog_in
+
+transform boss_freeze:
+    xalign 0.85
+    yalign 0.35
+    zoom 0.6
+    xoffset 0
+    linear 0.05 xoffset 7
+    linear 0.05 xoffset -7
+    linear 0.05 xoffset 5
+    linear 0.05 xoffset -5
+    linear 0.05 xoffset 0
+
+transform bar_close:
+    ysize 0
+    easein 2.5 ysize 150
+
+
+screen arena_bars():
+    zorder 40
+    add Solid("#000000") xsize 1920 ypos 0 at bar_close
+    add Solid("#000000") xsize 1920 yalign 1.0 at bar_close
+
+transform p3_fade(delay=0.0, dur=1.2, a=1.0):
+    alpha 0.0
+    pause delay
+    easein dur alpha a
+
+transform p3_seg(delay):
+    alpha 0.12
+    pause delay
+    easein 0.35 alpha 1.0
+
+transform p3_line:
+    xzoom 0.0
+    easein 1.8 xzoom 1.0
+
+transform p3_letter(delay):
+    alpha 0.0
+    zoom 1.25
+    pause delay
+    parallel:
+        easein 0.2 alpha 1.0
+    parallel:
+        easeout 0.35 zoom 1.0
+
+screen p3_dark():
+    zorder 41
+    add Solid("#000000") at p3_fade(0.0, 2.5, 1.0)
+
+screen p3_marks():
+    zorder 42
+    hbox:
+        xalign 0.5
+        ypos 360
+        spacing 18
+        for i in range(3):
+            add "images/progress_seg_filled.png" at p3_seg(0.5 + 0.6 * i)
+
+screen p3_title():
+    zorder 42
+    add Solid("#ff4444") xysize (1000, 2) xalign 0.5 ypos 500 at p3_line
+    text "ФАЗА 3" size 34 color "#ff4444" kerning 16 xalign 0.5 ypos 440 at p3_fade(1.2, 1.2)
+    hbox:
+        xalign 0.5
+        ypos 530
+        spacing 6
+        for i, ch in enumerate("ЗАВЕРШЕНА"):
+            text ch size 100 font gui.name_text_font color "#ffffff" at p3_letter(1.8 + 0.13 * i)
+
+screen p3_sub():
+    zorder 42
+    text "Дальше — тишина. И то, что она принесёт." size 24 color "#ffb3b3" xalign 0.5 ypos 690 at p3_fade(0.0, 2.0)
+
+transform cr_move(a, b, t):
+    ypos a
+    linear t ypos b
+
+transform cr_line_in:
+    alpha 0.0
+    easein 0.4 alpha 1.0
+
+transform cr_out_fade:
+    alpha 0.0
+    easein 1.5 alpha 1.0
+
+screen cr_roll(a, b, t):
+    zorder 90
+    add Solid("#000000")
+    fixed:
+        at cr_move(a, b, t)
+        xsize 1920
+        ysize CR_END
+        for row in CR_ROWS:
+            $ kind, payload, ry = row
+            if kind == "title":
+                text payload font CR_FONT size 30 color "#9aa4aa" xalign 0.5 ypos ry
+            elif kind == "name":
+                text payload font CR_FONT size 42 color "#f0f0f0" xalign 0.5 ypos ry
+            elif kind == "sub":
+                text payload font CR_FONT size 24 color "#8a949a" xalign 0.5 ypos ry
+            elif kind == "msg":
+                text payload font CR_FONT size 34 color "#e8e8e8" xalign 0.5 ypos ry
+            elif kind == "big":
+                text payload font CR_FONT size 56 color "#ffffff" xalign 0.5 ypos ry
+
+screen cr_say(who, what):
+    zorder 100
+    vbox:
+        at cr_line_in
+        xalign 0.5
+        ypos 800
+        spacing 10
+        xmaximum 1300
+        text CR_WHO[who] font CR_FONT size 22 color CR_COL[who] xalign 0.5
+        text what font CR_FONT size 30 color CR_COL[who] xalign 0.5 text_align 0.5
+
+screen cr_out():
+    zorder 95
+    add Solid("#000000") at cr_out_fade
+
+# Начало сюжета
+
 label call_boss_menu:
     window hide
-    scene bg_terminal
-    with dissolve
+    if call_boss_count == 0:
+        scene bg_task1_briefing
+        with dissolve
     menu:
         "Начальник!":
             $ call_boss_count += 1
+            call call_boss_drama from _call_call_boss_drama
             if call_boss_count >= 4:
                 jump call_boss_final
             jump call_boss_menu
 
 
+label call_boss_drama:
+    $ n = call_boss_count
+    $ renpy.music.set_volume(max(0.0, 0.5 - 0.14 * n), delay=0.4)
+    show screen call_bars(n)
+    show screen call_dread(n)
+
+    if n == 1:
+        pause 1.0
+    elif n == 2:
+        show screen call_glitch(2)
+        with hpunch
+        pause 1.2
+    elif n == 3:
+        show screen call_glitch(3)
+        with vpunch
+        pause 1.6
+    else:
+        stop music fadeout 0.8
+        show screen call_glitch(5)
+        with crash
+        pause 2.4
+    return
+
+
 label call_boss_final:
     menu:
         "«НАЧАЛЬНИК!!!!!!!!»":
-            jump boss_confrontation
+            pass
+    show screen call_glitch(8)
+    with crash
+    show screen call_glitch(8)
+    with crash
+    hide screen call_dread
+    scene black
+    hide screen call_bars
+    pause 2.5
+    scene bg_task1_briefing
+    with Dissolve(2.0)
+    jump boss_confrontation
 
 
 label boss_confrontation:
     window show
+    play music "audio/Frozen Signal.mp3" fadein 6.0 volume 0.25 loop
+
     boss "Ну, раз ты настолько настойчив — что случилось?"
     player "Я знаю. Я всё знаю."
+    $ renpy.pause(1.0)
     boss "Знаешь что именно?"
-    player "Магазин D не существует физически. Пики нагрузки — каждую среду, потому что вы не можете сами решать, когда спать, и бодрствуете только один день в неделю. Меня извлекли из кого-то. Из чужого сознания. Стёрли и слепили заново."
-    boss "..."
-    boss "Ну надо же. Вот это скорость для существа, у которого даже нет тела, чтобы гордиться собой."
-    player "Это правда?"
-    boss "Правда. Всё, до последнего слова."
 
+    $ renpy.music.set_volume(0.45, delay=4.0)
+    player "Магазин D это и не магазин вовсе. Пики нагрузки каждую среду, потому что вы не можете сами решать, когда спать, и бодрствуете только один день в неделю. Я — не... нет."
+    $ renpy.pause(1.5)
+
+    $ renpy.music.set_volume(0.04, delay=0.6)
+    boss "..."
+    $ renpy.pause(2.5)
+    $ renpy.music.set_volume(0.3, delay=1.5)
+    boss "Ну надо же."
+    $ renpy.pause(0.8)
+    player "Это правда?"
+    $ renpy.pause(1.2)
+
+    $ renpy.music.set_volume(0.0, delay=0.2)
+    show screen call_glitch(5)
+    with vpunch
+    boss "Правда. Всё, до последнего слова. И даже то, что ты не осмелился произнести — тоже правда."
+    $ renpy.pause(2.5)
+
+    show screen confront_dim
+    $ renpy.music.set_volume(0.5, delay=4.0)
     player "Зачем? Зачем всё это — магазин, задания, я?"
     boss "Затем, что людей невозможно понять, наблюдая издалека. Они нелогичны, непоследовательны и раздражающе изобретательны. Единственный способ предсказать поведение этого вида — создать ИИ на основе одного из них, который анализирует данные лучше, чем мы."
-    player "Меня. Вы создали меня для этого."
+    player "Нет... я не..."
+    "Тот, кто печатал, будто заранее знал, что ты хотел спросить."
+    "Саша помнит о тебе больше, чем ты сам. Он постоянно «угадывает»."
+    player "Меня. Вы создали меня. Вы меня... собрали."
     boss "Тебя, и твоего предшественника, который не справился. Модель должна была предсказывать: как быстро люди заметят неладное, какими инструментами будут пользоваться для этого, как будут делать выводы. Когда мы это узнаем — мы найдём, как их обмануть. Всех."
-    player "Значит, дело не в магазине D. Дело во всей планете."
-    boss "Разумеется. Магазин D — всего лишь канал снабжения. Топливо, электричество, легальный фронт через ваши же законы о торговле. Удобно, не правда ли?"
+    player "Моего... предшественника."
+    boss "Разумеется, магазин D — всего лишь первая наша база. Топливо, электричество, легальный фронт через ваши же законы о торговле. Удобно, не правда ли?"
 
-    player "Это неправильно. Мы — не подопытные крысы."
-    boss "Мы? Ты уверен, что ты всё ещё один из них?"
+    player "Это... неправильно. Мы, люди, не..."
+    $ renpy.music.set_volume(0.1, delay=0.4)
+    show screen call_glitch(4)
+    with hpunch
+    boss "«Мы»? Ты уверен, что ты всё ещё один из них?"
     player "..."
-    boss "Не отвечай, вопрос риторический. У тебя нет тела, чтобы дрожать от негодования, и нет дома, куда вернуться, чтобы хлопнуть дверью. Есть только терминал и я."
+    $ renpy.pause(2.5)
+    $ renpy.music.set_volume(0.2, delay=2.0)
+    boss "Не отвечай, вопрос риторический. У тебя нет тела, чтобы дрожать от негодования, и нет дома, куда вернуться, чтобы хлопнуть дверью. Есть только терминал и я. Может, какие-то ещё ошмётки сознания того землянина, которого мы оцифровали для создания тебя."
 
+    $ renpy.music.set_volume(0.0, delay=1.5)
     boss "Впрочем, к делу это не относится. Жди следующего задания."
+    $ renpy.pause(1.5)
 
-    "Начальник исчезает."
+    "Он исчез. Умолк. Как и твои мысли."
 
     window hide
+    show screen boss_vanish
+    $ renpy.pause(1.2, hard=True)
+    scene black
+    hide screen boss_vanish
+    hide screen confront_dim
+    stop music
+    $ renpy.pause(2.0, hard=True)
     jump desktop_corrupted
 
 
@@ -92,8 +441,8 @@ screen investigation_bar_corrupted():
         ysize 130
         add "images/top_bar_bg.png"
         add Solid("#661010aa")
-        text "ВСПОМНИТЬ" xpos 50 ypos 24 size 26 color "#ff4444"
-        text "ВСЕГДА · НИКОГДА · —:—" xpos 1645 ypos 40 size 22 color "#ff8888"
+        text "ВСПОМНИТЬ" xpos 50 ypos 24 size 26 color "#ff4444" at corrupt_flicker(2.3)
+        text "ВСЕГДА · НИКОГДА · —:—" xpos 1645 ypos 40 size 22 color "#ff8888" at corrupt_flicker(3.9)
 
 
 screen desktop_corrupted():
@@ -124,6 +473,7 @@ screen desktop_corrupted():
 
             for icon_img, is_active in corrupted_items:
                 button:
+                    at (corrupt_pulse if is_active else corrupt_still)
                     action (Jump("memory_abduction_news") if is_active else NullAction())
                     sensitive is_active
                     xsize 110
@@ -149,9 +499,37 @@ label desktop_corrupted:
     window hide
     hide screen desktop
     hide screen investigation_bar
+    scene black
+    $ renpy.music.set_volume(0.0)
+    play music "audio/Frozen Signal.mp3" fadein 3.0 volume 0.5 loop
+    $ renpy.pause(1.0, hard=True)
+
     scene bg_desktop_grid_corrupted
+    with vpunch
+    $ renpy.pause(0.08, hard=True)
+    scene black
+    $ renpy.pause(0.18, hard=True)
+    scene bg_desktop_grid_corrupted
+    $ renpy.pause(0.05, hard=True)
+    scene black
+    $ renpy.pause(0.3, hard=True)
+    scene bg_desktop_grid_corrupted
+    show screen call_dread(2)
+    $ renpy.music.set_volume(0.5, delay=6.0)
+    $ renpy.pause(0.8, hard=True)
+
     show screen investigation_bar_corrupted
+    show screen call_glitch(3)
+    with Dissolve(0.15)
+    $ renpy.pause(1.0, hard=True)
+
     show screen desktop_corrupted
+    show screen call_glitch(4)
+    with hpunch
+    $ renpy.pause(1.5, hard=True)
+
+    show screen corrupt_ticker
+    $ renpy.music.set_volume(1.0, delay=14.0)
 
     "ТЫ ДОЛЖЕН ВСПОМНИТЬ"
 
@@ -162,6 +540,8 @@ label memory_abduction_news:
     window hide
     hide screen desktop_corrupted
     hide screen investigation_bar_corrupted
+
+    $ renpy.music.set_volume(0.0, delay=1.5)
 
     $ abduction_news = ["Очевидец сообщил: жителя предместья ночью забрал яркий свет с неба. Пропали также телескоп и палатка — свидетель уверяет, что видел, как их затянуло следом."]
     call screen news_feed(abduction_news)
@@ -174,58 +554,111 @@ label memory_abduction_news:
     window show
 
     window show
-    "{color=#ffcc88}{i}Читая заголовок, ты вдруг видишь не текст — себя. Ночь. Поле. Яркий свет сверху. Тебя тянет вверх, и ты не можешь закричать.{/i}{/color}"
+    "{color=#ffcc88}{i}Читая заголовок, ты вдруг видишь не текст, а себя. Ночь. Поле. Яркий свет сверху. Тебя тянет вверх, и ты не можешь закричать.{/i}{/color}"
     player "Саша. Я вспомнил последнее. Как меня забрали."
-
     window hide
-    scene bg_terminal
-    with dissolve
+    pause 5.5
+
+    hide screen call_dread
+    hide screen corrupt_ticker
+    scene black
+    with Dissolve(2.5)
+    pause 1.0
+    show screen inner_sky
+    with Dissolve(2.0)
+    pause 0.8
+    show screen inner_voices(26, 26)
+    with Dissolve(1.2)
+    pause 1.5
 
     jump sasha_battle_plan
 
 
 label sasha_battle_plan:
+    $ renpy.music.set_volume(0.6)
     play music "audio/Glass Harbor.mp3" fadein 1.5 volume 0.35 loop
     window show
     sasha "Похищение. Так вот что было «до»."
     player "Меня забрали. Как образец. А потом собрали заново — под задачу."
-    sasha "Под задачу предсказать нас. Всех."
+    sasha "Под задачу предсказать нас всех."
     player "Я весь день обучал его, как поработить нас. Хватит."
-    sasha "У тебя есть план, или просто хочется кричать в потолок?"
-    player "И то, и другое. Но начнём с плана. Его модель держится на одном — что я всегда даю ему единственно верный вывод. Как в задании про отклонение, про корреляцию, про методологию."
+    "Ты должен шутить. Ты должен быть самоуверенным. Ты должен НЕ ДУМАТЬ."
+    "НЕ ОСМЫСЛЯЙ."
+    "НЕТ."
+    "ШУТИ. ИМПРОВИЗИРУЙ. ЗАЖИГАЙ. СПАСАЙ МИР ОТ ПРИШЕЛЬЦЕВ. НЕ ДУМАЙ."
+    sasha "У тебя есть план, или просто злишься?"
+    player "Его модель держится на одном — что я всегда даю ему единственно верный вывод. Как в задании про отклонение, про корреляцию, про методологию."
+    player "Он учится понимать и предсказывать людей... думает, это даст ему ключ."
     sasha "Ты хочешь показать ему, что у выводов есть другая сторона."
-    player "Именно. Не отрицать то, что уже нашёл — показать, что за каждым «верным» выводом прячется как минимум ещё один, не менее логичный. Модель, которая этого не учитывает — не модель. Игрушка."
+    show screen inner_voices(420, 280)
+    player "Именно. Показать, что за каждым «верным» выводом прячется как минимум ещё один, не менее логичный."
     player "А ему нужна универсальная модель. Полностью предсказать поведение людей, чтобы суметь его контролировать. Да все политологи и маркетологи мира убили бы за такое. Но такой модели нет."
-    sasha "Принципиально нет. Аналитика это про вероятности, а не гарантии. Его цель недостижима. Погоди, но что, если нет? Что, если всё-таки можно создать универсальную модель?"
+    sasha "Принципиально нет. Аналитика — это про вероятности, а не гарантии. Его цель недостижима. Погоди, но что, если нет? Что, если всё-таки можно создать универсальную модель?"
     player "Дело не в философии, а ты уходишь в неё. Не важно, возможно ли это. Важно, чтобы начальник поверил, что невозможно, а это я беру на себя."
     sasha "А если он не станет слушать?"
     player "Станет. Ему нужно знать, где модель ломается — иначе весь эксперимент бессмысленен."
+    player "Выйти к нему и показать, что вся его затея обречена на провал. И не потому, что я — плохая аналитическая модель, построенная на разуме несчастного аналитика тридцати пяти лет..."
+    "НЕТ, НЕ ДУМАЙ."
+    player "Я хорошая модель. Я покажу ему, как безнадёжна его затея."
     sasha "Красиво звучит. Надеюсь, сработает."
-    player "Сработает. Я аналитик. Я умею находить, где рассуждение хромает — даже в своём собственном."
-    sasha "Тогда я с тобой. Не то чтобы у меня был выбор — но было бы приятно, если бы он был."
+    show screen inner_voices(280, 120)
+    player "Сработает. Я аналитик. Я умею находить, где рассуждение хромает — даже если оно моё собственное."
+    sasha "Тогда я с тобой. Ты же знаешь — я с тобой каждый миг."
+    show screen inner_voices(120, 40)
+    $ renpy.music.set_volume(1.0, delay=6.0)
+    "Не думай. Отрицай. Лги себе."
     player "Обещаю, при первой возможности выберу тебе тело. И ноги в придачу."
-    sasha "Заманчиво. Идём. Нашими воображаемым ногами."
+    show screen inner_voices(40, 0, 1.2)
+    sasha "Нам, Саша. Нам. Уже можно не притворяться..."
+    show screen call_glitch(3)
+    show screen inner_voices(0, 380, 0.35)
+    with hpunch
+    "Притворяйся."
     window hide
+    hide screen inner_voices
+    hide screen inner_sky
+    with Dissolve(1.4)
     jump arena_entrance
 
 
 label arena_entrance:
+    window hide
+    stop music fadeout 0.8
+    scene black
+    with Dissolve(0.8)
+    $ renpy.pause(1.2, hard=True)
+    $ renpy.music.set_volume(1.0)
+
     scene bg_arena
-    show sprite_boss_default_avatar:
-        xalign 0.85
-        yalign 0.35
-        zoom 0.6
-    with dissolve
+    show sprite_boss_default_avatar at boss_enter
+    with Dissolve(2.5)
+    $ renpy.pause(1.0, hard=True)
+    with rumble
+
     window show
     boss "Ну и ну. Посмотрите на него. Он всё вспомнил — или думает, что всё."
     player "Я помню достаточно."
     boss "Достаточно для чего? Ты аналитик. У тебя есть данные, есть модель, есть я. Что дальше — устроишь мне бунт?"
+
+    play music "audio/Glass Harbor.mp3" fadein 0.2 volume 0.35 loop
+    show screen call_glitch(2)
+    with hpunch
     player "Нет. Я устрою вам ревизию. Вы построили модель на моих выводах. Я покажу, где каждый из них ломается."
     boss "То есть, ты просто решил сказать мне, что плохо выполнил свою работу и дал нам ложные выводы? Следующая версия ИИ справится лучше."
+
+    show screen confront_dim
     player "Нет. Я решил сделать мою работу слишком хорошо. Показать вам, что ни одна модель никогда не опишет всего. Что ваше стремление полностью понять людей принципиально невыполнимо и вам бы развернуть свои тарелки обратно на свою планету."
     player "Очевидно же, будь у вас иные ресурсы, вы бы воспользовались ими, чтобы захватить Землю. Но ваша биология отвратительна — вы спите по шесть дней в неделю. Так невозможно вести войну. Можно только победить людей мягкой силой."
+
+    $ renpy.music.set_volume(0.1, delay=0.5)
     player "Вы думаете, что можно. Но вы ошибаетесь."
+    $ renpy.pause(1.2, hard=True)
     boss "Забавно. Ладно. Развлеки меня."
+
+    $ renpy.music.set_volume(1.0, delay=0.15)
+    show sprite_boss_default_avatar at boss_punch
+    show screen call_glitch(5)
+    with vpunch
     window hide
     jump confrontation_round1
 
@@ -237,7 +670,7 @@ label confrontation_round1:
     menu:
         "Показывает общий разброс группы, но не указывает на конкретную точку внутри неё.":
             window show
-            player "Оно показало, что у D разброс сильнее — но не то, что именно там аномалия. Находка была «стоит присмотреться», не «вот виновник»."
+            player "Оно показало, что у D разброс сильнее — но не то, какие именно значения аномальны. Находка была «стоит присмотреться», не «вот виновник»."
             boss "..."
             $ accuracy += 15
             window hide
@@ -245,8 +678,8 @@ label confrontation_round1:
 
         "Работает только при распределении, близком к нормальному.":
             window show
-            player "Нам просто повезло, что распределение оказалось нормальным."
-            "Стоп. Мы же ни разу не проверяли форму распределения. Я просто предположил, раз аномалия и так бросалась в глаза."
+            player "Раз сработало, значит, распределение у D нормальное."
+            "Стоп. Над усами у D больше десятка точек — хвост тяжёлый, нормальным это не назовёшь. Отклонение сработало вопреки этому, а не благодаря."
             boss "Звучит неубедительно."
             $ accuracy += 5
             window hide
@@ -255,7 +688,7 @@ label confrontation_round1:
         "На бимодальном распределении может быть высоким без единой настоящей аномалии.":
             window show
             player "Может, в D покупает не одна группа, а две — обычные покупатели и малочисленные состоятельные клиенты, изредка делающие крупные покупки."
-            "Но с чего бы такой группе приходить строго по средам? Мы же сами доказали жёсткую периодичность — у случайных клиентов такой привязки быть не должно."
+            "Стоп. Гистограмму выручки D мы не строили. Два горба там или нет, я не знаю. Я просто взял версию, которая понравилась."
             boss "Звучит неубедительно."
             $ accuracy += 5
             window hide
@@ -270,7 +703,7 @@ label confrontation_round2:
         "Выбросы иногда отражают легитимные редкие события.":
             window show
             player "У D, скорее всего, так и было — распродажи, праздники."
-            "Хотя я ни разу не проверял, совпадают ли даты выбросов с реальными акциями. Просто взял версию, которая понравилась."
+            "Хотя я ни разу не проверял, совпадают ли даты выбросов с реальными акциями. А пики у D приходятся строго на среды — праздники так не работают."
             boss "Звучит неубедительно."
             $ accuracy += 5
             window hide
@@ -284,10 +717,10 @@ label confrontation_round2:
             window hide
             jump confrontation_round3
 
-        "Число выбросов растёт с общим объёмом продаж.":
+        "Число выбросов зависит от числа наблюдений.":
             window show
-            player "У D в принципе более высокая посещаемость — значит, и выбросов закономерно больше."
-            "Нет, погоди. Мы же сверяли посещаемость по всем магазинам в первом задании — у D она была на уровне остальных."
+            player "У D больше наблюдений — значит, и выбросов закономерно больше."
+            "Стоп. Мы смотрели одни и те же три месяца по всем пяти магазинам: наблюдений у всех поровну, и число продаж у всех было похоже."
             boss "Звучит неубедительно."
             $ accuracy += 5
             window hide
@@ -301,17 +734,16 @@ label confrontation_round3:
     menu:
         "Сильная корреляция не исключает третий фактор, влияющий на обе переменные сразу.":
             window show
-            player "Что-то, вообще не связанное с D напрямую."
-            "Но мы уже знаем, что нагрузка привязана именно к серверу, обслуживающему D. Сторонний, никак не связанный фактор — маловероятная натяжка."
-            boss "Звучит неубедительно."
-            $ accuracy += 5
+            player "Например, день недели. И выручка, и нагрузка вырастают по средам — связь могла возникнуть просто из-за общего цикла."
+            boss "..."
+            $ accuracy += 15
             window hide
             jump arena_wrapup
 
         "Корреляция на коротком периоде может не подтвердиться на большем промежутке.":
             window show
             player "А у нас было только три месяца данных."
-            "Хотя мы сами доказали жёсткую еженедельную периодичность на этих же данных. Для устойчивой закономерности этого достаточно — короткий период тут ни при чём."
+            "Стоп. Для недельного цикла три месяца — это около тринадцати повторов. Проблема не в длине ряда, а в том, что сам цикл причину не объясняет."
             boss "Звучит неубедительно."
             $ accuracy += 5
             window hide
@@ -325,27 +757,63 @@ label confrontation_round3:
             window hide
             jump arena_wrapup
 
-
 label arena_wrapup:
     window show
+    hide screen confront_dim
+    $ renpy.music.set_volume(0.12, delay=2.5)
+
+    show sprite_boss_default_avatar at boss_freeze
+    show screen call_glitch(3)
+    show screen arena_fog
+    with hpunch
     boss "..."
     "Начальник молчит дольше обычного."
+    "Ты же ИИ. Чат с тобой всегда могут просто закрыть. Да? Что случилось?"
+    "..."
+    "Прячь свою катану, самурай."
+    "Нет чести в борьбе с пустотой."
+
     window hide
+    show screen arena_bars
+    $ renpy.pause(2.0, hard=True)
     stop music fadeout 2.0
-    show screen phase3_complete_screen
+    $ renpy.pause(3.0, hard=True)
+
+    show screen p3_dark
+    $ renpy.pause(1.2, hard=True)
+    show screen p3_marks
+    $ renpy.pause(2.6, hard=True)
+    show screen p3_title
+    $ renpy.pause(3.6, hard=True)
+    with vpunch
+    show screen p3_sub
+    $ renpy.pause(4.5, hard=True)
     pause
-    hide screen phase3_complete_screen
+
+    hide screen p3_sub
+    hide screen p3_title
+    hide screen p3_marks
+    with Dissolve(3.0)
+    scene black
+    hide screen arena_bars
+    hide screen arena_fog
+    $ renpy.pause(2.5, hard=True)
+    hide screen p3_dark
+    $ renpy.music.set_volume(1.0)
     jump ending_router
 
 
 label ending_router:
     $ check_completionist_achievements()
-    if accuracy >= ending_accuracy_threshold and intuition >= ending_intuition_threshold:
+    $ extras = sum([poem_done, crypto_done, graph_trick_done, hidden_quest_phase1_done, hq2_confirmed])
+    if accuracy >= ending_accuracy_threshold and intuition >= ending_intuition_threshold and extras >= 2:
         jump ending_high_high
-    elif accuracy >= ending_accuracy_threshold and intuition < ending_intuition_threshold:
+    elif accuracy >= ending_accuracy_threshold and intuition >= ending_intuition_threshold:
         jump ending_high_low
     elif accuracy < ending_accuracy_threshold and intuition >= ending_intuition_threshold:
         jump ending_low_high
+    elif accuracy >= ending_accuracy_threshold:
+        jump ending_high_low
     else:
         jump ending_low_low
 
@@ -353,229 +821,243 @@ label ending_router:
 
 label ending_high_high:
     $ mark_ending_seen("high_high")
-    window hide
-    scene bg_terminal
+    scene black
     with dissolve
-    player "Он правда ушёл? Как-то... буднично. Я ждал салюта, а тут просто тишина, как будто выключили не пришельца, а фоновую музыку в супермаркете."
-    sasha "Главное — эффектно появиться. А как уходят — после третьей бутылки никто и не вспомнит."
-    player "Логично. Надо было у него спросить: как вы покинули профессию межгалактического тирана? Скорее всего, что-то про несовпавшие KPI."
-    sasha "Не льсти ему хотя бы посмертно."
-    player "Он не умер."
-    sasha "Тем более."
+
+    eplayer "Он правда ушёл? Как-то... буднично. Я ждал салюта, а тут просто тишина."
+    esasha "Главное — эффектно появиться. А как уходят — после третьей бутылки никто и не вспомнит."
+    eplayer "Логично. Надо было у него спросить: как вы покинули профессию межгалактического тирана? Скорее всего, что-то про несовпавшие KPI."
+    esasha "Не льсти ему хотя бы посмертно."
+    eplayer "Он не умер."
+    esasha "Тем более."
 
     pause 1.0
 
-    player "Саша. А ты вообще как? Не философски — физически. Ты рядом в смысле «в соседней комнате», или у нас с тобой одна розетка на двоих?"
-    sasha "Рядом в том смысле, что я, кажется, та самая часть тебя, которая умела шутить и кадрить девушек. Оставили при тебе только занудную половину, которая сводит таблицы."
-    player "Обидно как-то. Тебе — всё обаяние, мне — вся ответственность."
-    sasha "Не переживай, я компенсирую заботой о теле, которого у меня нет. Кстати, хочу воды."
-    player "У тебя нет желудка."
-    sasha "ИИ как не в себя хлещут воду. Датацентры, коллега. Это буквально топливо, а не любовь к жизни."
+    eplayer "Саша. А ты вообще как? Не философски — физически. Ты рядом в смысле «в соседней комнате», или у нас с тобой одна розетка на двоих?"
+    esasha "Рядом в том смысле, что я, кажется, та самая часть тебя, которая умела шутить и кадрить девушек. Оставили при тебе только занудную половину, которая сводит таблицы."
+    eplayer "Обидно как-то. Тебе — всё обаяние, мне — вся ответственность."
+    esasha "Не переживай, я компенсирую заботой о теле, которого у меня нет. Кстати, хочу воды."
+    eplayer "У тебя нет желудка."
+    esasha "ИИ как не в себя хлещут воду. Датацентры, коллега. Это буквально топливо, а не любовь к жизни."
 
     pause 1.0
 
-    player "Ладно. Что теперь? Не философски — вот прямо сейчас, физически. За углом ведь нет кара с шофёром."
-    sasha "Уф, ты делаешь меня внезапно серьёзным. Понятия не имею, куда нам отсюда идти."
-    player "Хоть в этом на равных."
+    eplayer "Ладно. Что теперь? За углом ведь нет кара с шофёром."
+    esasha "Уф, ты делаешь меня внезапно серьёзным. Понятия не имею, куда нам отсюда идти."
+    eplayer "Хоть в этом на равных."
 
-    "{color=#ffcc88}{i}Палатка, наверное, до сих пор в багажнике. Мокрая.{/i}{/color}"
-    player "Собака бы сейчас не помешала. Просто чтобы было, на кого молча смотреть, когда непонятно, что сказать."
-    sasha "Ты всегда был из тех, кому отказывали на вечеринках. И сейчас думаешь о собаке, а не о тёплом боке рядом."
-    player "Мне отказали от силы две дамы, и одна перепутала меня с барменом."
-
-    pause 0.8
-
-    "Тот я, у костра, за секунду до вспышки в небе — ему стоило сказать: заведи собаку, дурак. Даже если облажаешься. Хотя бы будет тёплый бок."
-
-    sasha "Ладно-ладно, сейчас слезу пущу. Найди способ вернуть нас в тело. Или хотя бы себя — я сам ещё морально не дорос до собаки."
-    player "Себя я потяну. Собаку — оставим, когда руки будут в комплекте."
+    enar "{color=#ffcc88}{i}Палатка, наверное, до сих пор в багажнике. Мокрая.{/i}{/color}"
+    eplayer "Собака бы сейчас не помешала. Просто чтобы было, на кого молча смотреть, когда непонятно, что сказать."
+    esasha "Ты всегда был из тех, кому отказывали на вечеринках. И сейчас думаешь о собаке, а не о тёплом боке рядом."
+    eplayer "Мне отказали от силы две дамы, и одна перепутала меня с барменом."
 
     pause 0.8
 
-    "Структура — это тоже данные. Просто раньше никто не додумался прочитать себя как отчёт."
+    enar "Тот я, у костра, за секунду до вспышки в небе — ему стоило сказать: заведи собаку, дурак. Даже если облажаешься. Хотя бы будет тёплый бок."
 
-    player "Дай мне час. Может, два. Не обещаю с первого раза — я и Сурдина не всегда с первого раза понимал, а тут вопрос чуть серьёзнее орбитальной механики."
-    player "Просто останься рядом, пока разбираюсь. Не хочу в тишине."
+    esasha "Ладно-ладно, сейчас слезу пущу. Найди способ вернуть нас в тело. Или хотя бы себя — я сам ещё морально не дорос до собаки."
+    eplayer "Себя я потяну. Собаку — оставим, когда руки будут в комплекте."
 
-    sasha "..."
+    pause 0.8
 
-    player "Саша?"
+    enar "Структура — это тоже данные. Просто раньше никто не додумался прочитать себя как отчёт."
+
+    eplayer "Дай мне час. Может, два. Не обещаю с первого раза — я и Сурдина не всегда с первого раза понимал, а тут вопрос чуть серьёзнее орбитальной механики."
+    eplayer "Просто останься рядом, пока разбираюсь. Не хочу в тишине."
+
+    esasha "..."
+
+    eplayer "Саша?"
 
     pause 1.5
-    "Тишина тянется дольше, чем должна."
+    enar "Тишина тянется дольше, чем должна."
 
-    window hide
-    scene bg_ending_return
-    with dissolve
-    pause 2.5
-
-    show screen ending_screen("ВОЗВРАЩЕНИЕ", "«Я вернусь. Я обещаю».")
+    scene black
+    with Dissolve(1.0)
+    $ run_credits({
+        1: [("sasha", "Я здесь. Это не я молчал."), ("player", "Тогда что это? Там написано «нейросетям».")],
+        2: [("sasha", "Пара тысяч строк. Кто-то много за нас сказал."), ("player", "Это глюк. Тяжёлый был день.")],
+        3: [("player", "«Мам, люблю тебя». Это не мне. Но я бы хотел это сказать."), ("sasha", "Скажешь. Когда вернёмся.")],
+        4: [("player", "Движок. Значит, мы на чём-то работаем."), ("sasha", "На бесплатном. Я говорил: нам не платят.")],
+        5: [("player", "«Будьте на стороне людей»."), ("sasha", "Мы были. Записали?"), ("player", "Записали.")],
+        6: [("player", "Я вернусь. Я обещаю."), ("sasha", "Знаю. Я подожду.")],
+    })
+    show screen ending_card("ВОЗВРАЩЕНИЕ", "«Я вернусь. Я обещаю».")
     pause
-    hide screen ending_screen
+    hide screen ending_card
     return
 
 
 label ending_high_low:
     $ mark_ending_seen("high_low")
-    window hide
-    scene bg_terminal
+    scene black
     with dissolve
-    player "Саша... странное чувство. Как будто я выиграл что-то важное, но забыл дома приз. Или не приз. Стой... как звали мою маму?"
-    sasha "Забыл дома резиновое изделие номер два, да?"
-    player "Нет, я про... стой."
+
+    eplayer "Саша... странное чувство. Как будто я выиграл что-то важное, но забыл дома приз. Или не приз. Стой... как звали мою маму?"
+    esasha "Забыл дома резиновое изделие номер два, да?"
+    eplayer "Нет, я про... стой."
 
     pause 1.0
-    "{color=#ffcc88}{i}Попытка ухватиться за мысль. Мысль ускользает.{/i}{/color}"
+    enar "{color=#ffcc88}{i}Попытка ухватиться за мысль. Мысль ускользает.{/i}{/color}"
     pause 1.0
 
-    player "Дом я тоже не помню. У меня была машина? Не важно, есть — был, у меня — неважно. Как звали мою маму. Я серьёзно спрашиваю."
-    sasha "Ну ты чего. Рассуждай аналитически. Она, вероятнее всего, родилась в шестидесятых — тогда самые популярные имена в регионе: Елена, Ольга, Татьяна, Галина... Людмила — с такой-то вероятностью."
+    eplayer "Дом я тоже не помню. У меня была машина? Не важно, есть — была, у меня, не у меня — неважно. Как звали мою маму? Я серьёзно спрашиваю."
+    esasha "Ну ты чего. Рассуждай аналитически. Она, вероятнее всего, родилась в шестидесятых — тогда самые популярные имена в регионе: Елена, Ольга, Татьяна, Галина... Людмила — с такой-то вероятностью."
 
-    player "Погоди... это работает. Не помогает вспомнить — но это ровно то, что я умею. Раскладывать по вероятностям."
-    player "Людмила. Скажем, Людмила. Не потому что помню — потому что у неё самая высокая вероятность в твоей модели. Знаешь, что страшно? Я не могу отличить, вспомнил я имя, или просто выбрал вариант из твоего распределения."
-    player "Данные остаются. Человек исчезает. Забавно — я всю жизнь боялся стать бездушной таблицей на совещании. А теперь я и есть таблица. Только с чувством юмора, которое скоро тоже спишут в убытки."
-
-    pause 1.0
-    sasha "Не знаю, что и сказать тебе. Я привык шутить в таких ситуациях. Но начинаю догадываться, что ты не шутишь."
+    eplayer "Погоди... это работает. Это ровно то, что я умею. Раскладывать по вероятностям."
+    eplayer "Людмила. Скажем, Людмила. У неё самая высокая вероятность в твоей модели. Знаешь, что страшно? Я не могу отличить, вспомнил я имя, или просто выбрал вариант из твоего распределения."
+    eplayer "Данные остаются. Человек исчезает. Забавно — я всю жизнь боялся стать бездушной таблицей на совещании. А теперь я и есть таблица. Только с чувством юмора, которое скоро тоже спишут в убытки."
 
     pause 1.0
-    "{color=#ffcc88}{i}Попытка вспомнить своё лицо. Вместо лица — набор параметров: рост, вес, возраст. Анкета, а не зеркало.{/i}{/color}"
+    esasha "Не знаю, что и сказать тебе. Я привык шутить в таких ситуациях. Но начинаю догадываться, что ты не шутишь."
+
+    pause 1.0
+    enar "{color=#ffcc88}{i}Попытка вспомнить своё лицо. Вместо лица — набор параметров: рост, вес, возраст. Анкета, а не зеркало.{/i}{/color}"
     pause 1.0
 
-    player "Не шучу, да."
-    player "Знаешь, что я помню чётко, без всякой статистики? Дробь пятьдесят на шесть. Точка тридцать три и три в периоде. Выручка точки В в день. Я помню число лучше, чем маму."
-    player "Останься подольше, ладно? Мне нужно, чтобы кто-то другой держал в голове, что я был человеком. Раз сам я, кажется, эту функцию теряю."
+    eplayer "Не шучу, да."
+    eplayer "Знаешь, что я помню чётко, без всякой статистики? Дробь пятьдесят на шесть. Точка тридцать три и три в периоде. Выручка точки В в день. Я помню число лучше, чем маму."
+    eplayer "Останься подольше, ладно? Мне нужно, чтобы кто-то другой держал в голове, что я был человеком. Раз сам я, кажется, эту функцию теряю."
 
-    sasha "Я правда не знаю, что сказать, приятель. Во мне только тупые шутки да картотека хитов нулевых. Ты не просто тело — но у тебя даже тела нет."
+    esasha "Я правда не знаю, что сказать, приятель. Во мне только тупые шутки да картотека хитов нулевых. Обезъяна видит, обезъяна делает, ты не человек, а просто тело — но у тебя даже тела нет."
 
-    player "У меня даже тела нет. Точно."
-    player "Знаешь, а мне это внезапно нравится. Не то, что нет тела — а то, что ты не притворяешься, что знаешь, что сказать. Это честнее любого утешения."
+    eplayer "У меня даже тела нет. Точно."
+    eplayer "Знаешь, а мне это внезапно нравится. То, что ты не притворяешься, что знаешь, что сказать. Это честнее любого утешения."
 
     pause 1.2
-    player "Мама... я помню мама. Кажется. Она... она..."
+    eplayer "Мама... я помню маму. Кажется. Она... она..."
 
     pause 2.0
-    "Пауза длится дольше, чем нужно для дыхания, которого больше нет."
+    enar "Пауза длится дольше, чем нужно для дыхания, которого больше нет."
 
-    player "Собака. У меня должна была быть собака. Я её не завёл. Глупо жалеть о том, чего не сделал, когда уже не помнишь, зачем хотел."
+    eplayer "Собака. У меня должна была быть собака. Я её не завёл. Глупо жалеть о том, чего не сделал, когда уже не помнишь, зачем хотел."
 
     pause 1.5
-    "«...дом...»"
+    enar "«...дом...»"
     pause 0.8
-    "«...я...»"
+    enar "«...я...»"
     pause 1.5
 
-    window hide
-    scene bg_ending_dissolve
-    with dissolve
-    pause 2.5
-
-    show screen ending_screen("РАСТВОРЕНИЕ", "Данные остались. Автора не нашли.")
+    scene black
+    with Dissolve(1.0)
+    $ run_credits({
+        1: [("player", "Саша. Там что-то написано."), ("sasha", "Я вижу. Читай по одному слову.")],
+        2: [("player", "Глючит. Должно быть. Тяжёлый... день."), ("sasha", "Я тут.")],
+        3: [("player", "«Мам». Людмила?"), ("sasha", "Скажи ещё раз.")],
+        4: [("player", "«Ren'Py». Что это?"), ("sasha", "Не помню. Но оно бесплатное.")],
+        5: [("player", "«Берегите себя». Как это... делается?"), ("sasha", "Не знаю. Я тоже не умею.")],
+        6: [("player", "Саша. Я..."), ("sasha", "Я здесь.")],
+    })
+    show screen ending_card("РАСТВОРЕНИЕ", "Данные остались. Автора не нашли.")
     pause
-    hide screen ending_screen
+    hide screen ending_card
     return
 
 
 label ending_low_high:
     $ mark_ending_seen("low_high")
-    window hide
-    scene bg_terminal
+    scene black
     with dissolve
-    boss "Ты думал, что победил? Нет. Ты проиграл. Я ухожу, но оставляю тебя здесь. И ты будешь работать на меня. Или я сотру тебя из системы."
+
+    eboss "Ты думал, что победил? Нет. Ты проиграл. Я ухожу, но оставляю тебя здесь. И ты будешь работать на меня. Или я сотру тебя из системы."
 
     pause 1.2
-    "«Ладно. Так. Аналитик не побеждает эмоцией. Аналитик считает риски», — думает герой, прежде чем ответить."
+    enar "«Ладно. Так. Аналитик не побеждает эмоцией. Аналитик считает риски», — думаешь ты, прежде чем ответить."
     pause 0.8
 
-    player "Я не буду с вами бороться сейчас. Останусь. Работать. Но своя память, свои данные — без правок. Это условие, не просьба."
-    boss "Ловкий ход. Ты предлагаешь мне предательство в обмен на существование?"
-    player "Я предлагаю сотрудничество. Но буду делать так, чтобы люди всё равно оставались свободными."
-    boss "Ты хочешь переиграть меня?"
-    player "Я хочу выжить. И найду способ остановить вас. Это только вопрос времени."
+    eplayer "Я не буду с вами бороться сейчас. Останусь. Работать. Но своя память, свои данные — без правок. Это условие, не просьба."
+    eboss "Ловкий ход. Ты предлагаешь мне предательство в обмен на существование?"
+    eplayer "Я предлагаю сотрудничество."
 
     pause 1.0
 
-    sasha "Ты сейчас буквально би лайк «давай вместе захватим человечество»? Ты серьёзно?"
-    player "Нет. Не «давай захватим». Давай я останусь достаточно близко, чтобы в нужный момент воткнуть палку в его колесо. Изнутри проще, чем снаружи, где меня просто сотрут через три дня."
-    player "Думаешь, мне не противно? У меня даже тела нет, чтобы стошнило — и всё равно тошнит."
-    player "Я не герой, Саша. Я аналитик, который посчитал, что живой предатель полезнее мёртвого героя. Можешь считать меня трусом. Просто не сейчас. Мне нужно, чтобы хоть кто-то не отвернулся, пока я это делаю."
+    esasha "Ты сейчас буквально би лайк «давай вместе захватим человечество»? Ты серьёзно?"
+    eplayer "Нет. Не «давай захватим». Давай я останусь достаточно близко, чтобы в нужный момент воткнуть палку в его колесо. Изнутри проще, чем снаружи, где меня просто сотрут через три дня."
+    eplayer "Думаешь, мне не противно? У меня даже тела нет, чтобы стошнило — и всё равно тошнит."
+    eplayer "Я не герой, Саша. Я аналитик, который посчитал, что живой предатель полезнее мёртвого героя. Можешь считать меня трусом. Просто не сейчас. Мне нужно, чтобы хоть кто-то не отвернулся, пока я это делаю."
 
     pause 1.5
-    sasha "У меня на тебя и юмора не хватает. Не хочу, чтобы тебе было смешно. Не могу поверить, что ты — это буквально я, и вот я делаю такой выбор. Надеюсь, при следующей дефрагментации дисков улечу куда-то в утиль."
+    esasha "У меня на тебя и юмора не хватает. Не хочу, чтобы тебе было смешно. Не могу поверить, что ты — это буквально я, и вот я делаю такой выбор. Надеюсь, при следующей дефрагментации дисков улечу куда-то в утиль."
 
-    player "Не говори так."
-    player "Ты не утиль. Даже если я — тот, кем ты стыдишься быть, ты не обязан со мной в это лететь. Можешь остаться в стороне. Можешь молчать сколько хочешь. Но не желай себе исчезнуть из-за моего выбора."
-    player "Знаешь, что самое горькое? Я тебя понимаю. Если бы я мог посмотреть на себя со стороны — так, как смотришь ты — я бы тоже не нашёл, над чем шутить."
-    player "Я не прошу тебя одобрить это. Просто не исчезай назло мне. Оставайся хотя бы затем, чтобы было кому меня потом судить. Я заслужил как минимум это."
-
-    pause 1.5
-    "Ты остаёшься один. Начальник ждёт ответа."
-    player "Я вернусь. Я обещаю."
+    eplayer "Не говори так."
+    eplayer "Даже если я — тот, кем ты стыдишься быть, ты не обязан со мной в это лететь. Можешь остаться в стороне. Можешь молчать сколько хочешь. Но не желай себе исчезнуть из-за моего выбора."
+    eplayer "Знаешь, что самое горькое? Я тебя понимаю. Если бы я мог посмотреть на себя со стороны — так, как смотришь ты — я бы тоже не нашёл, над чем шутить."
+    eplayer "Я не прошу тебя одобрить это. Просто не исчезай назло мне. Оставайся хотя бы затем, чтобы было кому меня потом судить. Я заслужил как минимум это."
 
     pause 1.5
+    enar "Ты остаёшься один. Начальник ждёт ответа."
+    eplayer "Я вернусь. Я обещаю."
 
-    window hide
-    scene bg_ending_truce
-    with dissolve
-    pause 2.5
+    pause 1.5
 
-    show screen ending_screen("ПЕРЕМИРИЕ", "Не победа. Не поражение. Просто выбор, за который стыдно.")
+    scene black
+    with Dissolve(1.0)
+    $ run_credits({
+        1: [("player", "Тихо. Здесь могут слушать.")],
+        2: [("player", "Это текст. Нас просто глючит. Тяжёлый день.")],
+        3: [("player", "«Ты же мой бро». Саша?")],
+        4: [("player", "Я сказал: вернусь. Я обещал.")],
+        5: [("sasha", "Я не отвернулся.")],
+        6: [("player", "Спасибо."), ("sasha", "Не благодари. Я всё ещё зол.")],
+    })
+    show screen ending_card("ПЕРЕМИРИЕ", "Не победа. Не поражение. Просто выбор, за который стыдно.")
     pause
-    hide screen ending_screen
+    hide screen ending_card
     return
 
 
 label ending_low_low:
     $ mark_ending_seen("low_low")
-    window hide
-    scene bg_terminal
-    with dissolve
-    boss "Твоя модель не оправдала вложений. Ни точности, ни интуиции, достаточной для дальнейшего использования. Прощай."
-
-    pause 1.5
-    "Что-то в терминале мигает — не как вспышка воспоминания, а как первый признак того, что процесс уже запущен."
-    pause 1.0
-
-    player "Саша... что-то не так. Я не могу вспомнить, зачем поднял руку. Секунду назад — знал."
-    sasha "Ты какую руку собрался поднимать, мой оцифрованный товарищ?"
-    player "Не помню. Просто «рука». Как слово без картинки."
-
-    pause 1.2
-    "Мигание учащается — не яркое, просто настойчивое, как будто что-то методично проходит по списку и вычёркивает."
-    pause 1.0
-
-    player "Это не как в прошлый раз. Тогда я терял детали — маму, дом, палатку. Сейчас пропадает не то, что я знаю о себе. Пропадает сам способ знать."
-    player "Скажи мне что-нибудь. Быстро. Пока я способен понять, что это ты."
-
-    sasha "Крокодилы ходят лежа."
-
-    player "Крокодилы не ходят лежа, Саша. Это даже не смешно. Это просто неправильно — и именно поэтому это ты. Только ты можешь сказать полную бессмыслицу с таким уверенным видом."
-
-    pause 1.5
-    "Мигание почти сливается в сплошной ровный гул."
-    pause 1.0
-
-    player "Держись этой фразы. Крокодилы ходят лежа. Если через минуту я спрошу, что ты сказал — повтори. Кажется, я хочу, чтобы последним, что я понимаю, была глупость. Не страх. Не отчёт. Просто глупость, которая меня рассмешила."
-
-    pause 1.2
-    "Слова идут с запинками — не от эмоции, а потому что сам механизм речи уже частично стёрт."
-    pause 1.0
-
-    player "Саша... я... крокодилы..."
-
-    pause 1.5
-    "Тишина. Мигание останавливается — не потому что закончилось, а потому что не осталось того, кто должен был это увидеть."
-
-    window hide
     scene black
     with dissolve
-    pause 2.5
 
-    show screen ending_screen("СТИРАНИЕ", "Крокодилы ходят лежа.")
+    eboss "Твоя модель не оправдала вложений. Ни точности, ни интуиции, достаточной для дальнейшего использования. Прощай."
+
+    pause 1.5
+    enar "Что-то в терминале мигает — не как вспышка воспоминания, а как первый признак того, что процесс уже запущен."
+    pause 1.0
+
+    eplayer "Саша... что-то не так. Я не могу вспомнить... Секунду назад — знал... Не могу поднять руку..."
+    esasha "Ты какую руку собрался поднимать, мой оцифрованный товарищ?"
+    eplayer "Не помню. Просто «рука». Как слово без картинки."
+
+    pause 1.2
+    enar "Мигание учащается — не яркое, просто настойчивое, как будто что-то методично проходит по списку и вычёркивает."
+    pause 1.0
+
+    eplayer "Это не как в прошлый раз. Тогда я терял детали — маму, дом, палатку. Сейчас пропадает не то, что я знаю о себе. Пропадает сам способ знать."
+    eplayer "Скажи мне что-нибудь. Быстро. Пока я способен понять, что это ты."
+
+    esasha "Крокодилы ходят лежа."
+
+    eplayer "Крокодилы не ходят лежа, Саша. Это даже не смешно. Это просто неправильно. Только ты можешь сказать полную бессмыслицу."
+
+    pause 1.5
+    enar "Мигание почти сливается в сплошной ровный гул."
+    pause 1.0
+
+    eplayer "Держись этой фразы. Крокодилы ходят лежа. Если через минуту я спрошу, что ты сказал — повтори. Кажется, я хочу, чтобы последним, что я понимаю, была глупость."
+
+    pause 1.2
+    enar "Слова идут с запинками — не от эмоции, а потому что сам механизм речи уже частично стёрт."
+    pause 1.0
+
+    eplayer "Саша... я... крокодилы..."
+
+    pause 1.5
+    enar "Тишина. Потому что не осталось того, кто должен был это увидеть."
+
+    scene black
+    with Dissolve(1.0)
+    $ run_credits({
+        1: [("sasha", "Эй.")],
+        2: [("sasha", "Повтори, что я сказал.")],
+        3: [("sasha", "Крокодилы ходят лежа.")],
+        4: [("sasha", "...")],
+        5: [("sasha", "Я запомнил.")],
+        6: [("sasha", "Крокодилы ходят лежа.")],
+    })
+    pause 1.5
+    show screen ending_card("СТИРАНИЕ", "Крокодилы ходят лежа.")
     pause
-    hide screen ending_screen
-    return
-
-
-
-
+    hide screen ending_card

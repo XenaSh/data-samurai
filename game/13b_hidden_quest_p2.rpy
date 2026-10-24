@@ -293,7 +293,7 @@ screen hq2_halves():
 
 label hidden_quest_start:
     if hq2_prediction_made and not hq2_confirmed and current_task >= 4:
-        call hq2_confirmation
+        call hq2_confirmation from _call_hq2_confirmation_1
         jump desktop_loop
     if hidden_quest_phase2_done:
         "Нет ничего нового."
@@ -422,7 +422,7 @@ label hidden_quest2_sky:
     sasha "Ну, тут явно нерегулярные."
     player "А может и нет. Смотри."
 
-    call hq2_demo_sweep
+    call hq2_demo_sweep from _call_hq2_demo_sweep
 
     sasha "Стой. Вернись. Там что-то мелькнуло."
     player "Вот именно. Мелькнуло и пропало."

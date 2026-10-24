@@ -547,15 +547,12 @@ label task3_reflection:
         "Слов не находится. Может, и не всё стоит облекать в слова."
     elif refl_kind == "investigative":
         player "[user_reflection]"
-        boss "Настойчивый. Впрочем, я это уже понял про тебя."
         sasha "Похоже на тебя, коллега. Ты никогда не отпускаешь то, что не сходится."
     elif refl_kind == "careful":
         player "[user_reflection]"
-        boss "ТЕКСТ: реплика босса на осторожный, честный вывод."
-        sasha "ТЕКСТ: реплика Саши: умение сказать «пока не знаю» тоже навык."
+        sasha "Умение сказать «пока не знаю» тоже навык."
     elif refl_kind == "dismissive":
         player "[user_reflection]"
-        boss "Прагматично. Не самый смелый вывод, но хотя бы честный."
         sasha "Иногда проще жить, не заглядывая под каждый камень. Я тебя не сужу."
     else:
         player "[user_reflection]"
@@ -604,7 +601,7 @@ label task3_final:
     if hq2_prediction_made and not hq2_confirmed:
         scene bg_terminal
         with Dissolve(1.0)
-    call hq2_confirmation
+    call hq2_confirmation from _call_hq2_confirmation
     $ game_minutes_total += renpy.random.randint(20, 115)
 
     jump desktop_loop
