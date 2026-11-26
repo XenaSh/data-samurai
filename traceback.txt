@@ -1,61 +1,52 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
-Executing ATL code at game/06_endgame.rpy:212
-  File "game/06_endgame.rpy", line 697, in script
-    with hpunch
-TypeError: Argument 'other' has incorrect type (expected renpy.display.matrix.Matrix, got SaturationMatrix)
+While running game code:
+  File "game/11_minigame_crypto.rpy", line 95, in script
+    $ crypto_demo_shift = renpy.call_screen("crypto_shift_picker", ciphertext=crypto_demo_cipher, hint="ТЕКСТ: подсказка к первому шагу")
+  File "game/11_minigame_crypto.rpy", line 95, in <module>
+    $ crypto_demo_shift = renpy.call_screen("crypto_shift_picker", ciphertext=crypto_demo_cipher, hint="ТЕКСТ: подсказка к первому шагу")
+TypeError: Unexpected keyword arguments: 'hint'
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/06_endgame.rpy", line 697, in script
-    with hpunch
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1658, in execute
-    renpy.exports.with_statement(trans, paired=paired)
-  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 1653, in with_statement
-    return renpy.game.interface.do_with(trans, paired, clear=clear)
-  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 2798, in do_with
-    return self.interact(trans_pause=True,
+  File "game/11_minigame_crypto.rpy", line 95, in script
+    $ crypto_demo_shift = renpy.call_screen("crypto_shift_picker", ciphertext=crypto_demo_cipher, hint="ТЕКСТ: подсказка к первому шагу")
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 1131, in execute
+    renpy.python.py_exec_bytecode(self.code.bytecode, self.hide, store=self.store)
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1052, in py_exec_bytecode
+    exec(bytecode, globals, locals)
+  File "game/11_minigame_crypto.rpy", line 95, in <module>
+    $ crypto_demo_shift = renpy.call_screen("crypto_shift_picker", ciphertext=crypto_demo_cipher, hint="ТЕКСТ: подсказка к первому шагу")
+  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 3174, in call_screen
+    rv = renpy.ui.interact(mouse="screen", type="screen", roll_forward=roll_forward)
+  File "E:\renpy-8.0.2-sdk\renpy\ui.py", line 299, in interact
+    rv = renpy.game.interface.interact(roll_forward=roll_forward, **kwargs)
   File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3377, in interact
     repeat, rv = self.interact_core(preloads=preloads, trans_pause=trans_pause, pause=pause, pause_start=pause_start, **kwargs) # type: ignore
-  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3906, in interact_core
-    self.draw_screen(root_widget, fullscreen_video, (not fullscreen_video) or video_frame_drawn)
-  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 2602, in draw_screen
-    surftree = renpy.display.render.render_screen(
-  File "render.pyx", line 495, in renpy.display.render.render_screen
-  File "render.pyx", line 266, in renpy.display.render.render
-  File "E:\renpy-8.0.2-sdk\renpy\display\layout.py", line 884, in render
-    surf = render(child, width, height, cst, cat)
-  File "render.pyx", line 170, in renpy.display.render.render
-  File "render.pyx", line 266, in renpy.display.render.render
-  File "E:\renpy-8.0.2-sdk\renpy\display\motion.py", line 181, in render
-    child = render(self.child, width, height, st, at)
-  File "render.pyx", line 170, in renpy.display.render.render
-  File "render.pyx", line 266, in renpy.display.render.render
-  File "E:\renpy-8.0.2-sdk\renpy\display\layout.py", line 884, in render
-    surf = render(child, width, height, cst, cat)
-  File "render.pyx", line 170, in renpy.display.render.render
-  File "render.pyx", line 266, in renpy.display.render.render
-  File "E:\renpy-8.0.2-sdk\renpy\display\layout.py", line 884, in render
-    surf = render(child, width, height, cst, cat)
-  File "render.pyx", line 170, in renpy.display.render.render
-  File "render.pyx", line 266, in renpy.display.render.render
-  File "E:\renpy-8.0.2-sdk\renpy\display\transform.py", line 747, in render
-    return transform_render(self, width, height, st, at)
-  File "accelerator.pyx", line 148, in renpy.display.accelerator.transform_render
-  File "E:\renpy-8.0.2-sdk\renpy\display\transform.py", line 926, in update_state
-    fr = self.execute(self, self.st, self.at)
-  File "E:\renpy-8.0.2-sdk\renpy\atl.py", line 596, in execute
-    action, arg, pause = block.execute(trans, timebase, self.atl_state, events)
-  File "E:\renpy-8.0.2-sdk\renpy\atl.py", line 839, in execute
-    action, arg, pause = stmt.execute(trans, target - start, child_state, events)
-  File "E:\renpy-8.0.2-sdk\renpy\atl.py", line 1235, in execute
-    linear = trans.state.diff(newts)
-  File "E:\renpy-8.0.2-sdk\renpy\display\transform.py", line 163, in diff
-    if new != old:
-TypeError: Argument 'other' has incorrect type (expected renpy.display.matrix.Matrix, got SaturationMatrix)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3804, in interact_core
+    root_widget.visit_all(lambda i : i.per_interact())
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 582, in visit_all
+    d.visit_all(callback, seen)
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 451, in visit_all
+    callback(self)
+  File "E:\renpy-8.0.2-sdk\renpy\display\core.py", line 3804, in <lambda>
+    root_widget.visit_all(lambda i : i.per_interact())
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 462, in per_interact
+    self.update()
+  File "E:\renpy-8.0.2-sdk\renpy\display\screen.py", line 653, in update
+    self.screen.function(**self.scope)
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 294, in apply_arguments
+    return parameters.apply(args, kwargs, ignore_errors)
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 279, in apply
+    raise TypeError(
+TypeError: Unexpected keyword arguments: 'hint'
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
-DataSamurai 1.0
-Sat Oct 24 21:09:13 2026
+DataSamurai 0.9-test1
+Thu Nov 26 05:18:04 2026

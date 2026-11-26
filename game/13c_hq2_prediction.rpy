@@ -1,4 +1,3 @@
-# === 13c_hq2_prediction.rpy — скрытый квест, фаза 2: «Апофения» и предсказание вспышки ===
 # Зависит от 13b_hidden_quest_p2.rpy: HQ2_T, HQ2_Y, HQ2_FONT, hq2_points-логика не нужна.
 
 define HQ2P_FALS_MAX = 3

@@ -76,6 +76,9 @@ screen orion_constellation():
 
     add "images/orion_sky_bg.png"
 
+    if len(orion_stars_clicked) < len(orion_star_order):
+        text "ЛКМ чтобы выделить звезду" size 26 color "#ffaa00" xalign 0.5 ypos 55 at sig_fade_in(1.0, 1.2)
+
     for dkey, dpos in orion_decoy_positions.items():
         button:
             pos (dpos[0] - 32, dpos[1] - 32)
@@ -96,37 +99,143 @@ screen orion_constellation():
                 add "images/star_dim.png"
 
     if len(orion_stars_clicked) >= len(orion_star_order):
-        add "images/orion_overlay.png"
-        textbutton "Я должен вспомнить всё.":
-            xalign 0.5
-            yalign 0.92
-            action Return()
-            text_color "#00ffcc"
-            text_size 24
+        fixed:
+            at sig_fade_in(0.0, 0.8)
+            use sig_btn("Я должен вспомнить всё.", Return(), 0.9)
 
 
 # СБОРКА СЛОВА "САМУРАЙ" — мини-игра "Кто я?"
 
 
 define samurai_dot_files = {
-    "С": "images/dots_С.png",
-    "А": "images/dots_А.png",
-    "М": "images/dots_М.png",
-    "У": "images/dots_У.png",
-    "Р": "images/dots_Р.png",
-    "Й": "images/dots_Й.png",
+    "С": "images/dots_s.png",
+    "А": "images/dots_a.png",
+    "М": "images/dots_m.png",
+    "У": "images/dots_u.png",
+    "Р": "images/dots_r.png",
+    "Й": "images/dots_j.png",
 }
 
 
 init python:
-    def click_samurai_letter(i):
-        if i not in samurai_letters_state:
-            samurai_letters_state[i] = samurai_start_offsets[i]
-        if samurai_letters_state[i] != 0:
-            samurai_letters_state[i] = max(0, samurai_letters_state[i] - samurai_rotation_step)
-            renpy.sound.play("audio/star_click.mp3")
-            if all(samurai_letters_state.get(j, samurai_start_offsets[j]) == 0 for j in range(len(samurai_word))):
-                renpy.sound.play("audio/constellation_complete.mp3")
+    import random
+    import math
+
+    # Головоломка «САМУРАЙ из двух половин»: окна букв на шкале 0–100 и шум.
+    SIG_WL = [(6, 90), (14, 82), (34, 70), (40, 64)]
+    SIG_WR = [(68, 100), (14, 100), (4, 92)]
+    SIG_VIS_MIN = 0.7
+    SIG_NOISE_MAX = 0.2
+
+    def sig_ramp(v):
+        return max(0.0, min(1.0, v))
+
+    def sig_vis(w, s):
+        return sig_ramp((s - w[0]) / 4.0) * (1.0 - sig_ramp((s - w[1]) / 4.0))
+
+    def sig_tri(s, a, b, c):
+        if s <= a or s >= c:
+            return 0.0
+        return (s - a) / float(b - a) if s < b else (c - s) / float(c - b)
+
+    def sig_plat(s, a, b, c, d):
+        if s <= a or s >= d:
+            return 0.0
+        if s < b:
+            return (s - a) / float(b - a)
+        if s < c:
+            return 1.0
+        return (d - s) / float(d - c)
+
+    def sig_nl(s):
+        return max(sig_tri(s, 18, 26, 38), sig_plat(s, 66, 72, 84, 92))
+
+    def sig_nr(s):
+        return max(sig_tri(s, 24, 32, 44), sig_tri(s, 54, 60, 68))
+
+    def sig_state(W, s, noise_fn):
+        n = noise_fn(s)
+        vs = [sig_vis(w, s) for w in W]
+        if n > SIG_NOISE_MAX:
+            return "noise"
+        under = any(v < SIG_VIS_MIN and s < (w[0] + w[1]) / 2.0 for v, w in zip(vs, W))
+        over = any(v < SIG_VIS_MIN and s >= (w[0] + w[1]) / 2.0 for v, w in zip(vs, W))
+        if not under and not over:
+            return "clean"
+        if over and not under:
+            return "over"
+        if under and not over:
+            return "under"
+        return "mixed"
+
+    def sig_clean_l(s):
+        return sig_state(SIG_WL, s, sig_nl) == "clean"
+
+    def sig_clean_r(s):
+        return sig_state(SIG_WR, s, sig_nr) == "clean"
+
+    SIG_PHRASE = {
+        "clean": "всё чисто",
+        "noise": "всё тонет в шуме",
+        "under": "ещё не все буквы проступили",
+        "over": "буквы уже уходят",
+        "mixed": "что-то не сходится",
+    }
+
+    def sig_report(sl, sr):
+        cl = sig_state(SIG_WL, sl, sig_nl)
+        cr = sig_state(SIG_WR, sr, sig_nr)
+        if cl == "clean" and cr != "clean":
+            return "Слева всё складывается, но вот справа " + SIG_PHRASE[cr] + "."
+        if cr == "clean" and cl != "clean":
+            return "Справа всё складывается, но вот слева " + SIG_PHRASE[cl] + "."
+        return "Слева " + SIG_PHRASE[cl] + ", справа " + SIG_PHRASE[cr] + "."
+
+    def sig_demo(t):
+        return 12.0 - 12.0 * math.cos(t)
+
+    def sig_noise_pts(n, x0, x1, y0, y1, seed):
+        r = random.Random(seed)
+        return [(r.randint(x0, x1), r.randint(y0, y1), r.random()) for i in range(n)]
+
+    SIG_N1L = sig_noise_pts(70, 250, 1000, 150, 880, 1)
+    SIG_N1R = sig_noise_pts(60, 1010, 1760, 150, 880, 2)
+    SIG_N2L = sig_noise_pts(70, 20, 760, 20, 500, 3)
+    SIG_N2R = sig_noise_pts(60, 20, 760, 20, 500, 4)
+
+    SIG_POS_ALL = list(zip(samurai_x_pos, samurai_y_pos))
+    SIG_POS_L1 = SIG_POS_ALL[:4]
+    SIG_POS_R1 = SIG_POS_ALL[4:]
+    SIG_POS_L2 = [(110, 230), (290, 270), (470, 215), (650, 260)]
+    SIG_POS_R2 = [(170, 235), (390, 275), (610, 225)]
+
+transform sig_fade_in(delay=0.0, dur=0.9):
+    alpha 0.0
+    pause delay
+    easein dur alpha 1.0
+
+transform sig_none:
+    xoffset 0
+
+transform sig_split_l:
+    xoffset 0
+    easein 1.4 xoffset -70
+
+transform sig_split_r:
+    xoffset 0
+    easein 1.4 xoffset 70
+
+transform sig_crack:
+    ysize 0
+    easein 1.2 ysize 760
+
+style sig_bar is bar:
+    xsize 1100
+    ysize 30
+    left_bar Solid("#00ffcc")
+    right_bar Solid("#1a2a33")
+    thumb Transform(Solid("#ffffff"), xysize=(14, 30))
+    thumb_offset 7
 
 transform fly_to_katana(tx, ty, ang):
     xpos 960 ypos 900 xanchor 0.5 yanchor 0.5 alpha 0.0 rotate 0
@@ -139,37 +248,171 @@ transform falling_star_move(start_x, start_y, end_x, end_y):
     linear 0.4 alpha 0.0
 
 
-screen samurai_constellation():
+transform sig_pulse:
+    alpha 0.8
+    block:
+        easein 0.9 alpha 1.0
+        easeout 0.9 alpha 0.8
+        repeat
+
+screen sig_btn(label, act, yal=0.9):
+    frame:
+        at sig_pulse
+        background Solid("#00ffcc")
+        padding (2, 2)
+        xalign 0.5
+        yalign yal
+        frame:
+            background Solid("#0b1a22")
+            padding (0, 0)
+            textbutton label:
+                action act
+                background None
+                hover_background Solid("#14313f")
+                padding (48, 18)
+                text_color "#00ffcc"
+                text_hover_color "#ffffff"
+                text_size 26
+
+screen sig_noise(pts, n, ox=0, oy=0):
+    for p in pts:
+        if n > p[2]:
+            add Solid("#cfe9ff") xysize (3, 3) pos (ox + p[0], oy + p[1]) alpha (0.7 * min(1.0, (n - p[2]) * 8.0))
+
+screen sig_letters(idxs, pos, s, win, zm=1.0, cyan=False):
+    for k in range(len(idxs)):
+        $ i = idxs[k]
+        $ la = 1.0 if cyan else sig_vis(win[k], s)
+        if la > 0.0:
+            fixed:
+                pos (pos[k][0] - 80, pos[k][1] - 100)
+                xysize (160, 200)
+                add samurai_dot_files[samurai_word[i]] at Transform(rotate=samurai_target_rot[i], zoom=zm, align=(0.5, 0.5), alpha=la, matrixcolor=BrightnessMatrix(0.35 if cyan else 0.0))
+
+screen sig_frame(x, y, w, h, col):
+    add Solid(col) xysize (w, 3) pos (x, y)
+    add Solid(col) xysize (w, 3) pos (x, y + h - 3)
+    add Solid(col) xysize (3, h) pos (x, y)
+    add Solid(col) xysize (3, h) pos (x + w - 3, y)
+
+screen samurai_stage1():
     modal True
     zorder 10
+    default s = 0.0
+    default sd = 0.0
+    default seen_l = False
+    default seen_r = False
+    default demo = True
+    default dt = 0.0
+    default tries = 0
+    default waited = 0.0
+    default msg = ""
+    default splitting = False
 
     add "images/orion_sky_bg.png"
 
-    python:
-        samurai_done = all(samurai_letters_state.get(i, samurai_start_offsets[i]) == 0 for i in range(len(samurai_word)))
+    $ seen_l = seen_l or sig_clean_l(sd)
+    $ seen_r = seen_r or sig_clean_r(sd)
 
     fixed:
-        for i in range(len(samurai_word)):
-            $ s_remaining = samurai_letters_state.get(i, samurai_start_offsets[i])
-            $ s_angle = samurai_target_rot[i] + s_remaining
-            $ s_solved = (s_remaining == 0)
-            $ s_x = samurai_x_pos[i]
-            $ s_y = samurai_y_pos[i]
-            button:
-                pos (s_x - 80, s_y - 100)
-                xysize (160, 200)
-                background None
-                action Function(click_samurai_letter, i)
-                add samurai_dot_files[samurai_word[i]] at Transform(rotate=s_angle, align=(0.5, 0.5), matrixcolor=BrightnessMatrix(0.35 if s_solved else 0.0))
+        at (sig_split_l if splitting else sig_none)
+        use sig_noise(SIG_N1L, sig_nl(sd))
+        use sig_letters([0, 1, 2, 3], SIG_POS_L1, sd, SIG_WL)
+    fixed:
+        at (sig_split_r if splitting else sig_none)
+        use sig_noise(SIG_N1R, sig_nr(sd))
+        use sig_letters([4, 5, 6], SIG_POS_R1, sd, SIG_WR)
 
-    if samurai_done:
+    timer 0.04 repeat True action If(abs(s - sd) > 0.05, SetScreenVariable("sd", sd + (s - sd) * 0.3), NullAction())
+    timer 0.04 repeat True action If(demo, [SetScreenVariable("dt", dt + 0.05), SetScreenVariable("s", sig_demo(dt))], NullAction())
+    timer 0.25 repeat True action If(seen_l and seen_r, SetScreenVariable("waited", waited + 0.25), NullAction())
+
+    if not splitting:
+        if demo:
+            fixed:
+                at sig_pulse
+                use sig_frame(398, 816, 1124, 58, "#00ffcc")
+        text "◄" font "DejaVuSans.ttf" size 34 color "#00ffcc" xpos 350 ypos 828
+        text "►" font "DejaVuSans.ttf" size 34 color "#00ffcc" xpos 1538 ypos 828
+        bar value ScreenVariableValue("s", 100.0, step=0.5, action=[SetScreenVariable("demo", False), SetScreenVariable("msg", "")]) style "sig_bar" xalign 0.5 ypos 830
+        text msg size 24 color "#8b95a8" xalign 0.5 ypos 892
+        if not demo:
+            fixed:
+                at sig_fade_in(0.0, 0.8)
+                use sig_btn("Зафиксировать", [SetScreenVariable("tries", tries + 1), SetScreenVariable("msg", sig_report(s, s))], 0.96)
+
+    if seen_l and seen_r and (tries >= 2 or waited >= 20.0) and not splitting:
+        timer 0.5 action SetScreenVariable("splitting", True)
+
+    if splitting:
+        add Solid("#00ffcc") xysize (3, 760) xalign 0.5 ypos 100 at sig_crack
+        timer 1.8 action Return(True)
+
+screen samurai_stage2():
+    modal True
+    zorder 10
+    default sl = 0.0
+    default sr = 0.0
+    default sld = 0.0
+    default srd = 0.0
+    default act = "l"
+    default solved = False
+    default msg = ""
+
+    add "images/orion_sky_bg.png"
+    key "K_LEFT" action [SetScreenVariable("act", "l"), SetScreenVariable("msg", "")]
+    key "K_RIGHT" action [SetScreenVariable("act", "r"), SetScreenVariable("msg", "")]
+
+    if solved:
+        use sig_letters([0, 1, 2, 3, 4, 5, 6], SIG_POS_ALL, 0, [None, None, None, None, None, None, None], 1.0, True)
         add "images/samurai_constellation_overlay_v4.png"
-        textbutton "Вот кто я такой.":
-            xalign 0.5
-            yalign 0.92
-            action Return()
-            text_color "#00ffcc"
-            text_size 24
+        fixed:
+            at sig_fade_in(0.8, 0.8)
+            use sig_btn("Вот кто я такой.", Return(), 0.9)
+    else:
+        timer 0.04 repeat True action If(abs(sl - sld) > 0.05, SetScreenVariable("sld", sld + (sl - sld) * 0.3), NullAction())
+        timer 0.04 repeat True action If(abs(sr - srd) > 0.05, SetScreenVariable("srd", srd + (sr - srd) * 0.3), NullAction())
+
+        text "Используй стрелки или ЛКМ, чтобы переключаться между экранами." size 26 color "#ffaa00" xalign 0.5 ypos 55 at sig_fade_in(0.5, 1.0)
+        text "Их нужно совместить…" size 32 color "#ffffff" xalign 0.5 ypos 100 at sig_fade_in(1.5, 1.0)
+
+        fixed:
+            pos (100, 190)
+            xysize (780, 520)
+            clipping True
+            add Solid("#070b14cc")
+            use sig_noise(SIG_N2L, sig_nl(sld))
+            use sig_letters([0, 1, 2, 3], SIG_POS_L2, sld, SIG_WL, 0.85)
+            if act != "l":
+                add Solid("#05080f") alpha 0.35
+            button:
+                xysize (780, 520)
+                background None
+                action [SetScreenVariable("act", "l"), SetScreenVariable("msg", "")]
+        use sig_frame(100, 190, 780, 520, ("#00ffcc" if act == "l" else "#2a3b44"))
+
+        fixed:
+            pos (1040, 190)
+            xysize (780, 520)
+            clipping True
+            add Solid("#070b14cc")
+            use sig_noise(SIG_N2R, sig_nr(srd))
+            use sig_letters([4, 5, 6], SIG_POS_R2, srd, SIG_WR, 0.85)
+            if act != "r":
+                add Solid("#05080f") alpha 0.35
+            button:
+                xysize (780, 520)
+                background None
+                action [SetScreenVariable("act", "r"), SetScreenVariable("msg", "")]
+        use sig_frame(1040, 190, 780, 520, ("#00ffcc" if act == "r" else "#2a3b44"))
+
+        if act == "l":
+            bar value ScreenVariableValue("sl", 100.0, step=0.5) style "sig_bar" xalign 0.5 ypos 770
+        else:
+            bar value ScreenVariableValue("sr", 100.0, step=0.5) style "sig_bar" xalign 0.5 ypos 770
+
+        text msg size 24 color "#8b95a8" xalign 0.5 ypos 835
+        use sig_btn("Зафиксировать", If(sig_clean_l(sl) and sig_clean_r(sr), [SetScreenVariable("solved", True), Play("sound", "audio/star_click.mp3")], SetScreenVariable("msg", sig_report(sl, sr))), 0.96)
 
 # МЕНЮ ВОСПОМИНАНИЙ
 
@@ -244,6 +487,9 @@ screen memory_query_puzzle():
         start_x = 960 - grid_w // 2
         start_y = 420
 
+    if not query_done:
+        text "ЛКМ чтобы убрать лишнее слово" size 26 color "#ffaa00" xalign 0.5 ypos 55 xmaximum 1500 at sig_fade_in(1.0, 1.2)
+
     fixed:
         for idx in range(len(memory_query_tokens)):
             $ r = idx // cols
@@ -266,19 +512,16 @@ screen memory_query_puzzle():
                         yalign 0.5
 
     if memory_query_total_mistakes >= 6 and not query_done:
-        text "«Нужные слова уже стоят на своих местах. Остальное — шум. Не трогай то, что верно — убирай только лишнее».":
+        text "Не то... Я должен сказать «Выбери всё из памяти, где раздел = Аналитика» Как же это по-английски?":
             xalign 0.5
             yalign 0.85
             color "#8b95a8"
             size 20
 
     if query_done:
-        textbutton "Вот что я искал.":
-            xalign 0.5
-            yalign 0.92
-            action Return()
-            text_color "#00ffcc"
-            text_size 24
+        fixed:
+            at sig_fade_in(0.0, 0.8)
+            use sig_btn("Вот что я искал.", Return(), 0.92)
 
 # МИНИ ИГРА С ШИФРОМ ЦЕЗАРЯ
 
@@ -312,14 +555,13 @@ label start:
 
     # play music переносим на пару строк ниже — пусть начало будет в тишине
     "Ты открываешь глаза."
-    "Нет, не глаза. Ты не чувствуешь привычного скольжения век по воспаленным глазным яблокам."
+    "Нет, не глаза. Ты не чувствуешь привычного скольжения век по глазным яблокам."
     "Тем не менее секунду назад было черным черно, а сейчас — яркий свет монитора."
 
     play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
 
-    menu:
-        "Будто тебя «включили»":
-            jump osmotretsya
+    "Будто меня «включили»"
+    jump osmotretsya
 
 
 label osmotretsya:
@@ -352,17 +594,21 @@ label osmotretsya:
 
     "Кто ты?"
     "{size=+20}{b}КТО ТЫ{/b}{/size}"
+    "Взгляни на звёзды. Убери шум."
 
-    menu:
-        "Кто я?":
-            pass
 
     hide screen who_floating_text
     window hide
     scene bg_orion_sky
     with dissolve
-    $ samurai_letters_state = {}
-    call screen samurai_constellation with Dissolve(1.0)
+    call screen samurai_stage1 with Dissolve(1.0)
+
+    window show
+    "Нет, тебе не поймать их всех разом... Но ты же можешь попробовать иначе?"
+    "Ты делишь небо пополам."
+    window hide
+
+    call screen samurai_stage2 with Dissolve(0.8)
 
     window show
     "Самурай..."
@@ -402,7 +648,6 @@ label osmotretsya:
     hide katana6
     with dissolve
 
-    "«Так вот, значит, кто я», — думаешь ты. — «Не имя. Не лицо. Профессия, натянутая на позвоночник так туго, что стала осанкой»."
     "Самурай... самурай верно служит своему даймё."
 
     "Даже если даймё — некий абстрактный начальник, которого ты даже не помнишь."
@@ -410,7 +655,7 @@ label osmotretsya:
     scene bg_desktop_grid_prologue
     with dissolve
 
-    boss "Ты вообще меня слушаешь? Я задал вопрос!"
+    boss "Ты вообще меня слушаешь? Десять минут."
 
  # --------------------------------------------
     # Вопрос 1: выбор вещи
@@ -471,7 +716,7 @@ label vopros_dva:
     show screen points_floating_text
     boss "Три точки. Выручка: 100, 150, 50 тысяч."
 
-    "Точки начинают кружить вокруг тебя, будто эфемерные мухи."
+    "Точки начинают кружить вокруг тебя, будто эфимерные мухи."
 
     "«Кто вообще такие эти точки? Это торговые точки? Я-то надеялся, я самурай где-то в сфере науки, а не ритейла...»"
 
@@ -645,7 +890,6 @@ label itogi_testa:
     hide screen blinking_cursor
     window show
 
-    "Но тишина не значит, что вопросы закончились. Просто спрашивать теперь некого, кроме себя самого."
 
     "«Аналитик… что это значит?»"
     window hide
@@ -677,7 +921,7 @@ label dumaty_o_situacii:
 
 
 label dumaty_o_budushchem:
-    "Ты пытаешься представить, что будет дальше. Задание. Аналитика. Работа."
+    "Ты пытаешься представить, что будет дальше. Задачи. Аналитика. Работа."
     "«У самурая нет цели — только путь», — вспоминается откуда-то фраза. Может, поэтому «что дальше» и не пугает так, как должно бы."
     "Внутри — странное спокойствие. Будто ты уже сидел вот так. Будто вернулся домой."
     jump sobratsya_i_zhdat
@@ -715,11 +959,8 @@ label sobratsya_i_zhdat:
     window show
     "Орион же тоже своего рода самурай? В том смысле, что он — воин?"
     "Что-то связывает тебя с ним. Загородная ночь, палатка, телескоп — ты обязательно всё вспомнишь."
+    "По крайней мере теперь ты знаешь, что ты в северном полушарии и сейчас что-то между ноябрём и апрелем."
     window hide
-
-    show screen blinking_cursor
-    pause 2.0
-    hide screen blinking_cursor
 
     show flash_soft with flash
     pause 0.5
@@ -910,8 +1151,8 @@ label sasha_milaya_boltovnya:
     "..."
     "Что ж, задача тебе ясна."
     "Что ты помнишь об аналитике?"
-    "«Так много мыслей разом... Нужно... убрать лишнее»."
-    "Где-то там, под слоем случайных символов и чужого кода, есть фраза, которая всегда была твоей."
+    "«Так много мыслей разом... Нужно... убрать лишнее. Если бы я мог написать запрос к собственной памяти», — думаешь ты."
+    "Где-то там, под слоем случайных символов и чужого кода, есть фраза, которая тебе нужна."
     player "Не помню нужную фразу целиком. Но помню, что она начинается с одного слова: select."
     player "Мне просто надо убрать всё лишнее. Отфильтровать шум."
 

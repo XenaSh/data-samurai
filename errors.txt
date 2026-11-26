@@ -2,9 +2,9 @@
 errors listed below, and try again.
 
 
-File "game/06_endgame.rpy", line 1065: expected 'name' not found.
-    hide screen
-               ^
+File "game/10_minigame_poem.rpy", line 79: 'alpha' is not a keyword argument or valid child for the text statement.
+    text what id "what" style "poem_line_text" xalign 0.5 yalign 0.86 alpha 0.0
+                                                                           ^
 
 Ren'Py Version: Ren'Py 8.0.2.22081402
-Sat Oct 24 22:53:58 2026
+Thu Nov 26 04:04:00 2026

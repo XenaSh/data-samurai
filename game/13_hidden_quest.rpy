@@ -85,6 +85,9 @@ screen news_sentence_match_screen():
     modal True
     zorder 200
 
+    $ nq_hint = "ЛКМ чтобы выбрать предложение в тексте" if (nq_selected_sentence is None and len(nq_pairs) == 0) else ("ЛКМ чтобы выбрать фактор справа" if nq_selected_sentence is not None else "Можно связать другие предложения или заверить")
+    text nq_hint size 26 color "#ffaa00" xalign 0.5 ypos 40 xmaximum 1500
+
     frame:
         xalign 0.5
         yalign 0.5

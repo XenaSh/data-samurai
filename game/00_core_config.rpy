@@ -8,6 +8,8 @@ style vscrollbar:
 default accuracy = 100
 default intuition = 100
 
+define TEST_BUILD = True
+
 default remembered_alexander = False
 
 default phase1_complete = False
@@ -98,15 +100,6 @@ define ending_intuition_threshold = 160
 
 default task2_intro_done = False
 
-
-
-define config.window_show_transition = Dissolve(0.2)
-
-define gui.text_font = "fonts/Exo2-Regular.ttf"
-
-define gui.name_text_font = "fonts/Exo2-Bold.ttf"
-
-define gui.interface_text_font = "fonts/Exo2-Regular.ttf"
 
 
 define flash = Fade(0.35, 0.0, 0.35)
@@ -641,3 +634,5 @@ screen ending_card(title, sub):
         text title font CR_FONT size 64 color "#ffffff" kerning 10 xalign 0.5
         add Solid("#00ffcc") xysize (420, 2) xalign 0.5
         text sub font CR_FONT size 24 color "#8a949a" xalign 0.5 text_align 0.5 xmaximum 1200
+        if TEST_BUILD:
+            text "[accuracy] / [intuition]" font CR_FONT size 16 color "#555555" xalign 0.5

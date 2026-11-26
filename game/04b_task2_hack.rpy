@@ -212,6 +212,10 @@ screen hack_alarm():
 screen hack_terminal():
     modal True
     zorder 30
+    if hack_phase == "A":
+        text "ЛКМ чтобы выбрать поля в SELECT и GROUP BY" size 26 color "#ffaa00" xalign 0.5 ypos 740 xmaximum 1500 at sig_fade_in(0.5, 0.8)
+    elif hack_phase == "B":
+        text "ЛКМ чтобы выбрать числитель слева и знаменатель справа" size 26 color "#ffaa00" xalign 0.5 ypos 740 xmaximum 1500 at sig_fade_in(0.5, 0.8)
 
     $ nz = min(hack_noise, 100)
     $ nz_col = "#e5534b" if nz >= 85 else ("#e0a030" if nz >= 60 else "#4fc9b0")
@@ -451,5 +455,5 @@ label task2_hack_exit:
         xalign 0.5
         yalign 0.05
     with dissolve
-    player "Гипотезу держим в секрете: ни к чему боссу знать, что мы копошились там, где нам не надо. Пики на графиках — каждые семь дней. Ревизия кабачковой икры, чем бы она ни была, тоже каждые семь дней, во вторник."
+    "Ты решаешь держать гипотезу в секрете: ни к чему боссу знать, что вы копошились там, где вам не надо. Пики на графиках — каждые семь дней. Ревизия кабачковой икры, чем бы она ни была, тоже каждые семь дней, во вторник."
     return

@@ -26,12 +26,13 @@ screen desktop():
             ]
 
             for icon_img, label, target, has_badge in desktop_items:
+                $ locked = (target == "chat_with_sasha" and current_task == 2 and task2_intro_done)
                 button:
-                    action Jump(target)
+                    action (NullAction() if locked else Jump(target))
                     xsize 110
                     ysize 100
                     background Solid("#00000000")
-                    hover_background Solid("#1a3a4a80")
+                    hover_background Solid("#00000000" if locked else "#1a3a4a80")
                     padding (6, 10)
 
                     vbox:
@@ -42,11 +43,11 @@ screen desktop():
                             xalign 0.5
                             xsize 44
                             ysize 44
-                            add icon_img xsize 44 ysize 44
+                            add icon_img xsize 44 ysize 44 alpha (0.3 if locked else 1.0)
                             if has_badge:
                                 add Solid("#ff5555") xsize 12 ysize 12 xalign 1.0 yalign 0.0
 
-                        text label size 15 color "#cfefff" xalign 0.5 text_align 0.5
+                        text label size 15 color ("#4a6270" if locked else "#cfefff") xalign 0.5 text_align 0.5
 
 # Лента новостей (без border) — показывает весь накопленный список,
 # новые с последнего просмотра помечены отдельно, старые никуда не пропадают
@@ -486,7 +487,7 @@ label chat_with_sasha_menu:
             sasha "Я не для того, чтобы обнадёживать. У меня для этого нет функции."
             jump chat_with_sasha_menu
 
-        "Как я справляюсь?" if sasha_phase = 2:
+        "Как я справляюсь?" if sasha_phase == 2:
             player "Саша, серьёзно — как я вообще справляюсь? Со стороны видно?"
             if accuracy >= accuracy_threshold_p2 and intuition >= intuition_threshold_p2:
                 sasha "Со стороны видно человека, который и считает аккуратно, и иногда просто знает, не досчитав до конца. Бесит, если честно. По-хорошему бесит."
