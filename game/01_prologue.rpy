@@ -77,7 +77,7 @@ screen orion_constellation():
     add "images/orion_sky_bg.png"
 
     if len(orion_stars_clicked) < len(orion_star_order):
-        text "ЛКМ чтобы выделить звезду" size 26 color "#ffaa00" xalign 0.5 ypos 55 at sig_fade_in(1.0, 1.2)
+        text "ЛКМ чтобы выделить звезду" size 26 color "#ffaa00" xalign 0.5 ypos 55 xmaximum 1500 at sig_fade_in(0.5, 1.0)
 
     for dkey, dpos in orion_decoy_positions.items():
         button:
@@ -229,6 +229,10 @@ transform sig_crack:
     ysize 0
     easein 1.2 ysize 760
 
+transform sig_hint_gone:
+    alpha 1.0
+    easeout 0.6 alpha 0.0
+
 style sig_bar is bar:
     xsize 1100
     ysize 30
@@ -298,6 +302,7 @@ screen sig_frame(x, y, w, h, col):
 screen samurai_stage1():
     modal True
     zorder 10
+
     default s = 0.0
     default sd = 0.0
     default seen_l = False
@@ -310,6 +315,10 @@ screen samurai_stage1():
     default splitting = False
 
     add "images/orion_sky_bg.png"
+
+    text "ЛКМ чтобы двигать ползунок" size 26 color "#ffaa00" xalign 0.5 ypos 55 xmaximum 1500 at (sig_hint_gone if splitting else sig_fade_in(0.5, 1.0))
+
+    $ seen_l = seen_l or sig_clean_l(sd)
 
     $ seen_l = seen_l or sig_clean_l(sd)
     $ seen_r = seen_r or sig_clean_r(sd)
@@ -373,7 +382,7 @@ screen samurai_stage2():
         timer 0.04 repeat True action If(abs(sl - sld) > 0.05, SetScreenVariable("sld", sld + (sl - sld) * 0.3), NullAction())
         timer 0.04 repeat True action If(abs(sr - srd) > 0.05, SetScreenVariable("srd", srd + (sr - srd) * 0.3), NullAction())
 
-        text "Используй стрелки или ЛКМ, чтобы переключаться между экранами." size 26 color "#ffaa00" xalign 0.5 ypos 55 at sig_fade_in(0.5, 1.0)
+        text "Используй стрелки или ЛКМ, чтобы переключаться между экранами." size 26 color "#ffaa00" xalign 0.5 ypos 55 xmaximum 1500 at sig_fade_in(0.5, 1.0)
         text "Их нужно совместить…" size 32 color "#ffffff" xalign 0.5 ypos 100 at sig_fade_in(1.5, 1.0)
 
         fixed:
@@ -452,6 +461,8 @@ define memory_query_tokens = [
     "malloc", "segment", "undefined", "=", "lambda", "throw", "'analytics'", "catch", "static"
 ]
 
+default memory_query_reset_flag = False
+
 init python:
     def click_memory_token(idx):
         if idx not in memory_query_target_idx and idx not in memory_query_cleared:
@@ -462,13 +473,13 @@ init python:
                 renpy.sound.play("audio/constellation_complete.mp3")
 
     def click_memory_mistake():
-        global memory_query_mistakes, memory_query_total_mistakes
+        global memory_query_mistakes, memory_query_total_mistakes, memory_query_reset_flag
         memory_query_mistakes += 1
         memory_query_total_mistakes += 1
-        renpy.sound.play("audio/star_click.mp3")
         if memory_query_mistakes >= 3:
             memory_query_cleared[:] = []
             memory_query_mistakes = 0
+            memory_query_reset_flag = True
 
 
 screen memory_query_puzzle():
@@ -488,7 +499,7 @@ screen memory_query_puzzle():
         start_y = 420
 
     if not query_done:
-        text "ЛКМ чтобы убрать лишнее слово" size 26 color "#ffaa00" xalign 0.5 ypos 55 xmaximum 1500 at sig_fade_in(1.0, 1.2)
+        text "ЛКМ чтобы убрать лишнее слово" size 26 color "#ffaa00" xalign 0.5 ypos 55 xmaximum 1500 at sig_fade_in(0.5, 1.0)
 
     fixed:
         for idx in range(len(memory_query_tokens)):
@@ -503,6 +514,7 @@ screen memory_query_puzzle():
                     pos (tx, ty)
                     xysize (cell_w - 8, cell_h - 8)
                     background None
+                    at sig_fade_in(0.0, 0.5)
                     action (NullAction() if query_done else (Function(click_memory_mistake) if is_target else Function(click_memory_token, idx)))
                     text memory_query_tokens[idx]:
                         color ("#5df0c0" if (is_target and query_done) else "#8b95a8")
@@ -511,12 +523,22 @@ screen memory_query_puzzle():
                         xalign 0.5
                         yalign 0.5
 
+    if memory_query_reset_flag and not query_done:
+        text "Слова вернулись на место... Кажется, просто тыкать это не вариант.":
+            xalign 0.5
+            ypos 105
+            color "#8b95a8"
+            size 24
+            at sig_fade_in(0.0, 0.6)
+        # timer 3.5 action SetVariable("memory_query_reset_flag", False)
+
     if memory_query_total_mistakes >= 6 and not query_done:
-        text "Не то... Я должен сказать «Выбери всё из памяти, где раздел = Аналитика» Как же это по-английски?":
+        text "Не то... Я должен сказать «Выбери всё из памяти, где раздел = Аналитика». Как же это по-английски?":
             xalign 0.5
             yalign 0.85
             color "#8b95a8"
             size 20
+            at sig_fade_in(0.0, 0.8)
 
     if query_done:
         fixed:
@@ -556,11 +578,11 @@ label start:
     # play music переносим на пару строк ниже — пусть начало будет в тишине
     "Ты открываешь глаза."
     "Нет, не глаза. Ты не чувствуешь привычного скольжения век по глазным яблокам."
-    "Тем не менее секунду назад было черным черно, а сейчас — яркий свет монитора."
+    "Тем не менее секунду назад было чёрным чёрно, а сейчас — яркий свет монитора."
 
     play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
 
-    "Будто меня «включили»"
+    "Будто меня «включили»."
     jump osmotretsya
 
 
@@ -716,7 +738,7 @@ label vopros_dva:
     show screen points_floating_text
     boss "Три точки. Выручка: 100, 150, 50 тысяч."
 
-    "Точки начинают кружить вокруг тебя, будто эфимерные мухи."
+    "Точки начинают кружить вокруг тебя, будто эфемерные мухи."
 
     "«Кто вообще такие эти точки? Это торговые точки? Я-то надеялся, я самурай где-то в сфере науки, а не ритейла...»"
 
@@ -738,12 +760,12 @@ label vopros_dva:
 
         "Были ли там скидки или акции?":
             $ accuracy += 5
-            boss "Неплохо, но скидки — это следствие, а не причина."
+            boss "Неплохо, но скидки это обычно следствие, а не причина."
             jump nepravilnyy_otvet_1
 
         "Какие товары там продавались?":
             $ accuracy += 2
-            boss "Ассортимент важен, но здесь ключевое — время работы."
+            boss "Ассортимент важен, но как он помогает оценить эффективность? Ты меня разочаровал."
             jump nepravilnyy_otvet_2
 
 # Ветка для первого неправильного вопроса (скидки)
@@ -771,11 +793,13 @@ label dannye_po_dnyam:
     show screen task_data
     "Ты чувствуешь, что двух знаков после запятой будет достаточно."
 
+    $ revenue_correct = 0
     $ correct_a = 100.0 / 30.0
     $ otvet_a = get_number("Выручка в день для точки А (тыс. руб.):")
     if abs(otvet_a - correct_a) <= 0.005:
         player "Я, может, не помню своего имени, но считать в уме ещё умею. [correct_a:.2f] тыс. в день."
         $ accuracy += 5
+        $ revenue_correct += 1
     else:
         player "...Нет. Что я только что написал? Должно быть [correct_a:.2f] тыс. в день. Двигаемся дальше."
 
@@ -789,7 +813,7 @@ label dannye_po_dnyam:
 
     $ correct_v = 50.0 / 6.0
     $ otvet_v = get_number("Выручка в день для точки В (тыс. руб.):")
-    if abs(otvet_v - correct_v) <= 0.01:
+    if abs(otvet_v - correct_v) <= 0.005:
         player "Тут [correct_v:.2f] тыс. в день. Неплохо для человека, который не помнит собственного лица."
         $ accuracy += 5
     else:
@@ -805,7 +829,7 @@ label dannye_po_dnyam:
 
 
 label posle_mikro:
-    "Ты всё ещё сидишь с этим ощущением на кончиках пальцев: два числа, поделенные один на другое. Как будто это единственное, что реально произошло за последние пять минут и было тебе понятно."
+    "Ты всё ещё сидишь с этим ощущением на кончиках пальцев: два числа, поделённые одно на другое. Как будто это единственное, что реально произошло за последние пять минут и было тебе понятно."
     "Может, в этом и есть весь фокус — не в том, чтобы вспомнить, кто ты, а в том, чтобы найти что-то, что точно твоё. Пусть даже это просто деление. Оно-то у тебя получается."
     jump vopros_tri
 
@@ -850,7 +874,7 @@ label vospominanie_alexander:
     with dissolve
     pause 1.5
     window show
-    "В голове вспыхивает картинка. Палатка. Костер. Рядом с тобой сидит мужчина и читает вслух Шекспира."
+    "В голове вспыхивает картинка. Палатка. Костёр. Рядом с тобой сидит мужчина и читает вслух Шекспира."
     "Ты знаешь его. Это Александр. Он был с тобой в тот день."
     "Но где он сейчас?"
     boss "Ты слушаешь меня вообще? Я задал вопрос!"
@@ -1084,7 +1108,7 @@ label sasha_chto_so_mnoy:
 label sasha_gde_rabotaem:
     sasha "О, точно, тебе бы не помешал контекст. Сеть супермаркетов «Изобилие». Гремучая смесь советской вывески и капиталистической текучки кадров."
     sasha "У начальника сейчас личный интерес — подозревает несостыковку в данных по одной из точек. Кажется, я сам работал над этим расследованием раньше, но меня немного стёрли."
-    sasha "Честно, вообще ничего не помню, кроме того, что налажал. Они еще пообещали создать на моей основе новую, более точную аналитическую модель. До того я налажал."
+    sasha "Честно, вообще ничего не помню, кроме того, что налажал. Они ещё пообещали создать на моей основе новую, более точную аналитическую модель. До того я налажал."
     jump sasha_voprosy
 
 
@@ -1136,11 +1160,11 @@ label sasha_milaya_boltovnya:
     sasha "Ладно, введу тебя в курс дела, раз потом сам не разберёшься."
     sasha "Есть начальник — определённо не человек по моему скромному мнению. Нечеловечески скучный. Ему нужна твоя помощь: подозревает несостыковку в данных по одной из точек сети и хочет, чтобы ты в этом разобрался."
     sasha "Связаться с ним можно через раздел «Задания» — там же будет и всё расследование. Не через меня, я тут просто чат, а не диспетчер."
-    sasha "Может, у тебя на рабочем столе еще что-то есть. Не знаю, пошурши."
+    sasha "Может, у тебя на рабочем столе ещё что-то есть. Не знаю, пошурши."
     sasha "Ах, да, если ты и это забыл: ты — Аналитик. Это такой человек, который смотрит на таблички с умным видом. Смекаешь?"
     sasha "Прежде чем соваться в пучины скуки от началька, постарайся вспомнить, что ты вообще знаешь об аналитике."
     player "Я сегодня уже пытался вспоминать вещи. Пока что выходило так же, как с днём рождения тёти."
-    sasha "Если перебрать всего 365 вариантов, то день рождения тёти обязательно найдется — минимум один раз за год поздравишь её вовремя!"
+    sasha "Если перебрать всего 365 вариантов, то день рождения тёти обязательно найдётся — минимум один раз за год поздравишь её вовремя!"
     sasha "Единственный минус моей модели — вероятно, тётя перестанет брать трубку уже на пятый день перебора..."
     player "Мне показалось, или ты ИИ с потугами в юмор?"
     sasha "Ещё бы! Мама собирает обед сыну в школу. Кладёт хлеб, колбасу и гвозди..."
@@ -1159,10 +1183,11 @@ label sasha_milaya_boltovnya:
     window hide
     $ memory_query_cleared = []
     $ memory_query_mistakes = 0
+    $ memory_query_reset_flag = False
     call screen memory_query_puzzle with Dissolve(1.0)
     window show
 
-    player "Select — выбери. From — из. Where — при условии. Не самая сложная фраза в мире, а сколько приносит внутреннего чувства порядка и умиротворения."
+    player "Select — выбери. From — из. Where — при условии. Не самая сложная фраза в мире, а сколько приносит внутреннего чувства порядка."
     if memory_query_total_mistakes == 0:
         $ unlock_achievement("chistyy_signal")
         $ accuracy += 3
@@ -1173,15 +1198,15 @@ label sasha_milaya_boltovnya:
     elif memory_query_total_mistakes <= 5:
         $ accuracy += 1
         sasha "Не переживай: пускай и криво, пускай и косо, и с парой лишних кругов, но получилось!"
-        player "Это ты сейчас совершенно серьезно думаешь, что звучишь подбадривающе?"
+        player "Это ты сейчас совершенно серьёзно думаешь, что звучишь подбадривающе?"
         player "Или того хуже... это и есть симуляция юмора?!"
-        player "Ты бы еще выдал что-то вроде: я был уверен, что даже у такого пня, как ты, всё получится!"
+        player "Ты бы ещё выдал что-то вроде: я был уверен, что даже у такого пня, как ты, всё получится!"
         sasha "Мысли мои читаешь! Я правда верил, что у такого... тебя — всё получится!"
         "Ты невольно ловишь себя на чувстве, что не будь рядом с тобой Саши, ты бы точно так же иронизировал над собой сам."
     else:
-        "Смесь замешательства и недовольства собой."
-        player "Несколько раз казалось, что я вообще не соображаю. Может, я и не сообразил. Я сообразил? Забудем..."
-        sasha "Такое и после сеанса гипноза не забывается."
+        "Внутри смесь замешательства и недовольства собой. Признавайся, ты же угадывал."
+        player "Казалось, что я вообще не соображаю, что делаю. Может, я и не сообразил. Я сообразил? Забудем..."
+        sasha "Такое возмутительное незнание SQL и после сеанса гипноза не забывается."
         player "Забудем."
         sasha "У меня от твоих потуг сжались от ужаса поисковые алгоритмы."
         player "...Забудем."
