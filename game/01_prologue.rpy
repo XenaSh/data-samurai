@@ -808,6 +808,7 @@ label dannye_po_dnyam:
     if abs(otvet_b - correct_b) <= 0.005:
         player "Второе почти на автомате — [correct_b:.2f] тыс. в день. Хоть что-то во мне работает как надо."
         $ accuracy += 5
+        $ revenue_correct += 1
     else:
         player "Погоди... Мимо. Конечно же, это [correct_b:.2f] тыс. в день — видимо, арифметика покинула меня так же, как и память."
 
@@ -816,6 +817,7 @@ label dannye_po_dnyam:
     if abs(otvet_v - correct_v) <= 0.005:
         player "Тут [correct_v:.2f] тыс. в день. Неплохо для человека, который не помнит собственного лица."
         $ accuracy += 5
+        $ revenue_correct += 1
     else:
         player "Не сошлось. Должно быть... [correct_v:.2f] тыс. в день. Чего ещё ждать от того, кого дёрнули из отпуска?"
 

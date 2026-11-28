@@ -253,7 +253,6 @@ screen quick_menu():
             yalign 1.0
             at quick_menu_fade
 
-            textbutton _("Назад") action Rollback()
             textbutton _("История") action ShowMenu('history')
             textbutton _("Пропуск") action Skip() alternate Skip(fast=True, confirm=True)
             textbutton _("Авто") action Preference("auto-forward", "toggle")
@@ -1419,7 +1418,6 @@ screen quick_menu():
             xalign 0.5
             yalign 1.0
 
-            textbutton _("Назад") action Rollback()
             textbutton _("Пропуск") action Skip() alternate Skip(fast=True, confirm=True)
             textbutton _("Авто") action Preference("auto-forward", "toggle")
             textbutton _("Меню") action ShowMenu()

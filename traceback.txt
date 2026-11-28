@@ -1,40 +1,28 @@
 ﻿I'm sorry, but an uncaught exception occurred.
 
 While running game code:
-  File "game/03_task1.rpy", line 602, in script call
-    call mech_round("delay") from _call_mech_round
-  File "game/03_task1.rpy", line 165, in script
-    player "[hero_fix]"
-KeyError: 'hero_fix'
+  File "game/05_task3.rpy", line 139, in script
+    if not task3_wait_done:
+  File "game/05_task3.rpy", line 139, in <module>
+    if not task3_wait_done:
+NameError: name 'task3_wait_done' is not defined
 
 -- Full Traceback ------------------------------------------------------------
 
 Full traceback:
-  File "game/03_task1.rpy", line 602, in script call
-    call mech_round("delay") from _call_mech_round
-  File "game/03_task1.rpy", line 165, in script
-    player "[hero_fix]"
-  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 921, in execute
-    renpy.exports.say(who, what, *args, **kwargs)
-  File "E:\renpy-8.0.2-sdk\renpy\exports.py", line 1373, in say
-    who(what, *args, **kwargs)
-  File "E:\renpy-8.0.2-sdk\renpy\character.py", line 1253, in __call__
-    what = self.prefix_suffix("what", self.what_prefix, what, self.what_suffix)
-  File "E:\renpy-8.0.2-sdk\renpy\character.py", line 1172, in prefix_suffix
-    return (sub(prefix) + sub(body) + sub(suffix))
-  File "E:\renpy-8.0.2-sdk\renpy\character.py", line 1152, in sub
-    return renpy.substitutions.substitute(s, scope=scope, force=force, translate=translate)[0]
-  File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 278, in substitute
-    s = formatter.vformat(s, (), kwargs) # type: ignore
-  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 165, in vformat
-  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 205, in _vformat
-  File "E:\renpy-8.0.2-sdk\renpy\substitutions.py", line 168, in get_field
-    obj, arg_used = super(Formatter, self).get_field(field_name, args, kwargs)
-  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 270, in get_field
-  File "/home/tom/ab/renpy-build/tmp/install.linux-x86_64/lib/python3.9/string.py", line 227, in get_value
-KeyError: 'hero_fix'
+  File "game/05_task3.rpy", line 139, in script
+    if not task3_wait_done:
+  File "E:\renpy-8.0.2-sdk\renpy\ast.py", line 2115, in execute
+    if renpy.python.py_eval(condition):
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1083, in py_eval
+    return py_eval_bytecode(code, globals, locals)
+  File "E:\renpy-8.0.2-sdk\renpy\python.py", line 1076, in py_eval_bytecode
+    return eval(bytecode, globals, locals)
+  File "game/05_task3.rpy", line 139, in <module>
+    if not task3_wait_done:
+NameError: name 'task3_wait_done' is not defined
 
 Windows-10-10.0.19044 AMD64
 Ren'Py 8.0.2.22081402
 DataSamurai 0.9-test1
-Fri Nov 27 04:23:21 2026
+Sat Nov 28 01:02:25 2026

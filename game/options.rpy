@@ -23,7 +23,7 @@ define gui.show_name = True
 
 ## Версия игры.
 
-define config.version = "0.9-test1"
+define config.version = "1.0"
 
 
 ## Текст, помещённый в экран "Об игре". Поместите текст между тройными скобками.
@@ -48,7 +48,8 @@ define build.name = "DataSamurai"
 
 define config.has_sound = True
 define config.has_music = True
-define config.has_voice = True
+define config.has_voice = False
+define config.rollback_enabled = False
 
 
 ## Чтобы разрешить игроку тестировать громкость на звуковом или голосовом

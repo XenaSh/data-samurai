@@ -4,6 +4,7 @@ default d_found = []
 default d_extra = []
 default d_picked = []
 default revenue_correct = -1
+default task3_wait_done = False
 
 screen desktop():
 
@@ -34,7 +35,7 @@ screen desktop():
             for icon_img, label, target, has_badge in desktop_items:
                 $ locked = (target == "chat_with_sasha" and current_task == 2 and task2_intro_done)
                 button:
-                    action (NullAction() if locked else Jump(target))
+                    action (NullAction() if locked else [If(task3_awaiting_access and target != "tasks_from_boss", SetVariable("task3_wait_done", True)), Jump(target)])
                     xsize 110
                     ysize 100
                     background Solid("#00000000")
@@ -285,15 +286,18 @@ screen nf_board(avail, links, msg):
     $ shown = NF_TEXT[hov] if hov else msg
     text shown size 28 color "#ffffff" xalign 0.5 ypos 905 xmaximum 1500 text_align 0.5
 
-    textbutton "Свести всё вместе":
-        xalign 0.5
-        ypos 985
-        sensitive len(links) >= 4
-        action Return("done")
-        text_font gui.text_font
-        text_size 28
-        text_color "#00ffcc"
-        text_insensitive_color "#3b4a52"
+    if len(links) >= 4:
+        use sig_btn("Свести всё вместе", Return("done"), 0.97)
+    else:
+        frame:
+            xalign 0.5
+            yalign 0.97
+            background Solid("#3b4a52")
+            padding (2, 2)
+            frame:
+                background Solid("#0b1a22")
+                padding (48, 0)
+                text "Свести всё вместе" color "#3b4a52" size 26
 
 screen nf_finale(avail, links):
     default p = 0.0
@@ -310,6 +314,7 @@ screen nf_finale(avail, links):
 
 
 label desktop_loop:
+    $ renpy.music.set_volume(1.0)
     if renpy.music.get_playing() != "audio/Idle Grid.mp3":
         play music "audio/Idle Grid.mp3" fadein 3.0 volume 0.3 loop
     window hide
@@ -421,7 +426,7 @@ label task3_break_menu:
 
         "Подумать про ночь." if hq2_prediction_made and not hq2_confirmed and "t3_night" not in sasha_topics_seen:
             $ mark_topic_seen("t3_night")
-            player "Эта ночь. Сегодня. Если ошибся, придётся признаться, что я это вс придумал."
+            player "Эта ночь. Сегодня. Если ошибся, придётся признаться, что я это всё придумал."
             sasha "А ты заранее решил, что будет считаться ошибкой?"
             player "В каком смысле?"
             sasha "Пока вспышки нет, любая причина подойдёт: облачно, окно не то, фаза сдвинулась. Само отсутствие вспышки не значит, что ты однозначно неправ. Скажи сейчас, до ночи: что для тебя провал?"
@@ -756,7 +761,7 @@ label sasha_not_final:
 
     window hide
     scene black with Dissolve(1.0)
-    play music "audio/Frozen Signal.mp3" fadein 2.0 volume 0.2 loop
+    play music "audio/Frozen Signal.mp3" fadein 2.0 volume 0.5 loop
     $ nf_avail = nf_available()
     $ nf_links = []
     $ nf_msg = "Что с чем связано?"
@@ -892,7 +897,7 @@ label memory_sasha_reveal:
         player "Александр. Палатка. Костёр."
         sasha "..."
         player "Значит, это правда. Ты — это он."
-        sasha "Значит, почти всё. Хэх."
+        sasha "Значит, понял почти всё. Хэх."
         sasha "Был. Когда-то."
         player "Почему ты молчал?"
         sasha "А что бы это изменило? Ты и так знал. Ты всегда знал, в каждый момент своего безвременного существования. Просто теперь мы оба знаем, что знаем."

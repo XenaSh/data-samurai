@@ -1,3 +1,76 @@
+default boss_trust = "mid"
+default boss_belief = 100
+default boss_doubt_count = 0
+
+init python:
+    def boss_trust_level():
+        pts = 0
+        found = getattr(store, "d_found", [])
+        extra = getattr(store, "d_extra", [])
+        if len(found) == 2 and not extra:
+            pts += 2
+        elif len(found) >= 1:
+            pts += 1
+        hits = getattr(store, "mech_hits", 0)
+        if hits == 4:
+            pts += 2
+        elif hits >= 2:
+            pts += 1
+        attempts = getattr(store, "task2_q1_attempts", 0)
+        if attempts == 0:
+            pts += 2
+        elif attempts <= 2:
+            pts += 1
+        outcome = getattr(store, "task3_outcome", "")
+        if outcome == "retreated":
+            pts += 1
+        elif outcome == "escalated":
+            pts -= 1
+        if pts >= 5:
+            return "high"
+        if pts >= 3:
+            return "mid"
+        return "low"
+
+screen boss_belief_bar():
+    zorder 90
+    frame:
+        xalign 0.5
+        ypos 36
+        background Solid("#000000b3")
+        padding (28, 14)
+        vbox:
+            spacing 8
+            text "Вера босса в модель" size 24 color "#ffffff" xalign 0.5
+            frame:
+                xalign 0.5
+                background Solid("#00ffcc")
+                padding (2, 2)
+                frame:
+                    background Solid("#0b1a22")
+                    padding (0, 0)
+                    bar:
+                        value AnimatedValue(boss_belief / 100.0, 1.0, delay=0.9)
+                        xsize 640
+                        ysize 22
+                        left_bar Solid("#ff6b6b")
+                        right_bar Solid("#0b1a22")
+                        thumb None
+
+screen trust_notice():
+    zorder 91
+    frame:
+        xalign 0.5
+        ypos 160
+        background Solid("#000000b3")
+        padding (24, 12)
+        if boss_trust == "high":
+            text "Ты неплохо справлялся с расследованием, начальник станет слушать охотнее." size 26 color "#00ffcc" xmaximum 1400 text_align 0.5 at sig_fade_in(0.0, 0.6)
+        elif boss_trust == "low":
+            text "Ты плохо справлялся с расследованием, начальник критичен к тебе." size 26 color "#ff6b6b" xmaximum 1400 text_align 0.5 at sig_fade_in(0.0, 0.6)
+        else:
+            text "Начальник нейтрален к тебе." size 26 color "#cfefff" xmaximum 1400 text_align 0.5 at sig_fade_in(0.0, 0.6)
+
 # Экран одной из 4 концовок игры
 
 screen ending_screen(title_text, subtitle_text):
@@ -370,31 +443,19 @@ label call_boss_final:
 
 label boss_confrontation:
     window show
-    play music "audio/Frozen Signal.mp3" fadein 6.0 volume 0.25 loop
+    $ renpy.music.set_volume(0.3)
+    play music "audio/Frozen Signal.mp3" fadein 1.0 volume 0.8 loop
 
     boss "Ну, раз ты настолько настойчив — что случилось?"
     player "Я знаю. Я всё знаю."
-    $ renpy.pause(1.0)
     boss "Знаешь что именно?"
-
-    $ renpy.music.set_volume(0.45, delay=4.0)
-    player "Магазин D это и не магазин вовсе. Пики нагрузки каждую среду, потому что вы не можете сами решать, когда спать, и бодрствуете только один день в неделю. Я — не... нет."
-    $ renpy.pause(1.5)
-
-    $ renpy.music.set_volume(0.04, delay=0.6)
+    player "Магазин D это и не магазин вовсе. Пики нагрузки каждую среду, потому что именно в этот день вы используете магазин для своих махинаций. А я — не... нет."
     boss "..."
-    $ renpy.pause(2.5)
-    $ renpy.music.set_volume(0.3, delay=1.5)
     boss "Ну надо же."
-    $ renpy.pause(0.8)
     player "Это правда?"
-    $ renpy.pause(1.2)
-
-    $ renpy.music.set_volume(0.0, delay=0.2)
     show screen call_glitch(5)
     with vpunch
     boss "Правда. Всё, до последнего слова. И даже то, что ты не осмелился произнести — тоже правда."
-    $ renpy.pause(2.5)
 
     show screen confront_dim
     $ renpy.music.set_volume(0.5, delay=4.0)
@@ -660,18 +721,54 @@ label arena_entrance:
     show screen call_glitch(5)
     with vpunch
     window hide
+    $ boss_trust = boss_trust_level()
+    $ boss_belief = 100
+    $ boss_doubt_count = 0
+    show screen boss_belief_bar
+    show screen trust_notice
+    $ renpy.pause(3.5, hard=True)
+    hide screen trust_notice
     jump confrontation_round1
 
+
+label boss_doubt_reaction:
+    $ boss_doubt_count += 1
+    if boss_trust == "high":
+        if boss_doubt_count == 1:
+            boss "Хотя ты впечатлил меня в ходе расследования, сейчас ты звучишь слабее."
+        elif boss_doubt_count == 2:
+            boss "Неужели это твой лучший аргумент?"
+        else:
+            boss "Ты начинаешь меня разочаровывать..."
+    elif boss_trust == "low":
+        if boss_doubt_count == 1:
+            boss "Ты не убедил меня своим замечанием. Дальше."
+        elif boss_doubt_count == 2:
+            boss "Твои аргументы раздражают. Дальше."
+        else:
+            boss "Мы явно создали кривую модель. Ты мог бы постараться и лучше."
+    else:
+        if boss_doubt_count == 1:
+            boss "Звучит неубедительно."
+        elif boss_doubt_count == 2:
+            boss "Что-то в твоих словах есть, но ты не убеждаешь меня."
+        else:
+            boss "Ты просто утомителен."
+    return
 
 label confrontation_round1:
     window show
     boss "Ты сам показал мне: когда средние равны, отклонение точно укажет, где аномалия — именно так ты нашёл магазин D. Значит, отклонение всегда позволяет найти выбросы."
+    player "Это не совсем так... Оно..."
     window hide
     menu:
         "Показывает общий разброс группы, но не указывает на конкретную точку внутри неё.":
             window show
             player "Оно показало, что у D разброс сильнее — но не то, какие именно значения аномальны. Находка была «стоит присмотреться», не «вот виновник»."
             boss "..."
+            $ boss_belief = max(0, boss_belief - 34)
+            show sprite_boss_default_avatar at boss_punch
+            with hpunch
             $ accuracy += 15
             window hide
             jump confrontation_round2
@@ -680,7 +777,8 @@ label confrontation_round1:
             window show
             player "Раз сработало, значит, распределение у D нормальное."
             "Стоп. Над усами у D больше десятка точек — хвост тяжёлый, нормальным это не назовёшь. Отклонение сработало вопреки этому, а не благодаря."
-            boss "Звучит неубедительно."
+            call boss_doubt_reaction from _call_boss_doubt_reaction_1
+            $ boss_belief = max(0, boss_belief - 11)
             $ accuracy += 5
             window hide
             jump confrontation_round2
@@ -689,7 +787,8 @@ label confrontation_round1:
             window show
             player "Может, в D покупает не одна группа, а две — обычные покупатели и малочисленные состоятельные клиенты, изредка делающие крупные покупки."
             "Стоп. Гистограмму выручки D мы не строили. Два горба там или нет, я не знаю. Я просто взял версию, которая понравилась."
-            boss "Звучит неубедительно."
+            call boss_doubt_reaction from _call_boss_doubt_reaction_2
+            $ boss_belief = max(0, boss_belief - 11)
             $ accuracy += 5
             window hide
             jump confrontation_round2
@@ -704,7 +803,8 @@ label confrontation_round2:
             window show
             player "У D, скорее всего, так и было — распродажи, праздники."
             "Хотя я ни разу не проверял, совпадают ли даты выбросов с реальными акциями. А пики у D приходятся строго на среды — праздники так не работают."
-            boss "Звучит неубедительно."
+            call boss_doubt_reaction from _call_boss_doubt_reaction_3
+            $ boss_belief = max(0, boss_belief - 11)
             $ accuracy += 5
             window hide
             jump confrontation_round3
@@ -713,6 +813,9 @@ label confrontation_round2:
             window show
             player "Один-единственный выброс может значить куда более серьёзную проблему, чем десяток мелких, статистически ожидаемых отклонений. Количество и тяжесть — разные вещи."
             boss "..."
+            $ boss_belief = max(0, boss_belief - 34)
+            show sprite_boss_default_avatar at boss_punch
+            with hpunch
             $ accuracy += 15
             window hide
             jump confrontation_round3
@@ -721,7 +824,8 @@ label confrontation_round2:
             window show
             player "У D больше наблюдений — значит, и выбросов закономерно больше."
             "Стоп. Мы смотрели одни и те же три месяца по всем пяти магазинам: наблюдений у всех поровну, и число продаж у всех было похоже."
-            boss "Звучит неубедительно."
+            call boss_doubt_reaction from _call_boss_doubt_reaction_4
+            $ boss_belief = max(0, boss_belief - 11)
             $ accuracy += 5
             window hide
             jump confrontation_round3
@@ -729,13 +833,16 @@ label confrontation_round2:
 
 label confrontation_round3:
     window show
-    boss "Ты сам вычислил: связь между выручкой и нагрузкой — 0.76. Раз корреляция настолько сильная, одно точно влияет на другое, и через эту связь можно управлять поведением."
+    boss "Ты сам вычислил: связь между выручкой и нагрузкой — 0.76. Раз корреляция настолько сильная, одно точно влияет на другое."
     window hide
     menu:
         "Сильная корреляция не исключает третий фактор, влияющий на обе переменные сразу.":
             window show
             player "Например, день недели. И выручка, и нагрузка вырастают по средам — связь могла возникнуть просто из-за общего цикла."
             boss "..."
+            $ boss_belief = max(0, boss_belief - 34)
+            show sprite_boss_default_avatar at boss_punch
+            with hpunch
             $ accuracy += 15
             window hide
             jump arena_wrapup
@@ -744,7 +851,8 @@ label confrontation_round3:
             window show
             player "А у нас было только три месяца данных."
             "Стоп. Для недельного цикла три месяца — это около тринадцати повторов. Проблема не в длине ряда, а в том, что сам цикл причину не объясняет."
-            boss "Звучит неубедительно."
+            call boss_doubt_reaction from _call_boss_doubt_reaction_5
+            $ boss_belief = max(0, boss_belief - 11)
             $ accuracy += 5
             window hide
             jump arena_wrapup
@@ -753,6 +861,9 @@ label confrontation_round3:
             window show
             player "У D выручка и нагрузка менялись синхронно — но мы сами тогда не смогли определить, что на что влияет, и оставили это открытым вопросом. Корреляция дала связь, не механизм."
             boss "..."
+            $ boss_belief = max(0, boss_belief - 34)
+            show sprite_boss_default_avatar at boss_punch
+            with hpunch
             $ accuracy += 15
             window hide
             jump arena_wrapup
@@ -760,13 +871,19 @@ label confrontation_round3:
 label arena_wrapup:
     window show
     hide screen confront_dim
+    if boss_belief <= 25:
+        boss "Ладно... я обдумаю твои слова. Но не обязательно в твою пользу."
+    elif boss_belief <= 50:
+        boss "Довольно. Я услышал довольно."
+    else:
+        boss "Хватит. Просто хватит. Как же ты жалок."
+    hide screen boss_belief_bar
     $ renpy.music.set_volume(0.12, delay=2.5)
 
     show sprite_boss_default_avatar at boss_freeze
     show screen call_glitch(3)
     show screen arena_fog
     with hpunch
-    boss "..."
     "Начальник молчит дольше обычного."
     "Ты же ИИ. Чат с тобой всегда могут просто закрыть. Да? Что случилось?"
     "..."

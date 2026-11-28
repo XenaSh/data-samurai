@@ -8,7 +8,7 @@ style vscrollbar:
 default accuracy = 100
 default intuition = 100
 
-define TEST_BUILD = True
+define TEST_BUILD = False
 
 default remembered_alexander = False
 

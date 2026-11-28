@@ -330,7 +330,7 @@ label sasha_poem_followup:
     show bg_poem_runes as ghost3 at poem_ghost(0.25)
     pause 4.0
 
-    play music "audio/Idle Grid.mp3" loop fadeout 4.0 fadein 4.0
+    play music "audio/Idle Grid.mp3" loop fadeout 4.0 fadein 4.0 volume 0.3
     scene poem_black with Dissolve(3.0)
     pause 1.5
     scene bg_terminal with Dissolve(2.5)
